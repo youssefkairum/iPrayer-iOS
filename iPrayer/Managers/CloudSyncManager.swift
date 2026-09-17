@@ -14,12 +14,14 @@ class CloudSyncManager {
         UDKey.userName.rawValue,
         UDKey.userEmail.rawValue,
         UDKey.lastTrackerDate.rawValue,
-        UDKey.lastCompletedStreakDate.rawValue
+        UDKey.lastCompletedStreakDate.rawValue,
+        UDKey.quranBookmarks.rawValue
     ]
     private let intKeys = [
         UDKey.tasbihCount.rawValue,
         UDKey.tasbihTarget.rawValue,
         UDKey.lastReadSurahNumber.rawValue,
+        UDKey.lastReadVerse.rawValue,
         UDKey.currentStreak.rawValue
     ]
     private let boolArrayKeys = [
@@ -112,6 +114,11 @@ class CloudSyncManager {
                 }
                 
                 defaults.set(cloudVal, forKey: key)
+                
+                if key == UDKey.quranBookmarks.rawValue {
+                    // The bookmarks store keeps its list in memory
+                    DispatchQueue.main.async { QuranBookmarks.shared.reload() }
+                }
                 
                 if isProfileKey {
                     // AccountManager is observed by the UI, so update it on the main thread

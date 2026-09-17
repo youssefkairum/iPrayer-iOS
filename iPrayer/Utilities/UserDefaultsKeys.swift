@@ -21,6 +21,12 @@ enum UDKey: String, CaseIterable {
     case lastReadSurahName = "lastReadSurahName"
     case lastReadSurahEnglish = "lastReadSurahEnglish"
     case lastReadSurahNumber = "lastReadSurahNumber"
+    case lastReadVerse = "lastReadVerse"
+    case quranBookmarks = "quranBookmarks"          // JSON string
+    
+    // Quran reader appearance
+    case quranFontSize = "quranFontSize"
+    case quranReaderTheme = "quranReaderTheme"      // "paper" or "dark"
     
     // Tasbih
     case tasbihCount = "tasbihCount"
