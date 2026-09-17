@@ -24,29 +24,28 @@ struct ContentView: View {
     }
     
     var body: some View {
-        ZStack {
-            // 1. The Background
-            LinearGradient(gradient: Gradient(colors: [Color(hex: "0F2027"), Color(hex: "203A43"), Color(hex: "2C5364")]), startPoint: .top, endPoint: .bottom)
-                .edgesIgnoringSafeArea(.all)
+        NavigationStack {
+            ZStack {
+                // 1. The Background
+                LinearGradient(gradient: Gradient(colors: [Color(hex: "0F2027"), Color(hex: "203A43"), Color(hex: "2C5364")]), startPoint: .top, endPoint: .bottom)
+                    .edgesIgnoringSafeArea(.all)
             
             // 2. The Views (Full Screen)
             // FIX: Removed the .padding(.bottom, 80) here.
             // Now the views extend all the way down behind the tab bar.
             Group {
-                PrayerListView()
-                    .opacity(selectedTab == .prayers ? 1 : 0)
-                
-                QuranView()
-                    .opacity(selectedTab == .quran ? 1 : 0)
-                
-                TasbihView()
-                    .opacity(selectedTab == .tasbih ? 1 : 0)
-                
-                QiblaCompassView()
-                    .opacity(selectedTab == .qibla ? 1 : 0)
-                
-                SettingsView()
-                    .opacity(selectedTab == .settings ? 1 : 0)
+                switch selectedTab {
+                case .prayers:
+                    PrayerListView()
+                case .quran:
+                    QuranView()
+                case .tasbih:
+                    TasbihView()
+                case .qibla:
+                    QiblaCompassView()
+                case .settings:
+                    SettingsView()
+                }
             }
             
             // 3. The Custom Floating Tab Bar (Overlay)
@@ -54,8 +53,9 @@ struct ContentView: View {
                 Spacer()
                 CustomTabBar(selectedTab: $selectedTab)
             }
-            .padding(.bottom, 20) // Raises the bar slightly above the Home Indicator
+            .padding(.bottom, 5) // Minimal padding, safe area handles the rest
             .ignoresSafeArea(.keyboard, edges: .bottom) // Prevents it from moving with keyboard
+        }
         }
     }
 }
@@ -92,11 +92,14 @@ struct CustomTabBar: View {
             }
         }
         .frame(height: 70)
-        .background(Material.ultraThinMaterial) // Glass effect
-        .cornerRadius(35) // Capsule shape
-        .padding(.horizontal, 20)
-        // Shadow for depth
-        .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+        .background(Material.ultraThinMaterial)
+        .cornerRadius(30)
+        .overlay(
+            RoundedRectangle(cornerRadius: 30)
+                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
+        .padding(.horizontal)
     }
 }
 

@@ -8,16 +8,67 @@
 
 /* Begin PBXBuildFile section */
 		981F32E02ED3B27B00F1C158 /* Adhan in Frameworks */ = {isa = PBXBuildFile; productRef = 981F32DF2ED3B27B00F1C158 /* Adhan */; };
+		986B92E52FC490FE0033E808 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 986B92E42FC490FD0033E808 /* WidgetKit.framework */; };
+		986B92E72FC490FE0033E808 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 986B92E62FC490FE0033E808 /* SwiftUI.framework */; };
+		986B92F42FC490FF0033E808 /* iPrayerWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 986B92E22FC490FD0033E808 /* iPrayerWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AC03CA45D00E80CA653B74F5 /* PrayerAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7F897CF6B4DA4FE528FA384 /* PrayerAttributes.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		986B92F22FC490FF0033E808 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 981F32C82ED3B11B00F1C158 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 986B92E12FC490FD0033E808;
+			remoteInfo = iPrayerWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		986B92F52FC490FF0033E808 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				986B92F42FC490FF0033E808 /* iPrayerWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		981F32D02ED3B11B00F1C158 /* iPrayer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iPrayer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		986B92E22FC490FD0033E808 /* iPrayerWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = iPrayerWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		986B92E42FC490FD0033E808 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		986B92E62FC490FE0033E808 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		986B93022FC4A8280033E808 /* iPrayerWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = iPrayerWidgetExtension.entitlements; sourceTree = "<group>"; };
+		F7F897CF6B4DA4FE528FA384 /* PrayerAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PrayerAttributes.swift; path = iPrayer/PrayerAttributes.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		986B92F82FC490FF0033E808 /* Exceptions for "iPrayerWidget" folder in "iPrayerWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 986B92E12FC490FD0033E808 /* iPrayerWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		981F32D22ED3B11B00F1C158 /* iPrayer */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = iPrayer;
+			sourceTree = "<group>";
+		};
+		986B92E82FC490FE0033E808 /* iPrayerWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				986B92F82FC490FF0033E808 /* Exceptions for "iPrayerWidget" folder in "iPrayerWidgetExtension" target */,
+			);
+			path = iPrayerWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -31,14 +82,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		986B92DF2FC490FD0033E808 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				986B92E72FC490FE0033E808 /* SwiftUI.framework in Frameworks */,
+				986B92E52FC490FE0033E808 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		981F32C72ED3B11B00F1C158 = {
 			isa = PBXGroup;
 			children = (
+				986B93022FC4A8280033E808 /* iPrayerWidgetExtension.entitlements */,
 				981F32D22ED3B11B00F1C158 /* iPrayer */,
+				986B92E82FC490FE0033E808 /* iPrayerWidget */,
+				986B92E32FC490FD0033E808 /* Frameworks */,
 				981F32D12ED3B11B00F1C158 /* Products */,
+				F7F897CF6B4DA4FE528FA384 /* PrayerAttributes.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -46,8 +110,18 @@
 			isa = PBXGroup;
 			children = (
 				981F32D02ED3B11B00F1C158 /* iPrayer.app */,
+				986B92E22FC490FD0033E808 /* iPrayerWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		986B92E32FC490FD0033E808 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				986B92E42FC490FD0033E808 /* WidgetKit.framework */,
+				986B92E62FC490FE0033E808 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -60,10 +134,12 @@
 				981F32CC2ED3B11B00F1C158 /* Sources */,
 				981F32CD2ED3B11B00F1C158 /* Frameworks */,
 				981F32CE2ED3B11B00F1C158 /* Resources */,
+				986B92F52FC490FF0033E808 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				986B92F32FC490FF0033E808 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				981F32D22ED3B11B00F1C158 /* iPrayer */,
@@ -76,6 +152,26 @@
 			productReference = 981F32D02ED3B11B00F1C158 /* iPrayer.app */;
 			productType = "com.apple.product-type.application";
 		};
+		986B92E12FC490FD0033E808 /* iPrayerWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 986B92F92FC490FF0033E808 /* Build configuration list for PBXNativeTarget "iPrayerWidgetExtension" */;
+			buildPhases = (
+				986B92DE2FC490FD0033E808 /* Sources */,
+				986B92DF2FC490FD0033E808 /* Frameworks */,
+				986B92E02FC490FD0033E808 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				986B92E82FC490FE0033E808 /* iPrayerWidget */,
+			);
+			name = iPrayerWidgetExtension;
+			productName = iPrayerWidgetExtension;
+			productReference = 986B92E22FC490FD0033E808 /* iPrayerWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -83,11 +179,14 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2610;
-				LastUpgradeCheck = 2610;
+				LastSwiftUpdateCheck = 2630;
+				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					981F32CF2ED3B11B00F1C158 = {
 						CreatedOnToolsVersion = 26.1.1;
+					};
+					986B92E12FC490FD0033E808 = {
+						CreatedOnToolsVersion = 26.3;
 					};
 				};
 			};
@@ -109,12 +208,20 @@
 			projectRoot = "";
 			targets = (
 				981F32CF2ED3B11B00F1C158 /* iPrayer */,
+				986B92E12FC490FD0033E808 /* iPrayerWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		981F32CE2ED3B11B00F1C158 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		986B92E02FC490FD0033E808 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -131,7 +238,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		986B92DE2FC490FD0033E808 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AC03CA45D00E80CA653B74F5 /* PrayerAttributes.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		986B92F32FC490FF0033E808 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 986B92E12FC490FD0033E808 /* iPrayerWidgetExtension */;
+			targetProxy = 986B92F22FC490FF0033E808 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		981F32D92ED3B11C00F1C158 /* Debug */ = {
@@ -193,6 +316,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -250,6 +374,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -260,22 +385,29 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = iPrayer/iPrayer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = LQZSTSHZ62;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "to know yo mama";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "iPrayer-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = iPrayer;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "to know user's location for displaying accurate prayer times";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_UIAppFonts = "(KFGQPC Uthmanic Script HAFS Regular.otf)";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIBackgroundModes = "fetch processing";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = youssefkairum.iPrayer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -293,27 +425,98 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = iPrayer/iPrayer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = LQZSTSHZ62;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "to know yo mama";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "iPrayer-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = iPrayer;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "to know user's location for displaying accurate prayer times";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_UIAppFonts = "(KFGQPC Uthmanic Script HAFS Regular.otf)";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIBackgroundModes = "fetch processing";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = youssefkairum.iPrayer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		986B92F62FC490FF0033E808 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = iPrayerWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = LQZSTSHZ62;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = iPrayerWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = iPrayerWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = youssefkairum.iPrayer.iPrayerWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		986B92F72FC490FF0033E808 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = iPrayerWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = LQZSTSHZ62;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = iPrayerWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = iPrayerWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = youssefkairum.iPrayer.iPrayerWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -338,6 +541,15 @@
 			buildConfigurations = (
 				981F32DC2ED3B11C00F1C158 /* Debug */,
 				981F32DD2ED3B11C00F1C158 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		986B92F92FC490FF0033E808 /* Build configuration list for PBXNativeTarget "iPrayerWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				986B92F62FC490FF0033E808 /* Debug */,
+				986B92F72FC490FF0033E808 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
