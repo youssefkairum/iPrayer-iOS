@@ -16,7 +16,24 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var viewModel: PrayerViewModel
-    @State private var selectedTab: Tab = .prayers
+    @State private var selectedTab: Tab = ContentView.initialTab
+    /// Tabs that have been opened at least once. They stay in the hierarchy so their state
+    /// (Quran search text and scroll position, Settings scroll) survives switching tabs.
+    @State private var loadedTabs: Set<Tab> = [ContentView.initialTab]
+    
+    private static var initialTab: Tab {
+        #if DEBUG
+        // Debug-only: `-debugInitialTab quran` as a launch argument opens that tab, for screenshots and UI checks
+        switch UserDefaults.standard.string(forKey: "debugInitialTab") {
+        case "quran": return .quran
+        case "tasbih": return .tasbih
+        case "qibla": return .qibla
+        case "settings": return .settings
+        default: break
+        }
+        #endif
+        return .prayers
+    }
     
     var body: some View {
         NavigationStack {
@@ -24,33 +41,42 @@ struct ContentView: View {
                 // 1. The Background
                 LinearGradient(gradient: Gradient(colors: [Color(hex: "0F2027"), Color(hex: "203A43"), Color(hex: "2C5364")]), startPoint: .top, endPoint: .bottom)
                     .edgesIgnoringSafeArea(.all)
-            
-            // 2. The Views (Full Screen)
-            // FIX: Removed the .padding(.bottom, 80) here.
-            // Now the views extend all the way down behind the tab bar.
-            Group {
-                switch selectedTab {
-                case .prayers:
-                    PrayerListView()
-                case .quran:
-                    QuranView()
-                case .tasbih:
-                    TasbihView()
-                case .qibla:
+                
+                // 2. The Views (Full Screen, extending behind the tab bar)
+                persistentTab(.prayers) { PrayerListView() }
+                persistentTab(.quran) { QuranView() }
+                persistentTab(.tasbih) { TasbihView() }
+                persistentTab(.settings) { SettingsView() }
+                
+                // The compass is deliberately NOT kept alive: it runs the magnetometer
+                // and a repeating animation, which must stop when the tab is left.
+                if selectedTab == .qibla {
                     QiblaCompassView()
-                case .settings:
-                    SettingsView()
                 }
+                
+                // 3. The Custom Floating Tab Bar (Overlay)
+                VStack {
+                    Spacer()
+                    CustomTabBar(selectedTab: $selectedTab)
+                }
+                .padding(.bottom, 5) // Minimal padding, safe area handles the rest
+                .ignoresSafeArea(.keyboard, edges: .bottom) // Prevents it from moving with keyboard
             }
-            
-            // 3. The Custom Floating Tab Bar (Overlay)
-            VStack {
-                Spacer()
-                CustomTabBar(selectedTab: $selectedTab)
+            .onChange(of: selectedTab) { _, newTab in
+                loadedTabs.insert(newTab)
             }
-            .padding(.bottom, 5) // Minimal padding, safe area handles the rest
-            .ignoresSafeArea(.keyboard, edges: .bottom) // Prevents it from moving with keyboard
         }
+    }
+    
+    /// Builds a tab lazily on first visit, then hides it instead of destroying it.
+    @ViewBuilder
+    private func persistentTab<Content: View>(_ tab: Tab, @ViewBuilder content: () -> Content) -> some View {
+        if loadedTabs.contains(tab) || selectedTab == tab {
+            let isSelected = selectedTab == tab
+            content()
+                .opacity(isSelected ? 1 : 0)
+                .allowsHitTesting(isSelected)
+                .accessibilityHidden(!isSelected)
         }
     }
 }

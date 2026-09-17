@@ -26,12 +26,15 @@ enum UDKey: String, CaseIterable {
     case tasbihCount = "tasbihCount"
     case tasbihTarget = "tasbihTarget"
     
+    // Notifications
+    case adhanSoundEnabled = "adhanSoundEnabled"
+    case quranRemindersEnabled = "quranRemindersEnabled"
+    case prePrayerReminderMinutes = "prePrayerReminderMinutes" // 0 = off
+    
     // Home tracker & streak
-    case dhikrCount = "dhikrCount"
     case currentStreak = "currentStreak"
     case dailyPrayersCompleted = "dailyPrayersCompleted"
     case lastCompletedStreakDate = "lastCompletedStreakDate"
-    case lastDhikrResetDate = "lastDhikrResetDate"
     case lastTrackerDate = "lastTrackerDate"
     
     // Account

@@ -25,7 +25,7 @@ struct AboutView: View {
                     Button(action: {
                         dismiss()
                     }) {
-                        Image(systemName: "chevron.left")
+                        Image(systemName: "chevron.backward")
                             .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.white)
                             .frame(width: 44, height: 44)

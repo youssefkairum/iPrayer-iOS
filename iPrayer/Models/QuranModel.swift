@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - Surah Metadata
-struct SurahMetadata: Codable, Identifiable, Sendable {
+struct SurahMetadata: Codable, Identifiable, Hashable, Sendable {
     let number: Int
     let name: String                    // Arabic Name (e.g. سورة الفاتحة)
     let englishName: String             // Phonetic (e.g. Al-Fatiha)

@@ -16,6 +16,10 @@ struct QuranView: View {
     @AppStorage(UDKey.lastReadSurahEnglish.rawValue) private var lastReadEnglish: String = ""
     @AppStorage(UDKey.lastReadSurahNumber.rawValue) private var lastReadNumber: Int = 0
     @State private var searchText = ""
+    #if DEBUG
+    /// Debug-only: `-debugOpenSurah 18` as a launch argument pushes that surah's reader, for screenshots and UI checks
+    @State private var debugSurah: SurahMetadata?
+    #endif
     
     var filteredSurahs: [SurahMetadata] {
         if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -151,6 +155,17 @@ struct QuranView: View {
                 }
             }
             .navigationBarHidden(true)
+            #if DEBUG
+            .navigationDestination(item: $debugSurah) { surah in
+                SurahDetailView(surah: surah)
+            }
+            .onChange(of: quranVM.surahs.count) { _, _ in
+                let number = UserDefaults.standard.integer(forKey: "debugOpenSurah")
+                if number > 0, debugSurah == nil {
+                    debugSurah = quranVM.surahs.first { $0.number == number }
+                }
+            }
+            #endif
     }
 }
 
@@ -182,7 +197,7 @@ struct ContinueReadingCard: View {
             }
             Spacer()
             
-            Image(systemName: "chevron.right.circle.fill")
+            Image(systemName: "chevron.forward.circle.fill")
                 .font(.largeTitle)
                 .foregroundColor(.white.opacity(0.5))
         }
@@ -291,11 +306,17 @@ struct SurahDetailView: View {
                 .padding(.bottom, 20)
             }
         }
-        // Light paper page inside a dark app: give the bar (and the status bar it drives) a light scheme
+        // Light paper page inside a dark app: give the navigation bar a light scheme.
+        // The status bar follows the WINDOW's scheme, so the app root switches the window to light
+        // while this page is on screen (see AppAppearance), keeping the clock readable on paper.
         .toolbarBackground(Color(hex: "FAF8F3"), for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(.light, for: .navigationBar)
+        .onDisappear {
+            AppAppearance.shared.prefersLightStatusBar = false
+        }
         .onAppear {
+            AppAppearance.shared.prefersLightStatusBar = true
             detailVM.fetchVerses(for: surah.number)
             UserDefaults.standard.set(surah.name, forKey: UDKey.lastReadSurahName.rawValue)
             UserDefaults.standard.set(surah.englishName, forKey: UDKey.lastReadSurahEnglish.rawValue)

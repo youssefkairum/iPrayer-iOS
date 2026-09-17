@@ -118,54 +118,24 @@ struct AyahWidgetView: View {
             Text(ayah.arabicText)
                 .font(.custom("KFGQPC Uthmanic Script HAFS", size: 22))
                 .foregroundColor(.white)
-                .lineLimit(2)
+                .lineLimit(3)
                 .minimumScaleFactor(0.5)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .environment(\.layoutDirection, .rightToLeft)
             
-            Text(ayah.englishText)
-                .font(.custom("AvenirNext-Regular", size: 14))
-                .foregroundColor(.white.opacity(0.8))
-                .lineLimit(3)
-                .multilineTextAlignment(.leading)
-            
-            Spacer(minLength: 0)
+            // Only an English rendering is bundled; Arabic readers don't need it
+            if appLanguage != "ar" {
+                Text(ayah.englishText)
+                    .font(.custom("AvenirNext-Regular", size: 14))
+                    .foregroundColor(.white.opacity(0.8))
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             
             Text(ayah.reference)
                 .font(.caption)
                 .foregroundColor(.teal)
         }
-        .premiumWidgetCard()
-    }
-}
-
-// MARK: - Dua Widget
-struct DuaWidgetView: View {
-    @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
-    let dua = HomeWidgetsData.shared.todaysDua
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Image(systemName: "hands.sparkles.fill")
-                    .foregroundColor(.blue)
-                Text(AppTranslations.translate("Daily Dua", to: appLanguage))
-                    .font(.caption.bold())
-                    .foregroundColor(.gray)
-                Spacer()
-            }
-            
-            Text(dua.text)
-                .font(.custom("AvenirNext-Medium", size: 15))
-                .foregroundColor(.white)
-                .lineLimit(5)
-                .multilineTextAlignment(.leading)
-            
-            Spacer(minLength: 0)
-            
-            Text(dua.reference)
-                .font(.caption)
-                .foregroundColor(.teal)
-        }
-        .premiumWidgetCard()
+        .premiumWidgetCard(height: nil)
     }
 }

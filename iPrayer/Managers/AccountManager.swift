@@ -41,6 +41,41 @@ class AccountManager: ObservableObject {
         }
     }
     
+    // MARK: - Sign in with Apple (shared by Onboarding and Settings)
+    
+    static func configure(_ request: ASAuthorizationAppleIDRequest) {
+        request.requestedScopes = [.fullName, .email]
+    }
+    
+    /// Applies the result of a SignInWithAppleButton. Returns true when the user is now signed in.
+    @discardableResult
+    func handleSignIn(_ result: Result<ASAuthorization, Error>) -> Bool {
+        switch result {
+        case .success(let authorization):
+            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else { return false }
+            
+            // Start iCloud sync FIRST, so a new name/email from Apple is pushed up to iCloud
+            CloudSyncManager.shared.startSyncing()
+            
+            appleUserId = credential.user
+            isLoggedIn = true
+            
+            // Apple only supplies these on the very first sign-in; never overwrite with blanks
+            if let fullName = credential.fullName {
+                let name = "\(fullName.givenName ?? "") \(fullName.familyName ?? "")".trimmingCharacters(in: .whitespaces)
+                if !name.isEmpty { userName = name }
+            }
+            if let email = credential.email {
+                userEmail = email
+            }
+            return true
+            
+        case .failure(let error):
+            print("Sign in failed: \(error.localizedDescription)")
+            return false
+        }
+    }
+    
     /// Confirms with Apple that the stored Sign in with Apple credential is still valid.
     /// Call at launch: the user can revoke access in Settings > Apple Account while the app isn't running.
     func verifyAppleCredential() {

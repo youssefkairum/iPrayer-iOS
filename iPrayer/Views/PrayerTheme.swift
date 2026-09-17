@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct PrayerTheme {
     let gradient: LinearGradient
@@ -43,4 +44,13 @@ struct PrayerTheme {
             )
         }
     }
+}
+
+/// Lets a screen ask for dark status bar text. The app is dark everywhere except the Quran reader's
+/// paper page. The root view pins its content to the dark scheme and only flips the window's scheme,
+/// which is what the status bar follows.
+final class AppAppearance: ObservableObject {
+    static let shared = AppAppearance()
+    @Published var prefersLightStatusBar = false
+    private init() {}
 }

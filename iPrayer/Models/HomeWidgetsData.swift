@@ -8,19 +8,10 @@ struct AyahSnippet: Codable {
     let reference: String
 }
 
-struct DuaSnippet: Codable {
-    let text: String
-    let reference: String
-}
-
 class HomeWidgetsData: ObservableObject {
     static let shared = HomeWidgetsData()
     
     // MARK: - Published properties
-    @Published var dhikrCount: Int = 0 {
-        didSet { UserDefaults.standard.set(dhikrCount, forKey: UDKey.dhikrCount.rawValue) }
-    }
-    
     // The streak and the daily tracker are synced through iCloud (see CloudSyncManager)
     @Published var currentStreak: Int = 0 {
         didSet {
@@ -42,11 +33,6 @@ class HomeWidgetsData: ObservableObject {
             UserDefaults.standard.set(newValue, forKey: UDKey.lastCompletedStreakDate.rawValue)
             CloudSyncManager.shared.sync(key: UDKey.lastCompletedStreakDate.rawValue, value: newValue)
         }
-    }
-    
-    private var lastDhikrResetDateStr: String {
-        get { UserDefaults.standard.string(forKey: UDKey.lastDhikrResetDate.rawValue) ?? "" }
-        set { UserDefaults.standard.set(newValue, forKey: UDKey.lastDhikrResetDate.rawValue) }
     }
     
     private var lastTrackerDateStr: String {
@@ -78,16 +64,6 @@ class HomeWidgetsData: ObservableObject {
         AyahSnippet(englishText: "Unquestionably, by the remembrance of Allah hearts are assured.", arabicText: "أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ", reference: "Quran 13:28")
     ]
     
-    let dailyDuas: [DuaSnippet] = [
-        DuaSnippet(text: "O Allah, I ask You for beneficial knowledge, goodly provision and acceptable deeds.", reference: "Morning Supplication"),
-        DuaSnippet(text: "O Allah, You are forgiving and love forgiveness, so forgive me.", reference: "Dua of Aisha (RA)"),
-        DuaSnippet(text: "O turner of the hearts, keep my heart firm upon Your religion.", reference: "Dua of the Prophet (SAW)"),
-        DuaSnippet(text: "O Allah, I seek refuge in You from anxiety and sorrow, weakness and laziness.", reference: "Bukhari"),
-        DuaSnippet(text: "Our Lord, grant us good in this world and good in the Hereafter, and protect us from the punishment of the Fire.", reference: "Quran 2:201"),
-        DuaSnippet(text: "O Allah, guide me among those whom You have guided.", reference: "Sunan an-Nasa'i"),
-        DuaSnippet(text: "O Allah, I ask You for Your love and the love of those who love You.", reference: "Tirmidhi")
-    ]
-    
     // Computed Properties
     var todaysAyah: AyahSnippet {
         let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
@@ -95,25 +71,16 @@ class HomeWidgetsData: ObservableObject {
         return dailyAyahs[index]
     }
     
-    var todaysDua: DuaSnippet {
-        let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
-        let index = dayOfYear % dailyDuas.count
-        return dailyDuas[index]
-    }
-    
     init() {
         loadPersistedState()
-        checkAndResetDhikr()
         checkAndResetTracker()
     }
     
     private func loadPersistedState() {
         let defaults = UserDefaults.standard
         let savedStreak = defaults.integer(forKey: UDKey.currentStreak.rawValue)
-        let savedDhikr = defaults.integer(forKey: UDKey.dhikrCount.rawValue)
         
         // Only assign real changes so the UI and iCloud aren't poked for nothing
-        if dhikrCount != savedDhikr { dhikrCount = savedDhikr }
         if currentStreak != savedStreak { currentStreak = savedStreak }
         if let savedTracker = defaults.array(forKey: UDKey.dailyPrayersCompleted.rawValue) as? [Bool],
            savedTracker.count == 5, savedTracker != dailyPrayersCompleted {
@@ -132,28 +99,7 @@ class HomeWidgetsData: ObservableObject {
     /// Re-runs the day-change checks. Called when the app returns to the foreground,
     /// since init only runs once and the app may stay alive across midnight.
     func refreshDayState() {
-        checkAndResetDhikr()
         checkAndResetTracker()
-    }
-    
-    func incrementDhikr() {
-        checkAndResetDhikr()
-        dhikrCount += 1
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-    }
-    
-    func resetDhikr() {
-        dhikrCount = 0
-    }
-    
-    private func checkAndResetDhikr() {
-        let formatter = Self.dayFormatter
-        let todayStr = formatter.string(from: Date())
-        
-        if lastDhikrResetDateStr != todayStr {
-            dhikrCount = 0
-            lastDhikrResetDateStr = todayStr
-        }
     }
     
     func togglePrayer(index: Int) {

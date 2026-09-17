@@ -39,6 +39,8 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var nextPrayerName: String = ""
     /// Translation key shown on the home screen when location access is unavailable.
     @Published var locationError: String?
+    /// Drives the Home card that asks for location access when it hasn't been decided yet.
+    @Published var locationAuthorization: CLAuthorizationStatus = .notDetermined
     
     private static let locationErrorKey = "Location access is needed to show prayer times."
     
@@ -62,8 +64,15 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
         // Only publish heading changes of at least one degree so sensor noise doesn't re-render the UI.
         locationManager.headingFilter = 1
+        locationAuthorization = locationManager.authorizationStatus
+        // Permission is requested from onboarding or the Home card, next to an explanation, not at launch.
+        // If access was already granted, locationManagerDidChangeAuthorization (which CoreLocation
+        // calls right after the delegate is set) starts the updates.
+    }
+    
+    /// Shows the system location prompt. Called from the onboarding slide and the Home card.
+    func requestLocationAccess() {
         locationManager.requestWhenInUseAuthorization()
-        locationManager.startUpdatingLocation()
     }
     
     // MARK: - Compass Battery Management
@@ -81,6 +90,7 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         let status = manager.authorizationStatus
         Task { @MainActor in
+            self.locationAuthorization = status
             switch status {
             case .denied, .restricted:
                 self.locationError = Self.locationErrorKey
@@ -176,6 +186,13 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     func updateLocation() {
         self.locationName = "Locating..."
         locationManager.startUpdatingLocation()
+    }
+    
+    /// Re-runs notification, widget and Live Activity scheduling even if the prayer times are unchanged,
+    /// for example after a notification setting changes or permission is granted.
+    func forceReschedule() {
+        lastScheduleSignature = nil
+        refreshPrayers()
     }
     
     func refreshPrayers() {
@@ -319,22 +336,30 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     // MARK: - Notifications
     
-    /// Schedules the next `notificationDaysAhead` days of prayer notifications, in the app's language,
+    /// Schedules several days of prayer notifications, in the app's language,
     /// so users who don't open the app every day keep receiving them.
     private func scheduleNotifications(coordinates: Coordinates, params: CalculationParameters, language: String) {
         let center = UNUserNotificationCenter.current()
         let cal = Calendar(identifier: .gregorian)
+        
+        // User settings (Settings > Notifications)
+        let defaults = UserDefaults.standard
+        let adhanEnabled = defaults.object(forKey: UDKey.adhanSoundEnabled.rawValue) as? Bool ?? true
+        let reminderMinutes = defaults.integer(forKey: UDKey.prePrayerReminderMinutes.rawValue)
+        // iOS keeps at most 64 pending requests per app; reminders double the count, so look less far ahead.
+        let daysAhead = reminderMinutes > 0 ? 5 : Self.notificationDaysAhead
         
         // Remove everything this app may have scheduled before, including the legacy per-name identifiers.
         var identifiers = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"]
         for day in 0..<Self.notificationDaysAhead {
             for prayer in Self.notifiedPrayers {
                 identifiers.append("prayer_\(prayerNameString(prayer))_\(day)")
+                identifiers.append("preprayer_\(prayerNameString(prayer))_\(day)")
             }
         }
         center.removePendingNotificationRequests(withIdentifiers: identifiers)
         
-        for dayOffset in 0..<Self.notificationDaysAhead {
+        for dayOffset in 0..<daysAhead {
             guard let date = cal.date(byAdding: .day, value: dayOffset, to: Date()) else { continue }
             let comps = cal.dateComponents([.year, .month, .day], from: date)
             guard let times = PrayerTimes(coordinates: coordinates, date: comps, calculationParameters: params) else { continue }
@@ -350,12 +375,24 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                 content.title = translatedName
                 content.body = AppTranslations.catalogString("It's time for %@ prayer", language: language, translatedName)
                 // Notification sounds must be aiff, wav or caf and under 30 seconds; iOS silently ignores mp3.
-                content.sound = UNNotificationSound(named: UNNotificationSoundName("adhan.caf"))
+                content.sound = adhanEnabled ? UNNotificationSound(named: UNNotificationSoundName("adhan.caf")) : .default
                 
                 let triggerComponents = cal.dateComponents([.year, .month, .day, .hour, .minute], from: time)
                 let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
-                let request = UNNotificationRequest(identifier: "prayer_\(name)_\(dayOffset)", content: content, trigger: trigger)
-                center.add(request)
+                center.add(UNNotificationRequest(identifier: "prayer_\(name)_\(dayOffset)", content: content, trigger: trigger))
+                
+                // Optional heads-up a few minutes before the prayer
+                let reminderTime = time.addingTimeInterval(TimeInterval(-reminderMinutes * 60))
+                if reminderMinutes > 0, reminderTime > Date() {
+                    let reminder = UNMutableNotificationContent()
+                    reminder.title = translatedName
+                    reminder.body = String(format: AppTranslations.translate("%@ in %lld minutes", to: language), translatedName, reminderMinutes)
+                    reminder.sound = .default
+                    
+                    let reminderComponents = cal.dateComponents([.year, .month, .day, .hour, .minute], from: reminderTime)
+                    let reminderTrigger = UNCalendarNotificationTrigger(dateMatching: reminderComponents, repeats: false)
+                    center.add(UNNotificationRequest(identifier: "preprayer_\(name)_\(dayOffset)", content: reminder, trigger: reminderTrigger))
+                }
             }
         }
     }

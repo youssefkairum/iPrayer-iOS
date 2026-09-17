@@ -105,6 +105,17 @@ struct PrayerListView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                     .padding(.horizontal)
+                } else if viewModel.locationAuthorization == .notDetermined {
+                    // Location hasn't been decided yet (the onboarding slide was skipped): ask here, with the reason
+                    LocationErrorCard(
+                        icon: "location.fill",
+                        iconColor: .teal,
+                        message: AppTranslations.translate("iPrayer uses your location to calculate prayer times and the Qibla direction.", to: appLanguage),
+                        buttonTitle: AppTranslations.translate("Enable Location", to: appLanguage)
+                    ) {
+                        viewModel.requestLocationAccess()
+                    }
+                    .padding(.horizontal)
                 } else if let error = viewModel.locationError {
                     LocationErrorCard(
                         message: AppTranslations.translate(error, to: appLanguage),
@@ -131,6 +142,16 @@ struct PrayerListView: View {
                     .buttonStyle(PlainButtonStyle())
                 }
                 .padding(.horizontal)
+                
+                // 4. FULL DAY AT A GLANCE
+                if !viewModel.prayerTimes.isEmpty {
+                    DayScheduleCard(prayers: viewModel.prayerTimes)
+                        .padding(.horizontal)
+                }
+                
+                // 5. VERSE OF THE DAY
+                AyahWidgetView()
+                    .padding(.horizontal)
             }
             .padding(.top, 20)
             .padding(.bottom, 100) // Clear the floating tab bar
@@ -224,15 +245,17 @@ struct HeroCard: View {
 
 /// Shown in place of the hero card when location access has been denied.
 struct LocationErrorCard: View {
+    var icon: String = "location.slash.fill"
+    var iconColor: Color = .orange
     let message: String
     let buttonTitle: String
     let action: () -> Void
     
     var body: some View {
         VStack(spacing: 14) {
-            Image(systemName: "location.slash.fill")
+            Image(systemName: icon)
                 .font(.system(size: 34))
-                .foregroundColor(.orange)
+                .foregroundColor(iconColor)
             
             Text(message)
                 .font(.custom("AvenirNext-Medium", size: 16))
@@ -258,5 +281,60 @@ struct LocationErrorCard: View {
             RoundedRectangle(cornerRadius: 30)
                 .stroke(Color.white.opacity(0.2), lineWidth: 1)
         )
+    }
+}
+
+/// All of the day's times in one compact card, so the schedule is visible without leaving Home.
+struct DayScheduleCard: View {
+    let prayers: [PrayerItem]
+    @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
+    
+    /// After Isha the view model switches the list to tomorrow's times.
+    private var isShowingTomorrow: Bool {
+        guard let first = prayers.first else { return false }
+        return Calendar.current.isDateInTomorrow(first.time)
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "calendar")
+                    .foregroundColor(.teal)
+                Text(AppTranslations.translate(isShowingTomorrow ? "Tomorrow's schedule" : "Prayer Times", to: appLanguage))
+                    .font(.custom("AvenirNext-DemiBold", size: 14))
+                    .foregroundColor(.white)
+                Spacer()
+            }
+            
+            VStack(spacing: 0) {
+                ForEach(prayers) { prayer in
+                    let isPast = !prayer.isNext && prayer.time < Date()
+                    let accent = PrayerTheme.theme(for: prayer.name).shadowColor
+                    
+                    HStack(spacing: 12) {
+                        Image(systemName: prayer.icon)
+                            .font(.system(size: 14))
+                            .frame(width: 22)
+                            .foregroundColor(prayer.isNext ? accent : (isPast ? .gray : .white.opacity(0.8)))
+                        
+                        Text(AppTranslations.translate(prayer.name, to: appLanguage))
+                            .font(.custom(prayer.isNext ? "AvenirNext-Bold" : "AvenirNext-Medium", size: 16))
+                            .foregroundColor(isPast ? .gray : .white)
+                        
+                        Spacer()
+                        
+                        Text(prayer.time, style: .time)
+                            .font(.system(size: 15, weight: prayer.isNext ? .bold : .regular, design: .monospaced))
+                            .foregroundColor(prayer.isNext ? accent : (isPast ? .gray : .white.opacity(0.8)))
+                    }
+                    .padding(.vertical, 9)
+                    
+                    if prayer.id != prayers.last?.id {
+                        Divider().background(Color.white.opacity(0.08))
+                    }
+                }
+            }
+        }
+        .premiumWidgetCard(height: nil)
     }
 }
