@@ -26,7 +26,17 @@ enum UDKey: String, CaseIterable {
     case tasbihCount = "tasbihCount"
     case tasbihTarget = "tasbihTarget"
     
+    // Home tracker & streak
+    case dhikrCount = "dhikrCount"
+    case currentStreak = "currentStreak"
+    case dailyPrayersCompleted = "dailyPrayersCompleted"
+    case lastCompletedStreakDate = "lastCompletedStreakDate"
+    case lastDhikrResetDate = "lastDhikrResetDate"
+    case lastTrackerDate = "lastTrackerDate"
+    
     // Account
     case userName = "userName"
     case userEmail = "userEmail"
+    case isLoggedIn = "isLoggedIn"
+    case appleUserId = "appleUserId"
 }

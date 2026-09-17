@@ -70,11 +70,11 @@ struct SettingsView: View {
                                         
                                         // Name and Email
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text(accountManager.userName.isEmpty ? String(localized: "iCloud Account") : accountManager.userName)
+                                            Text(accountManager.userName.isEmpty ? AppTranslations.catalogString("iCloud Account", language: appLanguage) : accountManager.userName)
                                                 .font(.custom("AvenirNext-DemiBold", size: 16))
                                                 .foregroundColor(.white)
                                             
-                                            Text(accountManager.userEmail.isEmpty ? String(localized: "Connected securely") : accountManager.userEmail)
+                                            Text(accountManager.userEmail.isEmpty ? AppTranslations.catalogString("Connected securely", language: appLanguage) : accountManager.userEmail)
                                                 .font(.custom("AvenirNext-Medium", size: 13))
                                                 .foregroundColor(.gray)
                                                 .lineLimit(1)

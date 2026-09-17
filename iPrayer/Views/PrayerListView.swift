@@ -182,7 +182,7 @@ struct HeroCard: View {
                             .font(.custom("AvenirNext-Bold", size: 38))
                             .foregroundColor(.white)
                         
-                        Text("\(AppTranslations.translate("at", to: appLanguage)) \(prayerTime.formatted(date: .omitted, time: .shortened))")
+                        Text("\(AppTranslations.translate("at", to: appLanguage)) \(prayerTime.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: appLanguage))))")
                             .font(.custom("AvenirNext-Medium", size: 16))
                             .foregroundColor(.white.opacity(0.8))
                     }

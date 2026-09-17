@@ -8,9 +8,23 @@
 
 import Foundation
 
-struct AppTranslations {
+nonisolated struct AppTranslations {
     static func translate(_ text: String, to language: String) -> String {
-        let dict: [String: [String: String]] = [
+        table[text]?[language] ?? text
+    }
+    
+    /// Looks up a String Catalog key in the IN-APP language rather than the device language.
+    /// `String(localized:)` and `NSLocalizedString` always follow the device, which mixed languages
+    /// in notifications and a few labels whenever the two differed.
+    static func catalogString(_ key: String, language: String, _ arguments: CVarArg...) -> String {
+        let bundle = Bundle.main.path(forResource: language, ofType: "lproj").flatMap { Bundle(path: $0) } ?? .main
+        let format = bundle.localizedString(forKey: key, value: key, table: nil)
+        guard !arguments.isEmpty else { return format }
+        return String(format: format, locale: Locale(identifier: language), arguments: arguments)
+    }
+    
+    // Built once. It used to be rebuilt on every call, and views call translate many times per render.
+    private static let table: [String: [String: String]] = [
             // MARK: - Prayer Names
             "Fajr":    ["ar": "الفجر",   "ur": "فجر",           "fr": "Fajr",             "zh-Hans": "晨礼",   "de": "Fadschr",        "hi": "फज्र",         "tr": "İmsak",   "ru": "Фаджр"],
             "Sunrise": ["ar": "الشروق",  "ur": "طلوع آفتاب",   "fr": "Lever du soleil",  "zh-Hans": "日出",   "de": "Sonnenaufgang",  "hi": "सूर्योदय",    "tr": "Güneş",   "ru": "Восход"],
@@ -49,6 +63,8 @@ struct AppTranslations {
             "Next Prayer": ["ar": "الصلاة القادمة", "ur": "اگلی نماز", "fr": "Prochaine prière", "zh-Hans": "下一个祈祷", "de": "Nächstes Gebet", "hi": "अगली प्रार्थना", "tr": "Sonraki Namaz", "ru": "Следующая молитва"],
             "Tomorrow's schedule": ["ar": "جدول الغد", "ur": "کل کا شیڈول", "fr": "Programme de demain", "zh-Hans": "明日时间表", "de": "Plan für morgen", "hi": "कल का शेड्यूल", "tr": "Yarının programı", "ru": "Расписание на завтра"],
             "Location access is needed to show prayer times.": ["ar": "يلزم الوصول إلى الموقع لعرض مواقيت الصلاة.", "ur": "نماز کے اوقات دکھانے کے لیے مقام تک رسائی درکار ہے۔", "fr": "L'accès à la localisation est nécessaire pour afficher les horaires de prière.", "zh-Hans": "需要位置权限才能显示祈祷时间。", "de": "Standortzugriff wird benötigt, um Gebetszeiten anzuzeigen.", "hi": "नमाज़ के वक्त दिखाने के लिए स्थान की अनुमति आवश्यक है।", "tr": "Namaz vakitlerini göstermek için konum erişimi gerekli.", "ru": "Для показа времени молитв нужен доступ к геопозиции."],
+            "Now": ["ar": "الآن", "ur": "ابھی", "fr": "Maintenant", "zh-Hans": "现在", "de": "Jetzt", "hi": "अभी", "tr": "Şimdi", "ru": "Сейчас"],
+            "Tap to open iPrayer": ["ar": "اضغط لفتح iPrayer", "ur": "iPrayer کھولنے کے لیے ٹیپ کریں", "fr": "Touchez pour ouvrir iPrayer", "zh-Hans": "点击打开 iPrayer", "de": "Tippen, um iPrayer zu öffnen", "hi": "iPrayer खोलने के लिए टैप करें", "tr": "iPrayer'ı açmak için dokun", "ru": "Нажмите, чтобы открыть iPrayer"],
             "Open Settings": ["ar": "فتح الإعدادات", "ur": "سیٹنگز کھولیں", "fr": "Ouvrir les réglages", "zh-Hans": "打开设置", "de": "Einstellungen öffnen", "hi": "सेटिंग्स खोलें", "tr": "Ayarları Aç", "ru": "Открыть настройки"],
 
             "Duas Library": ["ar": "مكتبة الأدعية", "ur": "دعاؤں کی لائبریری", "fr": "Bibliothèque de Duas", "zh-Hans": "杜阿图书馆", "de": "Duas Bibliothek", "hi": "दुआ पुस्तकालय", "tr": "Dualar Kütüphanesi", "ru": "Библиотека дуа"],
@@ -174,6 +190,4 @@ struct AppTranslations {
             "My Lord, have mercy upon them as they brought me up [when I was] small.": ["ar": "", "ur": "My Lord, have mercy upon them as they brought me up [when I was] small.", "fr": "My Lord, have mercy upon them as they brought me up [when I was] small.", "zh-Hans": "My Lord, have mercy upon them as they brought me up [when I was] small.", "de": "My Lord, have mercy upon them as they brought me up [when I was] small.", "hi": "My Lord, have mercy upon them as they brought me up [when I was] small.", "tr": "My Lord, have mercy upon them as they brought me up [when I was] small.", "ru": "My Lord, have mercy upon them as they brought me up [when I was] small."],
             "My Lord, increase me in knowledge.": ["ar": "", "ur": "My Lord, increase me in knowledge.", "fr": "My Lord, increase me in knowledge.", "zh-Hans": "My Lord, increase me in knowledge.", "de": "My Lord, increase me in knowledge.", "hi": "My Lord, increase me in knowledge.", "tr": "My Lord, increase me in knowledge.", "ru": "My Lord, increase me in knowledge."],
         ]
-        return dict[text]?[language] ?? text
-    }
 }

@@ -22,17 +22,7 @@ struct PrayerItem: Identifiable, Equatable {
     let time: Date
     let isNext: Bool
     
-    var icon: String {
-        switch name {
-        case "Fajr": return "sun.haze.fill"
-        case "Sunrise": return "sunrise.fill"
-        case "Dhuhr": return "sun.max.fill"
-        case "Asr": return "sun.min.fill"
-        case "Maghrib": return "sunset.fill"
-        case "Isha": return "moon.stars.fill"
-        default: return "clock.fill"
-        }
-    }
+    var icon: String { PrayerSchedule.icon(for: name) }
 }
 
 // MARK: - ViewModel
@@ -207,31 +197,8 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         let madhabString = UserDefaults.standard.string(forKey: UDKey.madhab.rawValue) ?? "shafi"
         let appLang = UserDefaults.standard.string(forKey: UDKey.appLanguage.rawValue) ?? "en"
         
-        // Map String -> Adhan.CalculationMethod
-        var method: CalculationMethod = .muslimWorldLeague
-        switch methodString {
-        case "muslimWorldLeague": method = .muslimWorldLeague
-        case "egyptian": method = .egyptian
-        case "karachi": method = .karachi
-        case "ummAlQura": method = .ummAlQura
-        case "dubai": method = .dubai
-        case "northAmerica": method = .northAmerica
-        case "kuwait": method = .kuwait
-        case "qatar": method = .qatar
-        case "singapore": method = .singapore
-        case "turkey": method = .turkey
-        case "tehran": method = .tehran
-        default: method = .muslimWorldLeague
-        }
-        
-        var params = method.params
-        
-        // Map String -> Adhan.Madhab
-        if madhabString == "hanafi" {
-            params.madhab = .hanafi
-        } else {
-            params.madhab = .shafi // Standard (includes Maliki & Hanbali)
-        }
+        // Shared with the widget so both always use identical parameters
+        let params = PrayerSchedule.parameters(method: methodString, madhab: madhabString)
         
         // 2. Calculate Today's Prayers
         guard let todayPrayers = PrayerTimes(coordinates: coordinates, date: dateComponents, calculationParameters: params) else { return }
@@ -305,7 +272,7 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         guard signature != lastScheduleSignature else { return }
         lastScheduleSignature = signature
         
-        self.updateWidgetTimeline(coordinates: coordinates, params: params, language: appLang)
+        self.updateWidgetTimeline(latitude: latitude, longitude: longitude, method: methodString, madhab: madhabString, language: appLang)
         self.scheduleNotifications(coordinates: coordinates, params: params, language: appLang)
         
         // Start or Update Live Activity
@@ -327,82 +294,25 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
     
-    private func updateWidgetTimeline(coordinates: Coordinates, params: CalculationParameters, language appLang: String) {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: appLang)
-        formatter.timeStyle = .short
-        let translatedHeader = AppTranslations.translate("Next Prayer", to: appLang)
-        
-        let cal = Calendar(identifier: .gregorian)
-        var allPrayers: [(name: String, time: Date)] = []
-        
-        for dayOffset in -1...2 {
-            if let targetDate = cal.date(byAdding: .day, value: dayOffset, to: Date()) {
-                let comps = cal.dateComponents([.year, .month, .day], from: targetDate)
-                if let p = PrayerTimes(coordinates: coordinates, date: comps, calculationParameters: params) {
-                    allPrayers.append(("Fajr", p.fajr))
-                    allPrayers.append(("Sunrise", p.sunrise))
-                    allPrayers.append(("Dhuhr", p.dhuhr))
-                    allPrayers.append(("Asr", p.asr))
-                    allPrayers.append(("Maghrib", p.maghrib))
-                    allPrayers.append(("Isha", p.isha))
-                }
-            }
+    /// The widget computes its own timeline with Adhan, so the app only shares the inputs.
+    private func updateWidgetTimeline(latitude: Double, longitude: Double, method: String, madhab: String, language appLang: String) {
+        var names: [String: String] = [:]
+        for name in PrayerSchedule.prayerNames {
+            names[name] = AppTranslations.translate(name, to: appLang)
         }
         
-        allPrayers.sort { $0.time < $1.time }
+        SharedPrayerConfig(
+            latitude: latitude,
+            longitude: longitude,
+            calculationMethod: method,
+            madhab: madhab,
+            language: appLang,
+            prayerNames: names,
+            header: AppTranslations.translate("Next Prayer", to: appLang)
+        ).save()
         
-        struct WidgetEntryData: Codable {
-            let date: Date
-            let prayerName: String
-            let timeString: String
-            let icon: String
-            let headerString: String
-        }
-        
-        var widgetEntries: [WidgetEntryData] = []
-        
-        for i in 1..<allPrayers.count {
-            let currentPrayer = allPrayers[i]
-            let previousPrayer = allPrayers[i-1]
-            
-            // Switch widget text exactly when the previous prayer starts
-            let displayStartTime = previousPrayer.time
-            
-            // Only schedule for future prayers (and the current active one)
-            if currentPrayer.time > Date() {
-                let translatedName = AppTranslations.translate(currentPrayer.name, to: appLang)
-                let timeString = formatter.string(from: currentPrayer.time)
-                
-                let iconName: String
-                switch currentPrayer.name {
-                case "Fajr": iconName = "sun.haze.fill"
-                case "Sunrise": iconName = "sunrise.fill"
-                case "Dhuhr": iconName = "sun.max.fill"
-                case "Asr": iconName = "sun.min.fill"
-                case "Maghrib": iconName = "sunset.fill"
-                case "Isha": iconName = "moon.stars.fill"
-                default: iconName = "clock.fill"
-                }
-                
-                let entryDate = displayStartTime < Date() ? Date() : displayStartTime
-                
-                widgetEntries.append(WidgetEntryData(
-                    date: entryDate,
-                    prayerName: translatedName,
-                    timeString: timeString,
-                    icon: iconName,
-                    headerString: translatedHeader
-                ))
-            }
-        }
-        
-        // Save JSON array to shared App Group
-        if let sharedDefaults = UserDefaults(suiteName: "group.iPrayer.shared") {
-            if let encoded = try? JSONEncoder().encode(widgetEntries) {
-                sharedDefaults.set(encoded, forKey: "widgetTimelineData")
-            }
-        }
+        // Entries precomputed by older versions of the app are no longer read
+        UserDefaults(suiteName: SharedPrayerConfig.suiteName)?.removeObject(forKey: "widgetTimelineData")
         
         WidgetCenter.shared.reloadAllTimelines()
     }
@@ -414,7 +324,6 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     private func scheduleNotifications(coordinates: Coordinates, params: CalculationParameters, language: String) {
         let center = UNUserNotificationCenter.current()
         let cal = Calendar(identifier: .gregorian)
-        let locale = Locale(identifier: language)
         
         // Remove everything this app may have scheduled before, including the legacy per-name identifiers.
         var identifiers = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"]
@@ -439,7 +348,7 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                 
                 let content = UNMutableNotificationContent()
                 content.title = translatedName
-                content.body = String(localized: "It's time for \(translatedName) prayer", locale: locale)
+                content.body = AppTranslations.catalogString("It's time for %@ prayer", language: language, translatedName)
                 // Notification sounds must be aiff, wav or caf and under 30 seconds; iOS silently ignores mp3.
                 content.sound = UNNotificationSound(named: UNNotificationSoundName("adhan.caf"))
                 
@@ -454,14 +363,23 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     // MARK: - Live Activities
     
     private func startOrUpdateLiveActivity(for prayer: PrayerItem, language appLang: String) {
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        let allActivities = Activity<PrayerAttributes>.activities
+        
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+            // The user switched Live Activities off: don't leave an old countdown behind.
+            Task {
+                for activity in allActivities {
+                    await activity.end(nil, dismissalPolicy: .immediate)
+                }
+            }
+            return
+        }
         
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: appLang)
         formatter.timeStyle = .short
         let timeStr = formatter.string(from: prayer.time)
         
-        let attributes = PrayerAttributes()
         let safeUpperBound = max(Date(), prayer.time)
         let state = PrayerAttributes.ContentState(
             timeRemaining: Date()...safeUpperBound,
@@ -470,31 +388,33 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             prayerTime: timeStr,
             atString: AppTranslations.translate("at", to: appLang),
             startsInString: AppTranslations.translate("Starts in", to: appLang),
-            nextString: AppTranslations.translate("NEXT", to: appLang)
+            nextString: AppTranslations.translate("NEXT", to: appLang),
+            nowString: AppTranslations.translate("Now", to: appLang),
+            openHintString: AppTranslations.translate("Tap to open iPrayer", to: appLang)
         )
-        let staleDate = prayer.time.addingTimeInterval(60) // stale 1 minute after prayer
+        // Once the prayer time passes the activity turns stale and the widget shows "Now"
+        // instead of a countdown stuck at zero, until the app gets to run and moves it on.
+        let content = ActivityContent(state: state, staleDate: prayer.time.addingTimeInterval(60))
         
-        let content = ActivityContent(state: state, staleDate: staleDate)
+        let liveActivities = allActivities.filter { $0.activityState == .active || $0.activityState == .stale }
         
-        let activeActivities = Activity<PrayerAttributes>.activities
-        
-        if activeActivities.isEmpty {
-            // Start new activity
+        if let current = liveActivities.first {
+            Task {
+                // Replace the previous prayer with the next one, and end any duplicates
+                await current.update(content)
+                for extra in liveActivities.dropFirst() {
+                    await extra.end(nil, dismissalPolicy: .immediate)
+                }
+            }
+        } else {
             do {
                 let _ = try Activity.request(
-                    attributes: attributes,
+                    attributes: PrayerAttributes(),
                     content: content,
                     pushType: nil
                 )
             } catch {
                 print("Error starting Live Activity: \(error.localizedDescription)")
-            }
-        } else {
-            // Update all existing activities
-            Task {
-                for activity in activeActivities {
-                    await activity.update(content)
-                }
             }
         }
         

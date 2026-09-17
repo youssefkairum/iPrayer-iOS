@@ -65,6 +65,9 @@ struct iPrayerApp: App {
                     }
                 }
                 
+                // Sign out if Sign in with Apple access was revoked while the app wasn't running
+                accountManager.verifyAppleCredential()
+                
                 // MARK: - iCloud Auto-Sync
                 if accountManager.isLoggedIn {
                     CloudSyncManager.shared.startSyncing()
