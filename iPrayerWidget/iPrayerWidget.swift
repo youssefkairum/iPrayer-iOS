@@ -1,0 +1,173 @@
+//
+//  iPrayerWidget.swift
+//  iPrayerWidget
+//
+
+import WidgetKit
+import SwiftUI
+
+/// Mirrors the JSON entries the main app writes to the shared App Group.
+struct WidgetEntryData: Codable {
+    let date: Date
+    let prayerName: String
+    let timeString: String
+    let icon: String
+    let headerString: String
+}
+
+struct Provider: TimelineProvider {
+    private static let placeholderEntry = SimpleEntry(date: Date(), prayerName: "Maghrib", timeString: "5:29 PM", icon: "sunset.fill", headerString: "Next Prayer")
+    private static let setupEntry = SimpleEntry(date: Date(), prayerName: "Open App", timeString: "--:--", icon: "location.fill", headerString: "Setup Required")
+    
+    private func loadSharedEntries() -> [WidgetEntryData] {
+        guard let data = UserDefaults(suiteName: "group.iPrayer.shared")?.data(forKey: "widgetTimelineData"),
+              let decoded = try? JSONDecoder().decode([WidgetEntryData].self, from: data) else {
+            return []
+        }
+        return decoded
+    }
+    
+    func placeholder(in context: Context) -> SimpleEntry {
+        Self.placeholderEntry
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
+        if let first = loadSharedEntries().first {
+            completion(SimpleEntry(date: Date(), prayerName: first.prayerName, timeString: first.timeString, icon: first.icon, headerString: first.headerString))
+        } else {
+            completion(Self.setupEntry)
+        }
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
+        var entries: [SimpleEntry] = loadSharedEntries().map {
+            SimpleEntry(date: $0.date, prayerName: $0.prayerName, timeString: $0.timeString, icon: $0.icon, headerString: $0.headerString)
+        }
+        
+        if entries.isEmpty {
+            entries.append(Self.setupEntry)
+        }
+        
+        // Refresh when timeline exhausts, though main app forces refresh earlier
+        let nextUpdate = entries.last?.date.addingTimeInterval(3600) ?? Date().addingTimeInterval(3600)
+        let timeline = Timeline(entries: entries, policy: .after(nextUpdate))
+        completion(timeline)
+    }
+}
+
+struct SimpleEntry: TimelineEntry {
+    let date: Date
+    let prayerName: String
+    let timeString: String
+    let icon: String
+    let headerString: String
+}
+
+struct iPrayerWidgetEntryView : View {
+    var entry: Provider.Entry
+    @Environment(\.widgetFamily) var family
+
+    var body: some View {
+        switch family {
+        case .accessoryInline:
+            Text("\(Image(systemName: entry.icon)) \(entry.prayerName) \(entry.timeString)")
+            
+        case .accessoryCircular:
+            ZStack {
+                AccessoryWidgetBackground()
+                VStack(spacing: 2) {
+                    Image(systemName: entry.icon)
+                        .font(.caption)
+                    Text(entry.timeString)
+                        .font(.system(size: 10, weight: .bold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+            }
+            
+        case .accessoryRectangular:
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 4) {
+                    Image(systemName: entry.icon)
+                        .font(.caption)
+                    Text(entry.headerString)
+                        .font(.headline)
+                        .textCase(.uppercase)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.4)
+                }
+                Text(entry.prayerName)
+                    .font(.body)
+                    .fontWeight(.bold)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                Text(entry.timeString)
+                    .font(.caption)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+            
+        default:
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 4) {
+                    Image(systemName: entry.icon)
+                        .foregroundColor(.teal)
+                        .font(.title2)
+                        .shadow(color: .teal.opacity(0.5), radius: 5, x: 0, y: 0)
+                    
+                    Text(entry.headerString)
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.gray)
+                        .textCase(.uppercase)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.4)
+                        .multilineTextAlignment(.leading)
+                    Spacer(minLength: 0)
+                }
+                
+                Spacer()
+                
+                Text(entry.prayerName)
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.4)
+                
+                Text(entry.timeString)
+                    .font(.system(size: 28, weight: .light, design: .monospaced))
+                    .foregroundColor(.teal)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.4)
+            }
+            // Use padding safely, container background handles the edges
+            .padding(4)
+        }
+    }
+}
+
+struct iPrayerWidget: Widget {
+    let kind: String = "iPrayerWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: Provider()) { entry in
+            iPrayerWidgetEntryView(entry: entry)
+                .containerBackground(for: .widget) {
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color(red: 15/255, green: 32/255, blue: 39/255), Color(red: 32/255, green: 58/255, blue: 67/255)]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                }
+        }
+        .configurationDisplayName("Next Prayer")
+        .description("Keep track of the upcoming prayer on your home screen.")
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryInline, .accessoryCircular, .accessoryRectangular])
+    }
+}
+
+#Preview(as: .systemSmall) {
+    iPrayerWidget()
+} timeline: {
+    SimpleEntry(date: .now, prayerName: "Maghrib", timeString: "5:29 PM", icon: "sunset.fill", headerString: "Next Prayer")
+}
