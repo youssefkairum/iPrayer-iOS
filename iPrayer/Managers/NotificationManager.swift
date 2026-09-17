@@ -14,6 +14,10 @@ class NotificationManager {
             let quranRequestIdentifiers = requests.filter { $0.identifier.hasPrefix("quran_reminder_") }.map { $0.identifier }
             center.removePendingNotificationRequests(withIdentifiers: quranRequestIdentifiers)
             
+            // Settings > Notifications > Daily Quran Reminder (on by default)
+            let enabled = UserDefaults.standard.object(forKey: UDKey.quranRemindersEnabled.rawValue) as? Bool ?? true
+            guard enabled else { return }
+            
             // Schedule new reminders
             self.scheduleNewReminders(surahName: surahName)
         }
@@ -21,17 +25,18 @@ class NotificationManager {
     
     private func scheduleNewReminders(surahName: String?) {
         let center = UNUserNotificationCenter.current()
+        // Use the in-app language, not the device language
+        let language = UserDefaults.standard.string(forKey: UDKey.appLanguage.rawValue) ?? "en"
         
         // We will schedule 14 daily notifications (2 weeks in advance)
         for dayOffset in 1...14 {
             let content = UNMutableNotificationContent()
-            content.title = String(localized: "Daily Quran Reminder")
+            content.title = AppTranslations.catalogString("Daily Quran Reminder", language: language)
             
             if let surah = surahName, !surah.isEmpty {
-                // The string interpolation here will trigger a localized string lookup with a '%@' format
-                content.body = String(localized: "Continue your journey. Take a moment to read Surah \(surah) today.")
+                content.body = AppTranslations.catalogString("Continue your journey. Take a moment to read Surah %@ today.", language: language, surah)
             } else {
-                content.body = String(localized: "Take a moment to read a portion of the Quran today.")
+                content.body = AppTranslations.catalogString("Take a moment to read a portion of the Quran today.", language: language)
             }
             
             content.sound = .default

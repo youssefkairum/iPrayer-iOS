@@ -25,7 +25,7 @@ struct AboutView: View {
                     Button(action: {
                         dismiss()
                     }) {
-                        Image(systemName: "chevron.left")
+                        Image(systemName: "chevron.backward")
                             .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.white)
                             .frame(width: 44, height: 44)
@@ -74,7 +74,7 @@ struct AboutView: View {
                                     .font(.system(size: 32, weight: .bold))
                                     .foregroundColor(.white)
                                 
-                                Text("\(String(localized: "Version", locale: Locale(identifier: appLanguage))) \(appVersion)")
+                                Text("\(AppTranslations.catalogString("Version", language: appLanguage)) \(appVersion)")
                                     .font(.system(size: 18))
                                     .foregroundColor(.gray)
                             }

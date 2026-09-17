@@ -20,8 +20,15 @@ struct iPrayerApp: App {
     
     // MARK: - Splash Screen State
     @State private var isSplashScreenVisible: Bool = true
+    @State private var didHandleNotificationPermission = false
+    
+    /// Arabic and Urdu read right to left; the locale alone does not flip the layout.
+    private var layoutDirection: LayoutDirection {
+        ["ar", "ur"].contains(appLanguage) ? .rightToLeft : .leftToRight
+    }
     
     @StateObject private var accountManager = AccountManager.shared
+    @StateObject private var appearance = AppAppearance.shared
     
     var body: some Scene {
         WindowGroup {
@@ -33,7 +40,10 @@ struct iPrayerApp: App {
                 ContentView()
                     .environmentObject(viewModel)
                     .environment(\.locale, Locale(identifier: appLanguage))
-                    .preferredColorScheme(.dark)
+                    .environment(\.layoutDirection, layoutDirection)
+                    // Content always renders dark; only the window (and so the status bar) can turn light
+                    .environment(\.colorScheme, .dark)
+                    .preferredColorScheme(appearance.prefersLightStatusBar ? .light : .dark)
                 
                 // 2. Onboarding (overlays the main app until dismissed).
                 // Removed from the hierarchy once finished so its animated background stops rendering.
@@ -41,6 +51,7 @@ struct iPrayerApp: App {
                     OnboardingView()
                         .environmentObject(viewModel)
                         .environment(\.locale, Locale(identifier: appLanguage))
+                        .environment(\.layoutDirection, layoutDirection)
                         .preferredColorScheme(.dark)
                         .transition(.opacity)
                         .zIndex(0.5)
@@ -54,16 +65,8 @@ struct iPrayerApp: App {
                 }
             }
             .onAppear {
-                // Request Notifications
-                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
-                    print("Notification permission granted: \(granted)")
-                    
-                    if granted {
-                        // Schedule initial daily Quran reminders on launch
-                        let surahName = UserDefaults.standard.string(forKey: UDKey.lastReadSurahEnglish.rawValue)
-                        NotificationManager.shared.scheduleQuranReminders(surahName: surahName)
-                    }
-                }
+                // Sign out if Sign in with Apple access was revoked while the app wasn't running
+                accountManager.verifyAppleCredential()
                 
                 // MARK: - iCloud Auto-Sync
                 if accountManager.isLoggedIn {
@@ -84,6 +87,14 @@ struct iPrayerApp: App {
                     }
                 }
             }
+            // Ask for notifications only once onboarding is done and the first prayer times are on screen,
+            // so the prompt has context instead of appearing over the splash screen.
+            .onChange(of: viewModel.prayerTimes.isEmpty) { _, _ in
+                requestNotificationsIfReady()
+            }
+            .onChange(of: hasSeenOnboarding) { _, _ in
+                requestNotificationsIfReady()
+            }
             // Foreground refresh logic
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
@@ -96,6 +107,34 @@ struct iPrayerApp: App {
         .backgroundTask(.appRefresh("com.youssefkairum.iPrayer.refresh")) {
             await MainActor.run {
                 viewModel.refreshPrayers()
+            }
+        }
+    }
+    
+    private func requestNotificationsIfReady() {
+        guard hasSeenOnboarding, !viewModel.prayerTimes.isEmpty, !didHandleNotificationPermission else { return }
+        didHandleNotificationPermission = true
+        
+        let center = UNUserNotificationCenter.current()
+        let model = viewModel
+        let scheduleQuranReminders = {
+            let surahName = UserDefaults.standard.string(forKey: UDKey.lastReadSurahEnglish.rawValue)
+            NotificationManager.shared.scheduleQuranReminders(surahName: surahName)
+        }
+        
+        center.getNotificationSettings { settings in
+            switch settings.authorizationStatus {
+            case .notDetermined:
+                center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+                    guard granted else { return }
+                    scheduleQuranReminders()
+                    // Prayer notifications added before permission existed were dropped; schedule them again
+                    Task { @MainActor in model.forceReschedule() }
+                }
+            case .authorized, .provisional, .ephemeral:
+                scheduleQuranReminders()
+            default:
+                break
             }
         }
     }

@@ -6,3 +6,10 @@ xcuserdata/
 
 # macOS
 .DS_Store
+
+# Local scratch files and backups (not part of the project)
+*.zip
+/iPrayer UI update/
+/add_json.rb
+/test
+/test*.swift

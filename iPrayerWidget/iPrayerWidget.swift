@@ -6,25 +6,36 @@
 import WidgetKit
 import SwiftUI
 
-/// Mirrors the JSON entries the main app writes to the shared App Group.
-struct WidgetEntryData: Codable {
-    let date: Date
-    let prayerName: String
-    let timeString: String
-    let icon: String
-    let headerString: String
-}
-
 struct Provider: TimelineProvider {
     private static let placeholderEntry = SimpleEntry(date: Date(), prayerName: "Maghrib", timeString: "5:29 PM", icon: "sunset.fill", headerString: "Next Prayer")
     private static let setupEntry = SimpleEntry(date: Date(), prayerName: "Open App", timeString: "--:--", icon: "location.fill", headerString: "Setup Required")
     
-    private func loadSharedEntries() -> [WidgetEntryData] {
-        guard let data = UserDefaults(suiteName: "group.iPrayer.shared")?.data(forKey: "widgetTimelineData"),
-              let decoded = try? JSONDecoder().decode([WidgetEntryData].self, from: data) else {
-            return []
+    /// Builds a week of entries from the location and settings the app shared through the App Group.
+    /// Each entry starts when the previous prayer begins and shows the prayer that comes next.
+    private func computeEntries(now: Date = Date()) -> [SimpleEntry] {
+        guard let config = SharedPrayerConfig.load() else { return [] }
+        
+        let parameters = PrayerSchedule.parameters(method: config.calculationMethod, madhab: config.madhab)
+        let prayers = PrayerSchedule.prayers(latitude: config.latitude, longitude: config.longitude, parameters: parameters, dayOffsets: -1...7, from: now)
+        guard prayers.count > 1 else { return [] }
+        
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: config.language)
+        formatter.timeStyle = .short
+        
+        var entries: [SimpleEntry] = []
+        for index in 1..<prayers.count {
+            let upcoming = prayers[index]
+            guard upcoming.time > now else { continue }
+            entries.append(SimpleEntry(
+                date: max(prayers[index - 1].time, now),
+                prayerName: config.prayerNames[upcoming.name] ?? upcoming.name,
+                timeString: formatter.string(from: upcoming.time),
+                icon: upcoming.icon,
+                headerString: config.header
+            ))
         }
-        return decoded
+        return entries
     }
     
     func placeholder(in context: Context) -> SimpleEntry {
@@ -32,26 +43,20 @@ struct Provider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
-        if let first = loadSharedEntries().first {
-            completion(SimpleEntry(date: Date(), prayerName: first.prayerName, timeString: first.timeString, icon: first.icon, headerString: first.headerString))
-        } else {
-            completion(Self.setupEntry)
-        }
+        completion(computeEntries().first ?? Self.setupEntry)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
-        var entries: [SimpleEntry] = loadSharedEntries().map {
-            SimpleEntry(date: $0.date, prayerName: $0.prayerName, timeString: $0.timeString, icon: $0.icon, headerString: $0.headerString)
-        }
+        let entries = computeEntries()
         
         if entries.isEmpty {
-            entries.append(Self.setupEntry)
+            // The app hasn't shared a location yet; check again soon.
+            completion(Timeline(entries: [Self.setupEntry], policy: .after(Date().addingTimeInterval(1800))))
+            return
         }
         
-        // Refresh when timeline exhausts, though main app forces refresh earlier
-        let nextUpdate = entries.last?.date.addingTimeInterval(3600) ?? Date().addingTimeInterval(3600)
-        let timeline = Timeline(entries: entries, policy: .after(nextUpdate))
-        completion(timeline)
+        // Entries cover a week; recompute well before they run out so the widget never goes stale.
+        completion(Timeline(entries: entries, policy: .after(Date().addingTimeInterval(3 * 24 * 3600))))
     }
 }
 

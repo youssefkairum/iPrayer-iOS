@@ -42,22 +42,32 @@ struct iPrayerWidgetLiveActivity: Widget {
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
                     
-                    Text("\(context.state.atString) \(context.state.prayerTime)")
+                    // First-strong isolate around the time keeps "at 3:49 AM" in the right order for Arabic and Urdu
+                    Text(verbatim: "\(context.state.atString) \u{2068}\(context.state.prayerTime)\u{2069}")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(.white.opacity(0.9))
                     
                     Spacer(minLength: 8)
                     
-                    Text(context.state.startsInString)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.8))
-                    
-                    Text(timerInterval: context.state.timeRemaining, countsDown: true)
-                        .font(.system(size: 34, weight: .heavy, design: .monospaced))
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.leading)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                    if context.isStale {
+                        // The prayer time has arrived: a countdown frozen at zero would be misleading
+                        Text(context.state.nowString ?? "Now")
+                            .font(.system(size: 34, weight: .heavy, design: .rounded))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.6)
+                    } else {
+                        Text(context.state.startsInString)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.8))
+                        
+                        Text(timerInterval: context.state.timeRemaining, countsDown: true)
+                            .font(.system(size: 34, weight: .heavy, design: .monospaced))
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.leading)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
                 }
                 .padding(20)
             }
@@ -80,14 +90,20 @@ struct iPrayerWidgetLiveActivity: Widget {
                 
                 // Trailing (Top Right)
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(timerInterval: context.state.timeRemaining, countsDown: true)
-                        .font(.system(.headline, design: .monospaced, weight: .semibold))
-                        .foregroundColor(.teal)
+                    if context.isStale {
+                        Text(context.state.nowString ?? "Now")
+                            .font(.headline)
+                            .foregroundColor(.teal)
+                    } else {
+                        Text(timerInterval: context.state.timeRemaining, countsDown: true)
+                            .font(.system(.headline, design: .monospaced, weight: .semibold))
+                            .foregroundColor(.teal)
+                    }
                 }
                 
                 // Bottom
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text("Swipe to open iPrayer")
+                    Text(context.state.openHintString ?? "Tap to open iPrayer")
                         .font(.caption)
                         .foregroundColor(.gray)
                 }
@@ -98,11 +114,19 @@ struct iPrayerWidgetLiveActivity: Widget {
                     .foregroundColor(.teal)
             } compactTrailing: {
                 // Compact UI - Right of pill
-                Text(timerInterval: context.state.timeRemaining, countsDown: true)
-                    .font(.system(.subheadline, design: .monospaced))
-                    .foregroundColor(.teal)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                if context.isStale {
+                    Text(context.state.nowString ?? "Now")
+                        .font(.subheadline)
+                        .foregroundColor(.teal)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                } else {
+                    Text(timerInterval: context.state.timeRemaining, countsDown: true)
+                        .font(.system(.subheadline, design: .monospaced))
+                        .foregroundColor(.teal)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
             } minimal: {
                 // Minimal UI - Circle icon when multiple activities exist
                 Image(systemName: context.state.prayerIcon)

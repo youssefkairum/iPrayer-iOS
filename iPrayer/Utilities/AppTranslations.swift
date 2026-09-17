@@ -8,9 +8,32 @@
 
 import Foundation
 
-struct AppTranslations {
+nonisolated struct AppTranslations {
     static func translate(_ text: String, to language: String) -> String {
-        let dict: [String: [String: String]] = [
+        table[text]?[language] ?? text
+    }
+    
+    /// Looks up a String Catalog key in the IN-APP language rather than the device language.
+    /// `String(localized:)` and `NSLocalizedString` always follow the device, which mixed languages
+    /// in notifications and a few labels whenever the two differed.
+    static func catalogString(_ key: String, language: String, _ arguments: CVarArg...) -> String {
+        let bundle = Bundle.main.path(forResource: language, ofType: "lproj").flatMap { Bundle(path: $0) } ?? .main
+        let format = bundle.localizedString(forKey: key, value: key, table: nil)
+        guard !arguments.isEmpty else { return format }
+        return String(format: format, locale: Locale(identifier: language), arguments: arguments)
+    }
+    
+    /// Translated format string for text that contains a minute count.
+    /// Arabic takes the plural "دقائق" for 3 to 10 and the singular form "دقيقة" from 11 up,
+    /// so one fixed string can't be correct for every reminder option.
+    static func minutesFormat(_ key: String, minutes: Int, language: String) -> String {
+        let format = translate(key, to: language)
+        guard language == "ar", (3...10).contains(minutes) else { return format }
+        return format.replacingOccurrences(of: "دقيقة", with: "دقائق")
+    }
+    
+    // Built once. It used to be rebuilt on every call, and views call translate many times per render.
+    private static let table: [String: [String: String]] = [
             // MARK: - Prayer Names
             "Fajr":    ["ar": "الفجر",   "ur": "فجر",           "fr": "Fajr",             "zh-Hans": "晨礼",   "de": "Fadschr",        "hi": "फज्र",         "tr": "İmsak",   "ru": "Фаджр"],
             "Sunrise": ["ar": "الشروق",  "ur": "طلوع آفتاب",   "fr": "Lever du soleil",  "zh-Hans": "日出",   "de": "Sonnenaufgang",  "hi": "सूर्योदय",    "tr": "Güneş",   "ru": "Восход"],
@@ -49,6 +72,32 @@ struct AppTranslations {
             "Next Prayer": ["ar": "الصلاة القادمة", "ur": "اگلی نماز", "fr": "Prochaine prière", "zh-Hans": "下一个祈祷", "de": "Nächstes Gebet", "hi": "अगली प्रार्थना", "tr": "Sonraki Namaz", "ru": "Следующая молитва"],
             "Tomorrow's schedule": ["ar": "جدول الغد", "ur": "کل کا شیڈول", "fr": "Programme de demain", "zh-Hans": "明日时间表", "de": "Plan für morgen", "hi": "कल का शेड्यूल", "tr": "Yarının programı", "ru": "Расписание на завтра"],
             "Location access is needed to show prayer times.": ["ar": "يلزم الوصول إلى الموقع لعرض مواقيت الصلاة.", "ur": "نماز کے اوقات دکھانے کے لیے مقام تک رسائی درکار ہے۔", "fr": "L'accès à la localisation est nécessaire pour afficher les horaires de prière.", "zh-Hans": "需要位置权限才能显示祈祷时间。", "de": "Standortzugriff wird benötigt, um Gebetszeiten anzuzeigen.", "hi": "नमाज़ के वक्त दिखाने के लिए स्थान की अनुमति आवश्यक है।", "tr": "Namaz vakitlerini göstermek için konum erişimi gerekli.", "ru": "Для показа времени молитв нужен доступ к геопозиции."],
+            "Now": ["ar": "الآن", "ur": "ابھی", "fr": "Maintenant", "zh-Hans": "现在", "de": "Jetzt", "hi": "अभी", "tr": "Şimdi", "ru": "Сейчас"],
+            "Tap to open iPrayer": ["ar": "اضغط لفتح iPrayer", "ur": "iPrayer کھولنے کے لیے ٹیپ کریں", "fr": "Touchez pour ouvrir iPrayer", "zh-Hans": "点击打开 iPrayer", "de": "Tippen, um iPrayer zu öffnen", "hi": "iPrayer खोलने के लिए टैप करें", "tr": "iPrayer'ı açmak için dokun", "ru": "Нажмите, чтобы открыть iPrayer"],
+            "Enable Location": ["ar": "تفعيل الموقع", "ur": "مقام فعال کریں", "fr": "Activer la localisation", "zh-Hans": "启用定位", "de": "Standort aktivieren", "hi": "स्थान सक्षम करें", "tr": "Konumu Etkinleştir", "ru": "Включить геопозицию"],
+            "Not now": ["ar": "ليس الآن", "ur": "ابھی نہیں", "fr": "Pas maintenant", "zh-Hans": "以后再说", "de": "Nicht jetzt", "hi": "अभी नहीं", "tr": "Şimdi değil", "ru": "Не сейчас"],
+            "Location Access": ["ar": "الوصول إلى الموقع", "ur": "مقام تک رسائی", "fr": "Accès à la localisation", "zh-Hans": "位置权限", "de": "Standortzugriff", "hi": "स्थान की अनुमति", "tr": "Konum Erişimi", "ru": "Доступ к геопозиции"],
+            "iPrayer uses your location to calculate prayer times and the Qibla direction.": ["ar": "يستخدم iPrayer موقعك لحساب مواقيت الصلاة واتجاه القبلة.", "ur": "iPrayer نماز کے اوقات اور قبلہ کی سمت معلوم کرنے کے لیے آپ کا مقام استعمال کرتا ہے۔", "fr": "iPrayer utilise votre position pour calculer les horaires de prière et la direction de la Qibla.", "zh-Hans": "iPrayer 使用您的位置来计算祈祷时间和朝向。", "de": "iPrayer verwendet deinen Standort, um Gebetszeiten und die Qibla-Richtung zu berechnen.", "hi": "iPrayer नमाज़ के वक्त और क़िबला की दिशा जानने के लिए आपके स्थान का उपयोग करता है।", "tr": "iPrayer, namaz vakitlerini ve kıble yönünü hesaplamak için konumunuzu kullanır.", "ru": "iPrayer использует вашу геопозицию для расчёта времени молитв и направления киблы."],
+            "Notifications": ["ar": "الإشعارات", "ur": "اطلاعات", "fr": "Notifications", "zh-Hans": "通知", "de": "Mitteilungen", "hi": "सूचनाएं", "tr": "Bildirimler", "ru": "Уведомления"],
+            "Adhan Sound": ["ar": "صوت الأذان", "ur": "اذان کی آواز", "fr": "Son de l'adhan", "zh-Hans": "宣礼声", "de": "Adhan-Ton", "hi": "अज़ान की आवाज़", "tr": "Ezan Sesi", "ru": "Звук азана"],
+            "Pre-Prayer Reminder": ["ar": "تذكير قبل الصلاة", "ur": "نماز سے پہلے یاد دہانی", "fr": "Rappel avant la prière", "zh-Hans": "祈祷前提醒", "de": "Erinnerung vor dem Gebet", "hi": "नमाज़ से पहले रिमाइंडर", "tr": "Namaz Öncesi Hatırlatma", "ru": "Напоминание перед молитвой"],
+            "Off": ["ar": "إيقاف", "ur": "بند", "fr": "Désactivé", "zh-Hans": "关闭", "de": "Aus", "hi": "बंद", "tr": "Kapalı", "ru": "Выкл."],
+            "%lld min before": ["ar": "قبل %lld دقيقة", "ur": "%lld منٹ پہلے", "fr": "%lld min avant", "zh-Hans": "提前 %lld 分钟", "de": "%lld Min. vorher", "hi": "%lld मिनट पहले", "tr": "%lld dk önce", "ru": "За %lld мин."],
+            "%@ in %lld minutes": ["ar": "%@ بعد %lld دقيقة", "ur": "%@ %lld منٹ میں", "fr": "%@ dans %lld minutes", "zh-Hans": "%@ 将在 %lld 分钟后开始", "de": "%@ in %lld Minuten", "hi": "%@ %lld मिनट में", "tr": "%@ %lld dakika sonra", "ru": "%@ через %lld мин."],
+            // MARK: - Quran reader
+            "Verse": ["ar": "آية", "ur": "آیت", "fr": "Verset", "zh-Hans": "经文", "de": "Vers", "hi": "आयत", "tr": "Ayet", "ru": "Аят"],
+            "Bookmarks": ["ar": "الإشارات المرجعية", "ur": "بُک مارکس", "fr": "Signets", "zh-Hans": "书签", "de": "Lesezeichen", "hi": "बुकमार्क", "tr": "Yer İmleri", "ru": "Закладки"],
+            "Bookmark": ["ar": "إشارة مرجعية", "ur": "بُک مارک", "fr": "Signet", "zh-Hans": "书签", "de": "Lesezeichen", "hi": "बुकमार्क", "tr": "Yer İmi", "ru": "Закладка"],
+            "Remove": ["ar": "إزالة", "ur": "ہٹائیں", "fr": "Supprimer", "zh-Hans": "移除", "de": "Entfernen", "hi": "हटाएं", "tr": "Kaldır", "ru": "Удалить"],
+            "No results found": ["ar": "لا توجد نتائج", "ur": "کوئی نتیجہ نہیں ملا", "fr": "Aucun résultat", "zh-Hans": "未找到结果", "de": "Keine Ergebnisse", "hi": "कोई परिणाम नहीं मिला", "tr": "Sonuç bulunamadı", "ru": "Ничего не найдено"],
+            "Copy": ["ar": "نسخ", "ur": "کاپی", "fr": "Copier", "zh-Hans": "复制", "de": "Kopieren", "hi": "कॉपी", "tr": "Kopyala", "ru": "Копировать"],
+            "Copied": ["ar": "تم النسخ", "ur": "کاپی ہو گیا", "fr": "Copié", "zh-Hans": "已复制", "de": "Kopiert", "hi": "कॉपी हो गया", "tr": "Kopyalandı", "ru": "Скопировано"],
+            "Share": ["ar": "مشاركة", "ur": "شیئر", "fr": "Partager", "zh-Hans": "分享", "de": "Teilen", "hi": "साझा करें", "tr": "Paylaş", "ru": "Поделиться"],
+            "Text Size": ["ar": "حجم الخط", "ur": "متن کا سائز", "fr": "Taille du texte", "zh-Hans": "文字大小", "de": "Textgröße", "hi": "टेक्स्ट का आकार", "tr": "Yazı Boyutu", "ru": "Размер текста"],
+            "Paper": ["ar": "ورقي", "ur": "کاغذ", "fr": "Papier", "zh-Hans": "纸张", "de": "Papier", "hi": "काग़ज़", "tr": "Kâğıt", "ru": "Бумага"],
+            "Dark": ["ar": "داكن", "ur": "گہرا", "fr": "Sombre", "zh-Hans": "深色", "de": "Dunkel", "hi": "गहरा", "tr": "Koyu", "ru": "Тёмная"],
+            "Meccan": ["ar": "مكية", "ur": "مکی", "fr": "Mecquoise", "zh-Hans": "麦加章", "de": "Mekkanisch", "hi": "मक्की", "tr": "Mekki", "ru": "Мекканская"],
+            "Medinan": ["ar": "مدنية", "ur": "مدنی", "fr": "Médinoise", "zh-Hans": "麦地那章", "de": "Medinensisch", "hi": "मदनी", "tr": "Medeni", "ru": "Мединская"],
             "Open Settings": ["ar": "فتح الإعدادات", "ur": "سیٹنگز کھولیں", "fr": "Ouvrir les réglages", "zh-Hans": "打开设置", "de": "Einstellungen öffnen", "hi": "सेटिंग्स खोलें", "tr": "Ayarları Aç", "ru": "Открыть настройки"],
 
             "Duas Library": ["ar": "مكتبة الأدعية", "ur": "دعاؤں کی لائبریری", "fr": "Bibliothèque de Duas", "zh-Hans": "杜阿图书馆", "de": "Duas Bibliothek", "hi": "दुआ पुस्तकालय", "tr": "Dualar Kütüphanesi", "ru": "Библиотека дуа"],
@@ -174,6 +223,4 @@ struct AppTranslations {
             "My Lord, have mercy upon them as they brought me up [when I was] small.": ["ar": "", "ur": "My Lord, have mercy upon them as they brought me up [when I was] small.", "fr": "My Lord, have mercy upon them as they brought me up [when I was] small.", "zh-Hans": "My Lord, have mercy upon them as they brought me up [when I was] small.", "de": "My Lord, have mercy upon them as they brought me up [when I was] small.", "hi": "My Lord, have mercy upon them as they brought me up [when I was] small.", "tr": "My Lord, have mercy upon them as they brought me up [when I was] small.", "ru": "My Lord, have mercy upon them as they brought me up [when I was] small."],
             "My Lord, increase me in knowledge.": ["ar": "", "ur": "My Lord, increase me in knowledge.", "fr": "My Lord, increase me in knowledge.", "zh-Hans": "My Lord, increase me in knowledge.", "de": "My Lord, increase me in knowledge.", "hi": "My Lord, increase me in knowledge.", "tr": "My Lord, increase me in knowledge.", "ru": "My Lord, increase me in knowledge."],
         ]
-        return dict[text]?[language] ?? text
-    }
 }

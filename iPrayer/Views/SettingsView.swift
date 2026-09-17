@@ -13,6 +13,10 @@ struct SettingsView: View {
     @AppStorage(UDKey.madhab.rawValue) private var madhabValue: String = "shafi" // 'shafi' is Standard (Maliki, Hanbali, Shafi)
     @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
     
+    @AppStorage(UDKey.adhanSoundEnabled.rawValue) private var adhanSoundEnabled: Bool = true
+    @AppStorage(UDKey.quranRemindersEnabled.rawValue) private var quranRemindersEnabled: Bool = true
+    @AppStorage(UDKey.prePrayerReminderMinutes.rawValue) private var prePrayerReminderMinutes: Int = 0
+    
     @StateObject private var accountManager = AccountManager.shared
     
     @EnvironmentObject var viewModel: PrayerViewModel
@@ -70,11 +74,11 @@ struct SettingsView: View {
                                         
                                         // Name and Email
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text(accountManager.userName.isEmpty ? String(localized: "iCloud Account") : accountManager.userName)
+                                            Text(accountManager.userName.isEmpty ? AppTranslations.catalogString("iCloud Account", language: appLanguage) : accountManager.userName)
                                                 .font(.custom("AvenirNext-DemiBold", size: 16))
                                                 .foregroundColor(.white)
                                             
-                                            Text(accountManager.userEmail.isEmpty ? String(localized: "Connected securely") : accountManager.userEmail)
+                                            Text(accountManager.userEmail.isEmpty ? AppTranslations.catalogString("Connected securely", language: appLanguage) : accountManager.userEmail)
                                                 .font(.custom("AvenirNext-Medium", size: 13))
                                                 .foregroundColor(.gray)
                                                 .lineLimit(1)
@@ -105,34 +109,10 @@ struct SettingsView: View {
                                         .fixedSize(horizontal: false, vertical: true)
                                     
                                     SignInWithAppleButton(.signIn) { request in
-                                        request.requestedScopes = [.fullName, .email]
+                                        AccountManager.configure(request)
                                     } onCompletion: { result in
-                                        switch result {
-                                        case .success(let authorization):
-                                            if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
-                                                
-                                                // Start iCloud Sync FIRST, so that any new name/email we get from Apple is pushed UP to iCloud
-                                                CloudSyncManager.shared.startSyncing()
-                                                
-                                                withAnimation {
-                                                    accountManager.appleUserId = appleIDCredential.user
-                                                    accountManager.isLoggedIn = true
-                                                    
-                                                    if let fullName = appleIDCredential.fullName {
-                                                        let given = fullName.givenName ?? ""
-                                                        let family = fullName.familyName ?? ""
-                                                        let name = "\(given) \(family)".trimmingCharacters(in: .whitespaces)
-                                                        if !name.isEmpty {
-                                                            accountManager.userName = name
-                                                        }
-                                                    }
-                                                    if let email = appleIDCredential.email {
-                                                        accountManager.userEmail = email
-                                                    }
-                                                }
-                                            }
-                                        case .failure(let error):
-                                            print("Sign in failed: \(error.localizedDescription)")
+                                        withAnimation {
+                                            _ = accountManager.handleSignIn(result)
                                         }
                                     }
                                     .signInWithAppleButtonStyle(.white)
@@ -220,6 +200,9 @@ struct SettingsView: View {
                             }
                         }
                         
+                        // Notifications Section
+                        notificationsCard
+                        
                         // 2. Language Section
                         SettingsCard(title: "Language", icon: "character.book.closed.fill") {
                             HStack {
@@ -266,7 +249,7 @@ struct SettingsView: View {
                                         Text(appVersion)
                                             .font(.custom("AvenirNext-Medium", size: 16))
                                             .foregroundColor(.gray)
-                                        Image(systemName: "chevron.right")
+                                        Image(systemName: "chevron.forward")
                                             .font(.caption)
                                             .foregroundColor(.gray)
                                     }
@@ -322,9 +305,75 @@ struct SettingsView: View {
             viewModel.refreshPrayers()
             CloudSyncManager.shared.sync(key: "madhab", value: newValue)
         }
+        .onChange(of: adhanSoundEnabled) { _, _ in
+            viewModel.forceReschedule()
+        }
+        .onChange(of: prePrayerReminderMinutes) { _, _ in
+            viewModel.forceReschedule()
+        }
+        .onChange(of: quranRemindersEnabled) { _, _ in
+            let surahName = UserDefaults.standard.string(forKey: UDKey.lastReadSurahEnglish.rawValue)
+            NotificationManager.shared.scheduleQuranReminders(surahName: surahName)
+        }
         .onChange(of: appLanguage) { _, newValue in
             viewModel.refreshPrayers()
             CloudSyncManager.shared.sync(key: "appLanguage", value: newValue)
+        }
+    }
+    
+    // MARK: - Notifications Card
+    
+    private func reminderLabel(for minutes: Int) -> String {
+        minutes == 0
+            ? AppTranslations.translate("Off", to: appLanguage)
+            : String(format: AppTranslations.minutesFormat("%lld min before", minutes: minutes, language: appLanguage), minutes)
+    }
+    
+    private var notificationsCard: some View {
+        SettingsCard(title: AppTranslations.translate("Notifications", to: appLanguage), icon: "bell.badge.fill") {
+            VStack(spacing: 10) {
+                Toggle(isOn: $adhanSoundEnabled) {
+                    Text(AppTranslations.translate("Adhan Sound", to: appLanguage))
+                        .font(.custom("AvenirNext-Medium", size: 16))
+                        .foregroundColor(.white)
+                }
+                .tint(.teal)
+                
+                Divider().background(Color.white.opacity(0.2))
+                
+                HStack {
+                    Text(AppTranslations.translate("Pre-Prayer Reminder", to: appLanguage))
+                        .font(.custom("AvenirNext-Medium", size: 16))
+                        .foregroundColor(.white)
+                    Spacer()
+                    Menu {
+                        Picker("", selection: $prePrayerReminderMinutes) {
+                            ForEach([0, 5, 10, 15, 30], id: \.self) { minutes in
+                                Text(reminderLabel(for: minutes)).tag(minutes)
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Text(reminderLabel(for: prePrayerReminderMinutes))
+                                .font(.custom("AvenirNext-Medium", size: 16))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.5)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.caption2)
+                        }
+                        .foregroundColor(.teal)
+                    }
+                }
+                
+                Divider().background(Color.white.opacity(0.2))
+                
+                Toggle(isOn: $quranRemindersEnabled) {
+                    Text(AppTranslations.catalogString("Daily Quran Reminder", language: appLanguage))
+                        .font(.custom("AvenirNext-Medium", size: 16))
+                        .foregroundColor(.white)
+                }
+                .tint(.teal)
+            }
         }
     }
     

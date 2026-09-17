@@ -21,12 +21,31 @@ enum UDKey: String, CaseIterable {
     case lastReadSurahName = "lastReadSurahName"
     case lastReadSurahEnglish = "lastReadSurahEnglish"
     case lastReadSurahNumber = "lastReadSurahNumber"
+    case lastReadVerse = "lastReadVerse"
+    case quranBookmarks = "quranBookmarks"          // JSON string
+    
+    // Quran reader appearance
+    case quranFontSize = "quranFontSize"
+    case quranReaderTheme = "quranReaderTheme"      // "paper" or "dark"
     
     // Tasbih
     case tasbihCount = "tasbihCount"
     case tasbihTarget = "tasbihTarget"
     
+    // Notifications
+    case adhanSoundEnabled = "adhanSoundEnabled"
+    case quranRemindersEnabled = "quranRemindersEnabled"
+    case prePrayerReminderMinutes = "prePrayerReminderMinutes" // 0 = off
+    
+    // Home tracker & streak
+    case currentStreak = "currentStreak"
+    case dailyPrayersCompleted = "dailyPrayersCompleted"
+    case lastCompletedStreakDate = "lastCompletedStreakDate"
+    case lastTrackerDate = "lastTrackerDate"
+    
     // Account
     case userName = "userName"
     case userEmail = "userEmail"
+    case isLoggedIn = "isLoggedIn"
+    case appleUserId = "appleUserId"
 }

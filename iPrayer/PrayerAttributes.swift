@@ -18,6 +18,10 @@ nonisolated public struct PrayerAttributes: ActivityAttributes {
         public var atString: String
         public var startsInString: String
         public var nextString: String
+        // Optional so activities started by an older build still decode
+        /// Shown instead of the countdown once the prayer time has arrived.
+        public var nowString: String?
+        public var openHintString: String?
     }
     
     // Static data that doesn't change

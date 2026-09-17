@@ -4,8 +4,18 @@ import AuthenticationServices
 struct OnboardingView: View {
     @AppStorage(UDKey.hasSeenOnboarding.rawValue) private var hasSeenOnboarding: Bool = false
     @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
+    @EnvironmentObject var viewModel: PrayerViewModel
     @StateObject private var accountManager = AccountManager.shared
-    @State private var currentTab = 0
+    @State private var currentTab = OnboardingView.initialSlide
+    
+    private static var initialSlide: Int {
+        #if DEBUG
+        // Debug-only: `-debugOnboardingSlide 2` as a launch argument starts on that slide, for screenshots and UI checks
+        return UserDefaults.standard.integer(forKey: "debugOnboardingSlide")
+        #else
+        return 0
+        #endif
+    }
     
     var body: some View {
         ZStack {
@@ -88,7 +98,68 @@ struct OnboardingView: View {
                 }
                 .tag(1)
                 
-                // MARK: - Slide 3: Secure Sign In
+                // MARK: - Slide 3: Location (asked here, next to the reason, instead of at launch)
+                VStack(spacing: 30) {
+                    Spacer()
+                    
+                    Image(systemName: "location.fill")
+                        .font(.system(size: 80))
+                        .foregroundColor(.teal)
+                        .shadow(color: .teal.opacity(0.5), radius: 20, x: 0, y: 0)
+                    
+                    VStack(spacing: 15) {
+                        Text(AppTranslations.translate("Location Access", to: appLanguage))
+                            .font(.custom("AvenirNext-Bold", size: 36))
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                        
+                        Text(AppTranslations.translate("iPrayer uses your location to calculate prayer times and the Qibla direction.", to: appLanguage))
+                            .font(.custom("AvenirNext-Medium", size: 16))
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(spacing: 15) {
+                        Button(action: {
+                            if viewModel.locationAuthorization == .notDetermined {
+                                viewModel.requestLocationAccess()
+                            }
+                            withAnimation { currentTab = 3 }
+                        }) {
+                            Group {
+                                if viewModel.locationAuthorization == .notDetermined {
+                                    Text(AppTranslations.translate("Enable Location", to: appLanguage))
+                                } else {
+                                    Text("Next")
+                                }
+                            }
+                            .font(.custom("AvenirNext-Bold", size: 18))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.teal)
+                            .cornerRadius(15)
+                        }
+                        
+                        if viewModel.locationAuthorization == .notDetermined {
+                            Button(action: {
+                                withAnimation { currentTab = 3 }
+                            }) {
+                                Text(AppTranslations.translate("Not now", to: appLanguage))
+                                    .font(.custom("AvenirNext-Medium", size: 16))
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 40)
+                    .padding(.bottom, 60)
+                }
+                .tag(2)
+                
+                // MARK: - Slide 4: Secure Sign In
                 VStack(spacing: 30) {
                     Spacer()
                     
@@ -114,34 +185,10 @@ struct OnboardingView: View {
                     
                     VStack(spacing: 15) {
                         SignInWithAppleButton(.signIn) { request in
-                            request.requestedScopes = [.fullName, .email]
+                            AccountManager.configure(request)
                         } onCompletion: { result in
-                            switch result {
-                            case .success(let authorization):
-                                if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
-                                    
-                                    // Start iCloud Sync FIRST, so that any new name/email we get from Apple is pushed UP to iCloud
-                                    CloudSyncManager.shared.startSyncing()
-                                    
-                                    accountManager.appleUserId = appleIDCredential.user
-                                    accountManager.isLoggedIn = true
-                                    
-                                    if let fullName = appleIDCredential.fullName {
-                                        let given = fullName.givenName ?? ""
-                                        let family = fullName.familyName ?? ""
-                                        let name = "\(given) \(family)".trimmingCharacters(in: .whitespaces)
-                                        if !name.isEmpty {
-                                            accountManager.userName = name
-                                        }
-                                    }
-                                    if let email = appleIDCredential.email {
-                                        accountManager.userEmail = email
-                                    }
-                                    
-                                    finishOnboarding()
-                                }
-                            case .failure(let error):
-                                print("Sign in failed: \(error.localizedDescription)")
+                            if accountManager.handleSignIn(result) {
+                                finishOnboarding()
                             }
                         }
                         .signInWithAppleButtonStyle(.white)
@@ -159,7 +206,7 @@ struct OnboardingView: View {
                     .padding(.horizontal, 40)
                     .padding(.bottom, 60)
                 }
-                .tag(2)
+                .tag(3)
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
             
@@ -191,7 +238,8 @@ struct OnboardingView: View {
                         .background(Color.black.opacity(0.3))
                         .cornerRadius(20)
                     }
-                    .padding(.top, 50)
+                    // This overlay respects the safe area, so a small offset clears the status bar on every device
+                    .padding(.top, 8)
                     .padding(.trailing, 20)
                 }
                 Spacer()

@@ -1,11 +1,14 @@
 import SwiftUI
 
 struct PremiumWidgetCardStyle: ViewModifier {
+    /// nil lets the card size itself to its content (used by full-width cards)
+    var height: CGFloat? = 140
+    
     func body(content: Content) -> some View {
         content
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .topLeading)
-            .frame(height: 140)
+            .frame(height: height)
             .background(Material.ultraThinMaterial)
             .cornerRadius(24)
             .overlay(
@@ -17,7 +20,7 @@ struct PremiumWidgetCardStyle: ViewModifier {
 }
 
 extension View {
-    func premiumWidgetCard() -> some View {
-        self.modifier(PremiumWidgetCardStyle())
+    func premiumWidgetCard(height: CGFloat? = 140) -> some View {
+        self.modifier(PremiumWidgetCardStyle(height: height))
     }
 }

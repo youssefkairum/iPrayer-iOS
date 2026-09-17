@@ -38,7 +38,7 @@ struct DuaLibraryView: View {
                 Button(action: {
                     presentationMode.wrappedValue.dismiss()
                 }) {
-                    Image(systemName: "chevron.left")
+                    Image(systemName: "chevron.backward")
                         .foregroundColor(.white)
                 }
             }
@@ -56,9 +56,11 @@ struct DuaCardView: View {
             Text(dua.arabicText)
                 .font(.custom("KFGQPC Uthmanic Script HAFS", size: 24))
                 .foregroundColor(.white)
-                .multilineTextAlignment(.trailing)
-                .frame(maxWidth: .infinity, alignment: .trailing)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .lineSpacing(10)
+                // "trailing" means left once the app itself is right-to-left, so pin the direction instead
+                .environment(\.layoutDirection, .rightToLeft)
             
             if appLanguage != "ar" {
                 Divider().background(Color.white.opacity(0.2))

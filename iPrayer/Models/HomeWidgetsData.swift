@@ -8,41 +8,50 @@ struct AyahSnippet: Codable {
     let reference: String
 }
 
-struct DuaSnippet: Codable {
-    let text: String
-    let reference: String
-}
-
 class HomeWidgetsData: ObservableObject {
     static let shared = HomeWidgetsData()
     
     // MARK: - Published properties
-    @Published var dhikrCount: Int = 0 {
-        didSet { UserDefaults.standard.set(dhikrCount, forKey: "dhikrCount") }
-    }
-    
+    // The streak and the daily tracker are synced through iCloud (see CloudSyncManager)
     @Published var currentStreak: Int = 0 {
-        didSet { UserDefaults.standard.set(currentStreak, forKey: "currentStreak") }
+        didSet {
+            UserDefaults.standard.set(currentStreak, forKey: UDKey.currentStreak.rawValue)
+            CloudSyncManager.shared.sync(key: UDKey.currentStreak.rawValue, value: currentStreak)
+        }
     }
     
     @Published var dailyPrayersCompleted: [Bool] = [false, false, false, false, false] {
-        didSet { UserDefaults.standard.set(dailyPrayersCompleted, forKey: "dailyPrayersCompleted") }
+        didSet {
+            UserDefaults.standard.set(dailyPrayersCompleted, forKey: UDKey.dailyPrayersCompleted.rawValue)
+            CloudSyncManager.shared.sync(key: UDKey.dailyPrayersCompleted.rawValue, value: dailyPrayersCompleted)
+        }
     }
     
     private var lastCompletedStreakDateStr: String {
-        get { UserDefaults.standard.string(forKey: "lastCompletedStreakDate") ?? "" }
-        set { UserDefaults.standard.set(newValue, forKey: "lastCompletedStreakDate") }
-    }
-    
-    private var lastDhikrResetDateStr: String {
-        get { UserDefaults.standard.string(forKey: "lastDhikrResetDate") ?? "" }
-        set { UserDefaults.standard.set(newValue, forKey: "lastDhikrResetDate") }
+        get { UserDefaults.standard.string(forKey: UDKey.lastCompletedStreakDate.rawValue) ?? "" }
+        set {
+            UserDefaults.standard.set(newValue, forKey: UDKey.lastCompletedStreakDate.rawValue)
+            CloudSyncManager.shared.sync(key: UDKey.lastCompletedStreakDate.rawValue, value: newValue)
+        }
     }
     
     private var lastTrackerDateStr: String {
-        get { UserDefaults.standard.string(forKey: "lastTrackerDate") ?? "" }
-        set { UserDefaults.standard.set(newValue, forKey: "lastTrackerDate") }
+        get { UserDefaults.standard.string(forKey: UDKey.lastTrackerDate.rawValue) ?? "" }
+        set {
+            UserDefaults.standard.set(newValue, forKey: UDKey.lastTrackerDate.rawValue)
+            CloudSyncManager.shared.sync(key: UDKey.lastTrackerDate.rawValue, value: newValue)
+        }
     }
+    
+    /// Day stamps are persisted and compared across devices, so they must not depend on the device's
+    /// calendar or locale. A plain DateFormatter writes Hijri or Buddhist years on devices set to those calendars.
+    private static let dayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
     
     // MARK: - Curated Content
     let dailyAyahs: [AyahSnippet] = [
@@ -55,16 +64,6 @@ class HomeWidgetsData: ObservableObject {
         AyahSnippet(englishText: "Unquestionably, by the remembrance of Allah hearts are assured.", arabicText: "أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ", reference: "Quran 13:28")
     ]
     
-    let dailyDuas: [DuaSnippet] = [
-        DuaSnippet(text: "O Allah, I ask You for beneficial knowledge, goodly provision and acceptable deeds.", reference: "Morning Supplication"),
-        DuaSnippet(text: "O Allah, You are forgiving and love forgiveness, so forgive me.", reference: "Dua of Aisha (RA)"),
-        DuaSnippet(text: "O turner of the hearts, keep my heart firm upon Your religion.", reference: "Dua of the Prophet (SAW)"),
-        DuaSnippet(text: "O Allah, I seek refuge in You from anxiety and sorrow, weakness and laziness.", reference: "Bukhari"),
-        DuaSnippet(text: "Our Lord, grant us good in this world and good in the Hereafter, and protect us from the punishment of the Fire.", reference: "Quran 2:201"),
-        DuaSnippet(text: "O Allah, guide me among those whom You have guided.", reference: "Sunan an-Nasa'i"),
-        DuaSnippet(text: "O Allah, I ask You for Your love and the love of those who love You.", reference: "Tirmidhi")
-    ]
-    
     // Computed Properties
     var todaysAyah: AyahSnippet {
         let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
@@ -72,19 +71,26 @@ class HomeWidgetsData: ObservableObject {
         return dailyAyahs[index]
     }
     
-    var todaysDua: DuaSnippet {
-        let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
-        let index = dayOfYear % dailyDuas.count
-        return dailyDuas[index]
+    init() {
+        loadPersistedState()
+        checkAndResetTracker()
     }
     
-    init() {
-        self.dhikrCount = UserDefaults.standard.integer(forKey: "dhikrCount")
-        self.currentStreak = UserDefaults.standard.integer(forKey: "currentStreak")
-        if let savedTracker = UserDefaults.standard.array(forKey: "dailyPrayersCompleted") as? [Bool], savedTracker.count == 5 {
-            self.dailyPrayersCompleted = savedTracker
+    private func loadPersistedState() {
+        let defaults = UserDefaults.standard
+        let savedStreak = defaults.integer(forKey: UDKey.currentStreak.rawValue)
+        
+        // Only assign real changes so the UI and iCloud aren't poked for nothing
+        if currentStreak != savedStreak { currentStreak = savedStreak }
+        if let savedTracker = defaults.array(forKey: UDKey.dailyPrayersCompleted.rawValue) as? [Bool],
+           savedTracker.count == 5, savedTracker != dailyPrayersCompleted {
+            dailyPrayersCompleted = savedTracker
         }
-        checkAndResetDhikr()
+    }
+    
+    /// Called by CloudSyncManager after it wrote tracker or streak values from iCloud into UserDefaults.
+    func reloadFromDefaults() {
+        loadPersistedState()
         checkAndResetTracker()
     }
     
@@ -93,29 +99,7 @@ class HomeWidgetsData: ObservableObject {
     /// Re-runs the day-change checks. Called when the app returns to the foreground,
     /// since init only runs once and the app may stay alive across midnight.
     func refreshDayState() {
-        checkAndResetDhikr()
         checkAndResetTracker()
-    }
-    
-    func incrementDhikr() {
-        checkAndResetDhikr()
-        dhikrCount += 1
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-    }
-    
-    func resetDhikr() {
-        dhikrCount = 0
-    }
-    
-    private func checkAndResetDhikr() {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        let todayStr = formatter.string(from: Date())
-        
-        if lastDhikrResetDateStr != todayStr {
-            dhikrCount = 0
-            lastDhikrResetDateStr = todayStr
-        }
     }
     
     func togglePrayer(index: Int) {
@@ -126,8 +110,7 @@ class HomeWidgetsData: ObservableObject {
     }
     
     private func checkAndResetTracker() {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
+        let formatter = Self.dayFormatter
         let todayStr = formatter.string(from: Date())
         
         // Reset daily booleans if it's a new day
@@ -150,8 +133,7 @@ class HomeWidgetsData: ObservableObject {
     }
     
     private func evaluateStreak() {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
+        let formatter = Self.dayFormatter
         let todayStr = formatter.string(from: Date())
         
         let allCompleted = dailyPrayersCompleted.allSatisfy { $0 == true }
