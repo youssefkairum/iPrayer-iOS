@@ -42,7 +42,8 @@ struct iPrayerWidgetLiveActivity: Widget {
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
                     
-                    Text("\(context.state.atString) \(context.state.prayerTime)")
+                    // First-strong isolate around the time keeps "at 3:49 AM" in the right order for Arabic and Urdu
+                    Text(verbatim: "\(context.state.atString) \u{2068}\(context.state.prayerTime)\u{2069}")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(.white.opacity(0.9))
                     

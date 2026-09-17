@@ -203,7 +203,9 @@ struct HeroCard: View {
                             .font(.custom("AvenirNext-Bold", size: 38))
                             .foregroundColor(.white)
                         
-                        Text("\(AppTranslations.translate("at", to: appLanguage)) \(prayerTime.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: appLanguage))))")
+                        // The time is wrapped in a first-strong isolate (U+2068…U+2069) so it takes its direction from its own
+                        // content. Without it, Arabic rendered the pieces out of order ("at, AM, 3:49").
+                        Text(verbatim: "\(AppTranslations.translate("at", to: appLanguage)) \u{2068}\(prayerTime.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: appLanguage))))\u{2069}")
                             .font(.custom("AvenirNext-Medium", size: 16))
                             .foregroundColor(.white.opacity(0.8))
                     }
