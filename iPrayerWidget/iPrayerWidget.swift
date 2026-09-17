@@ -6,11 +6,7 @@
 import WidgetKit
 import SwiftUI
 
-struct Provider: TimelineProvider {
-    func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), prayerName: "Maghrib", timeString: "5:29 PM", icon: "sunset.fill", headerString: "Next Prayer")
-    }
-
+/// Mirrors the JSON entries the main app writes to the shared App Group.
 struct WidgetEntryData: Codable {
     let date: Date
     let prayerName: String
@@ -19,42 +15,37 @@ struct WidgetEntryData: Codable {
     let headerString: String
 }
 
-    func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
-        let sharedDefaults = UserDefaults(suiteName: "group.iPrayer.shared")
-        if let data = sharedDefaults?.data(forKey: "widgetTimelineData"),
-           let decoded = try? JSONDecoder().decode([WidgetEntryData].self, from: data),
-           let first = decoded.first {
-            let entry = SimpleEntry(date: Date(), prayerName: first.prayerName, timeString: first.timeString, icon: first.icon, headerString: first.headerString)
-            completion(entry)
-            return
+struct Provider: TimelineProvider {
+    private static let placeholderEntry = SimpleEntry(date: Date(), prayerName: "Maghrib", timeString: "5:29 PM", icon: "sunset.fill", headerString: "Next Prayer")
+    private static let setupEntry = SimpleEntry(date: Date(), prayerName: "Open App", timeString: "--:--", icon: "location.fill", headerString: "Setup Required")
+    
+    private func loadSharedEntries() -> [WidgetEntryData] {
+        guard let data = UserDefaults(suiteName: "group.iPrayer.shared")?.data(forKey: "widgetTimelineData"),
+              let decoded = try? JSONDecoder().decode([WidgetEntryData].self, from: data) else {
+            return []
         }
-        
-        let emptyEntry = SimpleEntry(date: Date(), prayerName: "Open App", timeString: "--:--", icon: "location.fill", headerString: "Setup Required")
-        completion(emptyEntry)
+        return decoded
+    }
+    
+    func placeholder(in context: Context) -> SimpleEntry {
+        Self.placeholderEntry
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
+        if let first = loadSharedEntries().first {
+            completion(SimpleEntry(date: Date(), prayerName: first.prayerName, timeString: first.timeString, icon: first.icon, headerString: first.headerString))
+        } else {
+            completion(Self.setupEntry)
+        }
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
-        let sharedDefaults = UserDefaults(suiteName: "group.iPrayer.shared")
-        var entries: [SimpleEntry] = []
-        
-        if let data = sharedDefaults?.data(forKey: "widgetTimelineData"),
-           let decoded = try? JSONDecoder().decode([WidgetEntryData].self, from: data) {
-           
-           for dataEntry in decoded {
-               let entry = SimpleEntry(
-                   date: dataEntry.date,
-                   prayerName: dataEntry.prayerName,
-                   timeString: dataEntry.timeString,
-                   icon: dataEntry.icon,
-                   headerString: dataEntry.headerString
-               )
-               entries.append(entry)
-           }
+        var entries: [SimpleEntry] = loadSharedEntries().map {
+            SimpleEntry(date: $0.date, prayerName: $0.prayerName, timeString: $0.timeString, icon: $0.icon, headerString: $0.headerString)
         }
         
         if entries.isEmpty {
-            let emptyEntry = SimpleEntry(date: Date(), prayerName: "Open App", timeString: "--:--", icon: "location.fill", headerString: "Setup Required")
-            entries.append(emptyEntry)
+            entries.append(Self.setupEntry)
         }
         
         // Refresh when timeline exhausts, though main app forces refresh earlier
@@ -82,19 +73,8 @@ struct iPrayerWidgetEntryView : View {
             Text("\(Image(systemName: entry.icon)) \(entry.prayerName) \(entry.timeString)")
             
         case .accessoryCircular:
-            if #available(iOS 16.0, *) {
-                ZStack {
-                    AccessoryWidgetBackground()
-                    VStack(spacing: 2) {
-                        Image(systemName: entry.icon)
-                            .font(.caption)
-                        Text(entry.timeString)
-                            .font(.system(size: 10, weight: .bold))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.5)
-                    }
-                }
-            } else {
+            ZStack {
+                AccessoryWidgetBackground()
                 VStack(spacing: 2) {
                     Image(systemName: entry.icon)
                         .font(.caption)
@@ -171,26 +151,14 @@ struct iPrayerWidget: Widget {
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            if #available(iOS 17.0, *) {
-                iPrayerWidgetEntryView(entry: entry)
-                    .containerBackground(for: .widget) {
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color(red: 15/255, green: 32/255, blue: 39/255), Color(red: 32/255, green: 58/255, blue: 67/255)]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    }
-            } else {
-                iPrayerWidgetEntryView(entry: entry)
-                    .padding()
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color(red: 15/255, green: 32/255, blue: 39/255), Color(red: 32/255, green: 58/255, blue: 67/255)]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
+            iPrayerWidgetEntryView(entry: entry)
+                .containerBackground(for: .widget) {
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color(red: 15/255, green: 32/255, blue: 39/255), Color(red: 32/255, green: 58/255, blue: 67/255)]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
-            }
+                }
         }
         .configurationDisplayName("Next Prayer")
         .description("Keep track of the upcoming prayer on your home screen.")

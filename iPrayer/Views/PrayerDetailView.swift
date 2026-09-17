@@ -15,6 +15,12 @@ struct PrayerDetailView: View {
         PrayerTheme.theme(for: nextPrayerName)
     }
 
+    /// After Isha the view model switches the list to tomorrow's times.
+    private var isShowingTomorrow: Bool {
+        guard let first = viewModel.prayerTimes.first else { return false }
+        return Calendar.current.isDateInTomorrow(first.time)
+    }
+
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 20) {
@@ -24,7 +30,7 @@ struct PrayerDetailView: View {
                     Text(AppTranslations.translate("Prayer Times", to: appLanguage))
                         .font(.custom("AvenirNext-Bold", size: 32))
                         .foregroundColor(.white)
-                    Text(AppTranslations.translate("Today's full schedule", to: appLanguage))
+                    Text(AppTranslations.translate(isShowingTomorrow ? "Tomorrow's schedule" : "Today's full schedule", to: appLanguage))
                         .font(.custom("AvenirNext-Medium", size: 16))
                         .foregroundColor(.gray)
                 }

@@ -7,7 +7,6 @@
 
 import SwiftUI
 import UserNotifications
-import CoreText
 
 @main
 struct iPrayerApp: App {
@@ -16,12 +15,8 @@ struct iPrayerApp: App {
     @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
     @AppStorage(UDKey.hasSeenOnboarding.rawValue) private var hasSeenOnboarding: Bool = false
     
-    init() {
-        if let fontURL = Bundle.main.url(forResource: "KFGQPC Uthmanic Script HAFS Regular", withExtension: "otf") {
-            var error: Unmanaged<CFError>?
-            CTFontManagerRegisterFontsForURL(fontURL as CFURL, .process, &error)
-        }
-    }
+    // The KFGQPC font is registered through UIAppFonts in Info.plist.
+    // Registering it again with CoreText here logged a "file already registered" fault at every launch.
     
     // MARK: - Splash Screen State
     @State private var isSplashScreenVisible: Bool = true
@@ -40,21 +35,23 @@ struct iPrayerApp: App {
                     .environment(\.locale, Locale(identifier: appLanguage))
                     .preferredColorScheme(.dark)
                 
-                // 2. Onboarding (Overlays main app until dismissed)
-                OnboardingView()
-                    .environmentObject(viewModel)
-                    .environment(\.locale, Locale(identifier: appLanguage))
-                    .preferredColorScheme(.dark)
-                    .opacity(hasSeenOnboarding ? 0.0 : 1.0)
-                    .allowsHitTesting(!hasSeenOnboarding)
-                    .zIndex(0.5)
+                // 2. Onboarding (overlays the main app until dismissed).
+                // Removed from the hierarchy once finished so its animated background stops rendering.
+                if !hasSeenOnboarding {
+                    OnboardingView()
+                        .environmentObject(viewModel)
+                        .environment(\.locale, Locale(identifier: appLanguage))
+                        .preferredColorScheme(.dark)
+                        .transition(.opacity)
+                        .zIndex(0.5)
+                }
                 
-                // 2. The Splash Screen
-                SplashScreenView()
-                    .opacity(isSplashScreenVisible ? 1.0 : 0.0)
-                    .allowsHitTesting(isSplashScreenVisible)
-                    .animation(.easeInOut(duration: 0.5), value: isSplashScreenVisible)
-                    .zIndex(1) // Ensure it sits on top
+                // 3. The Splash Screen, likewise removed after it fades out
+                if isSplashScreenVisible {
+                    SplashScreenView()
+                        .transition(.opacity)
+                        .zIndex(1) // Ensure it sits on top
+                }
             }
             .onAppear {
                 // Request Notifications
@@ -73,15 +70,25 @@ struct iPrayerApp: App {
                     CloudSyncManager.shared.startSyncing()
                 }
                 
+                // Warm the Quran cache off the main thread so the first surah opens without a decode delay
+                Task.detached(priority: .background) {
+                    _ = try? await QuranDataCache.shared.getSurahs()
+                    _ = try? await QuranDataCache.shared.getVerses(for: 1)
+                }
+                
                 // MARK: - Splash Logic
-                // Wait 3 seconds, then trigger the implicit fade out
+                // Wait 3 seconds, then fade the splash out and drop it from the hierarchy
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                    isSplashScreenVisible = false
+                    withAnimation(.easeInOut(duration: 0.5)) {
+                        isSplashScreenVisible = false
+                    }
                 }
             }
-            // Background refresh logic
+            // Foreground refresh logic
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
+                    // Reset the daily tracker if the app stayed alive across midnight
+                    HomeWidgetsData.shared.refreshDayState()
                     viewModel.refreshPrayers()
                 }
             }

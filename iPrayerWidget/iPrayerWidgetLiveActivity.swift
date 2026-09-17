@@ -108,7 +108,7 @@ struct iPrayerWidgetLiveActivity: Widget {
                 Image(systemName: context.state.prayerIcon)
                     .foregroundColor(.teal)
             }
-            .widgetURL(URL(string: "http://www.apple.com")) // Deep link into app
+            .widgetURL(URL(string: "iprayer://prayers")) // Custom scheme registered in iPrayer-Info.plist
             .keylineTint(Color.teal)
         }
     }

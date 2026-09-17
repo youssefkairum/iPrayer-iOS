@@ -33,12 +33,13 @@ class AccountManager: ObservableObject {
     }
     
     func logout() {
+        // Stop syncing BEFORE clearing the profile: the didSet observers below would otherwise push
+        // empty strings to iCloud, and Apple only supplies the name/email on the very first sign-in.
+        CloudSyncManager.shared.stopSyncing()
+        
         isLoggedIn = false
         userName = ""
         userEmail = ""
         appleUserId = ""
-        
-        // Stop syncing if logged out
-        CloudSyncManager.shared.stopSyncing()
     }
 }

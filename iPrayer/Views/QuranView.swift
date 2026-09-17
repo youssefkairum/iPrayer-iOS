@@ -48,7 +48,7 @@ struct QuranView: View {
     }
     
     var body: some View {
-        NavigationView {
+        // No inner NavigationView: pushes go through the NavigationStack in ContentView.
             ZStack {
                 // Background Gradient
                 LinearGradient(gradient: Gradient(colors: [Color(hex: "0F2027"), Color(hex: "203A43"), Color(hex: "2C5364")]), startPoint: .top, endPoint: .bottom)
@@ -151,8 +151,6 @@ struct QuranView: View {
                 }
             }
             .navigationBarHidden(true)
-        }
-        .navigationViewStyle(StackNavigationViewStyle())
     }
 }
 
@@ -293,6 +291,10 @@ struct SurahDetailView: View {
                 .padding(.bottom, 20)
             }
         }
+        // Light paper page inside a dark app: give the bar (and the status bar it drives) a light scheme
+        .toolbarBackground(Color(hex: "FAF8F3"), for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.light, for: .navigationBar)
         .onAppear {
             detailVM.fetchVerses(for: surah.number)
             UserDefaults.standard.set(surah.name, forKey: UDKey.lastReadSurahName.rawValue)
@@ -316,7 +318,20 @@ struct MushafTextView: UIViewRepresentable {
     let surahEnglishName: String
     @Binding var selectedVerse: Int?
     
-    static var markerCache: [Int: UIImage] = [:]
+    // Marker images are built on a background queue by loadMore and on the main thread by updateUIView,
+    // so access to the cache is serialized with a lock.
+    nonisolated(unsafe) private static var markerCache: [Int: UIImage] = [:]
+    nonisolated private static let markerCacheLock = NSLock()
+    
+    nonisolated private static func cachedMarker(_ number: Int) -> UIImage? {
+        markerCacheLock.withLock { markerCache[number] }
+    }
+    nonisolated private static func storeMarker(_ image: UIImage, for number: Int) {
+        markerCacheLock.withLock { markerCache[number] = image }
+    }
+    nonisolated private static func clearMarkers() {
+        markerCacheLock.withLock { markerCache.removeAll() }
+    }
     
     func makeUIView(context: Context) -> UITextView {
         let textView = UITextView()
@@ -343,7 +358,7 @@ struct MushafTextView: UIViewRepresentable {
             
             context.coordinator.loadedVerseCount = endIndex
             context.coordinator.lastHighlightedVerse = nil
-            MushafTextView.markerCache.removeAll()
+            MushafTextView.clearMarkers()
             uiView.attributedText = buildNSAttributedString(for: batch, includeHeaders: true)
         }
         
@@ -435,7 +450,6 @@ struct MushafTextView: UIViewRepresentable {
             }
         }
         
-        @available(iOS 17.0, *)
         func textView(_ textView: UITextView, primaryActionFor textItem: UITextItem, defaultAction: UIAction) -> UIAction? {
             if case .link(let url) = textItem.content {
                 if url.scheme == "verse", let host = url.host, let v = Int(host) {
@@ -453,20 +467,6 @@ struct MushafTextView: UIViewRepresentable {
             return defaultAction
         }
         
-        // Fallback for iOS 16 and below
-        func textView(_ textView: UITextView, shouldInteractWith URL: URL, in characterRange: NSRange, interaction: UITextItemInteraction) -> Bool {
-            if URL.scheme == "verse", let host = URL.host, let v = Int(host) {
-                // We must use dispatch async to update state from a UIKit delegate to avoid SwiftUI warnings
-                DispatchQueue.main.async {
-                    if self.parent.selectedVerse == v {
-                        self.parent.selectedVerse = nil
-                    } else {
-                        self.parent.selectedVerse = v
-                    }
-                }
-            }
-            return false
-        }
     }
     
     private func buildNSAttributedString(for batch: [Ayah], includeHeaders: Bool) -> NSAttributedString {
@@ -597,7 +597,7 @@ struct MushafTextView: UIViewRepresentable {
     }
     
     private func generateVerseMarkerImage(number: Int, font: UIFont) -> UIImage? {
-        if let cached = MushafTextView.markerCache[number] {
+        if let cached = MushafTextView.cachedMarker(number) {
             return cached
         }
         
@@ -654,7 +654,7 @@ struct MushafTextView: UIViewRepresentable {
         
         let image = UIGraphicsGetImageFromCurrentImageContext()
         if let img = image {
-            MushafTextView.markerCache[number] = img
+            MushafTextView.storeMarker(img, for: number)
         }
         return image
     }

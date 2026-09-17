@@ -15,9 +15,6 @@ struct SettingsView: View {
     
     @StateObject private var accountManager = AccountManager.shared
     
-    // Trigger updates when settings change
-    private let updateTrigger = NotificationCenter.default.publisher(for: NSNotification.Name("UpdatePrayerTimes"))
-    
     @EnvironmentObject var viewModel: PrayerViewModel
     @Environment(\.requestReview) var requestReview
     

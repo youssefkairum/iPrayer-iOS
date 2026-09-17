@@ -9,8 +9,8 @@ import Combine
 struct PrayerListView: View {
     @EnvironmentObject var viewModel: PrayerViewModel
     @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
-    @State private var timeRemaining: String = "00:00:00"
     @StateObject private var accountManager = AccountManager.shared
+    @Environment(\.openURL) private var openURL
     
     // Grid layout for the home widgets
     private let columns = [
@@ -18,8 +18,9 @@ struct PrayerListView: View {
         GridItem(.flexible(), spacing: 10)
     ]
     
-    // Timer to update the countdown every second
-    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    // Coarse timer used only to recalculate once the next prayer has passed.
+    // The per-second countdown lives inside HeroCard so it doesn't re-render this whole screen.
+    private let refreshTimer = Timer.publish(every: 15, on: .main, in: .common).autoconnect()
     
     var islamicDate: String {
         let formatter = DateFormatter()
@@ -40,114 +41,106 @@ struct PrayerListView: View {
         let name = accountManager.userName.trimmingCharacters(in: .whitespaces)
         let firstName = name.components(separatedBy: " ").first ?? name
         
-        NavigationView {
-            ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 25) {
-                        
-                        // 1. DASHBOARD HEADER
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(islamicDate)
-                                .font(.custom("AvenirNext-Medium", size: 16))
-                                .foregroundColor(.gray)
-                            
-                            HStack(alignment: .top) {
-                                if !firstName.isEmpty {
-                                    VStack(alignment: .leading, spacing: 0) {
-                                        HStack(spacing: 0) {
-                                            Text(AppTranslations.translate(timeGreetingString, to: appLanguage))
-                                            Text(",")
-                                        }
-                                        Text(firstName)
-                                    }
-                                    .font(.custom("AvenirNext-Bold", size: 34))
-                                    .foregroundColor(.white)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.5)
-                                } else {
+        // No inner NavigationView: pushes go through the NavigationStack in ContentView,
+        // whose gradient background would otherwise be hidden by the navigation container.
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 25) {
+                
+                // 1. DASHBOARD HEADER
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(islamicDate)
+                        .font(.custom("AvenirNext-Medium", size: 16))
+                        .foregroundColor(.gray)
+                    
+                    HStack(alignment: .top) {
+                        if !firstName.isEmpty {
+                            VStack(alignment: .leading, spacing: 0) {
+                                HStack(spacing: 0) {
                                     Text(AppTranslations.translate(timeGreetingString, to: appLanguage))
-                                        .font(.custom("AvenirNext-Bold", size: 34))
-                                        .foregroundColor(.white)
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(0.5)
+                                    Text(",")
                                 }
-                                
-                                Spacer()
-                                
-                                // Location Pill
-                                HStack {
-                                    Image(systemName: "location.fill")
-                                        .foregroundColor(.teal)
-                                    Text(viewModel.locationName)
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(.white)
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(Color.white.opacity(0.1))
-                                .cornerRadius(20)
-                                .padding(.top, 8)
+                                Text(firstName)
                             }
-                        }
-                        .padding(.horizontal)
-                        
-                        // 2. HERO CARD (Next Prayer) — Tappable
-                        if let nextPrayer = viewModel.prayerTimes.first(where: { $0.isNext }) {
-                            NavigationLink(destination: PrayerDetailView(nextPrayerName: nextPrayer.name)
-                                .environmentObject(viewModel)
-                            ) {
-                                HeroCard(
-                                    prayerName: nextPrayer.name,
-                                    prayerTime: nextPrayer.time,
-                                    icon: nextPrayer.icon,
-                                    timeRemaining: timeRemaining
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .padding(.horizontal)
+                            .font(.custom("AvenirNext-Bold", size: 34))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
                         } else {
-                            Text("Loading Prayers...")
+                            Text(AppTranslations.translate(timeGreetingString, to: appLanguage))
+                                .font(.custom("AvenirNext-Bold", size: 34))
                                 .foregroundColor(.white)
-                                .padding(.top, 50)
-                                .frame(maxWidth: .infinity, alignment: .center)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.5)
                         }
                         
-                        // 3. WIDGETS GRID
-                        LazyVGrid(columns: columns, spacing: 10) {
-                            StreakWidgetView()
-                            NavigationLink(destination: DuaLibraryView()) {
-                                DuasLibraryWidgetView()
-                            }
-                            .buttonStyle(PlainButtonStyle())
+                        Spacer()
+                        
+                        // Location Pill
+                        HStack {
+                            Image(systemName: "location.fill")
+                                .foregroundColor(.teal)
+                            Text(viewModel.locationName)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.white)
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.white.opacity(0.1))
+                        .cornerRadius(20)
+                        .padding(.top, 8)
+                    }
                 }
-                .padding(.top, 20)
+                .padding(.horizontal)
+                
+                // 2. HERO CARD (Next Prayer) — Tappable
+                if let nextPrayer = viewModel.prayerTimes.first(where: { $0.isNext }) {
+                    NavigationLink(destination: PrayerDetailView(nextPrayerName: nextPrayer.name)
+                        .environmentObject(viewModel)
+                    ) {
+                        HeroCard(
+                            prayerName: nextPrayer.name,
+                            prayerTime: nextPrayer.time,
+                            icon: nextPrayer.icon
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.horizontal)
+                } else if let error = viewModel.locationError {
+                    LocationErrorCard(
+                        message: AppTranslations.translate(error, to: appLanguage),
+                        buttonTitle: AppTranslations.translate("Open Settings", to: appLanguage)
+                    ) {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            openURL(url)
+                        }
+                    }
+                    .padding(.horizontal)
+                } else {
+                    Text("Loading Prayers...")
+                        .foregroundColor(.white)
+                        .padding(.top, 50)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+                
+                // 3. WIDGETS GRID
+                LazyVGrid(columns: columns, spacing: 10) {
+                    StreakWidgetView()
+                    NavigationLink(destination: DuaLibraryView()) {
+                        DuasLibraryWidgetView()
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .padding(.horizontal)
             }
-            .background(Color.clear)
-            .navigationBarHidden(true)
+            .padding(.top, 20)
+            .padding(.bottom, 100) // Clear the floating tab bar
         }
-        .navigationViewStyle(StackNavigationViewStyle())
-        .onReceive(timer) { _ in
-            updateCountdown()
-        }
-        .onAppear {
-            updateCountdown()
-        }
-    }
-    
-    func updateCountdown() {
-        guard let nextPrayer = viewModel.prayerTimes.first(where: { $0.isNext }) else { return }
-        
-        let diff = nextPrayer.time.timeIntervalSinceNow
-        
-        if diff > 0 {
-            let hours = Int(diff) / 3600
-            let minutes = (Int(diff) % 3600) / 60
-            let seconds = Int(diff) % 60
-            timeRemaining = String(format: "%02d:%02d:%02d", hours, minutes, seconds)
-        } else {
-            timeRemaining = "00:00:00"
-            if diff < -60 { viewModel.refreshPrayers() }
+        .navigationBarHidden(true)
+        .onReceive(refreshTimer) { _ in
+            if let nextPrayer = viewModel.prayerTimes.first(where: { $0.isNext }),
+               nextPrayer.time.timeIntervalSinceNow < -60 {
+                viewModel.refreshPrayers()
+            }
         }
     }
 }
@@ -159,7 +152,6 @@ struct HeroCard: View {
     let prayerName: String
     let prayerTime: Date
     let icon: String
-    let timeRemaining: String
     
     var theme: PrayerTheme {
         PrayerTheme.theme(for: prayerName)
@@ -203,9 +195,12 @@ struct HeroCard: View {
                         Text(AppTranslations.translate("Starts in", to: appLanguage))
                             .font(.caption2)
                             .foregroundColor(.white.opacity(0.7))
-                        Text(timeRemaining)
-                            .font(.system(size: 26, weight: .bold, design: .monospaced))
-                            .foregroundColor(.white)
+                        // TimelineView redraws only this text once per second
+                        TimelineView(.periodic(from: .now, by: 1)) { context in
+                            Text(countdown(at: context.date))
+                                .font(.system(size: 26, weight: .bold, design: .monospaced))
+                                .foregroundColor(.white)
+                        }
                     }
                     Spacer()
                 }
@@ -220,53 +215,48 @@ struct HeroCard: View {
         )
         .shadow(color: theme.shadowColor.opacity(0.3), radius: 20, x: 0, y: 10)
     }
+    
+    private func countdown(at date: Date) -> String {
+        let diff = max(0, Int(prayerTime.timeIntervalSince(date)))
+        return String(format: "%02d:%02d:%02d", diff / 3600, (diff % 3600) / 60, diff % 60)
+    }
 }
 
-struct TimelineRow: View {
-    let prayer: PrayerItem
-    
-    var isPast: Bool {
-        return !prayer.isNext && prayer.time < Date()
-    }
+/// Shown in place of the hero card when location access has been denied.
+struct LocationErrorCard: View {
+    let message: String
+    let buttonTitle: String
+    let action: () -> Void
     
     var body: some View {
-        HStack(spacing: 15) {
-            // Timeline Node
-            ZStack {
-                Circle()
-                    .fill(prayer.isNext ? PrayerTheme.theme(for: prayer.name).shadowColor : (isPast ? Color.gray.opacity(0.3) : Color.white.opacity(0.1)))
-                    .frame(width: 40, height: 40)
-                
-                Image(systemName: prayer.icon)
-                    .foregroundColor(prayer.isNext ? .white : (isPast ? .gray : .white))
-                    .font(.system(size: 14))
+        VStack(spacing: 14) {
+            Image(systemName: "location.slash.fill")
+                .font(.system(size: 34))
+                .foregroundColor(.orange)
+            
+            Text(message)
+                .font(.custom("AvenirNext-Medium", size: 16))
+                .foregroundColor(.white)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            
+            Button(action: action) {
+                Text(buttonTitle)
+                    .font(.custom("AvenirNext-Bold", size: 16))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 10)
+                    .background(Color.teal)
+                    .cornerRadius(12)
             }
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(LocalizedStringKey(prayer.name))
-                    .font(.custom("AvenirNext-DemiBold", size: 18))
-                    .foregroundColor(isPast ? .gray : .white)
-                
-                if prayer.isNext {
-                    Text("Upcoming")
-                        .font(.caption)
-                        .foregroundColor(PrayerTheme.theme(for: prayer.name).shadowColor)
-                }
-            }
-            
-            Spacer()
-            
-            Text(prayer.time, style: .time)
-                .font(.system(size: 16, weight: prayer.isNext ? .bold : .medium, design: .monospaced))
-                .foregroundColor(prayer.isNext ? PrayerTheme.theme(for: prayer.name).shadowColor : (isPast ? .gray : .white))
         }
-        .padding()
+        .frame(maxWidth: .infinity)
+        .padding(24)
         .background(Material.ultraThinMaterial)
-        .cornerRadius(20)
+        .cornerRadius(30)
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(prayer.isNext ? PrayerTheme.theme(for: prayer.name).shadowColor.opacity(0.5) : Color.white.opacity(0.05), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 30)
+                .stroke(Color.white.opacity(0.2), lineWidth: 1)
         )
-        .opacity(isPast ? 0.7 : 1.0)
     }
 }

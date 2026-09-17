@@ -6,7 +6,9 @@
 import Foundation
 import ActivityKit
 
-public struct PrayerAttributes: ActivityAttributes {
+// nonisolated: the target defaults to MainActor isolation, which would make this conformance
+// unusable from ActivityKit's concurrent contexts (an error in Swift 6).
+nonisolated public struct PrayerAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         // Dynamic data that changes during the activity
         public var timeRemaining: ClosedRange<Date>

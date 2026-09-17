@@ -7,13 +7,7 @@
 
 import Foundation
 
-// MARK: - List Response (Metadata for all Surahs)
-struct SurahListResponse: Codable, Sendable {
-    let code: Int
-    let status: String
-    let data: [SurahMetadata]
-}
-
+// MARK: - Surah Metadata
 struct SurahMetadata: Codable, Identifiable, Sendable {
     let number: Int
     let name: String                    // Arabic Name (e.g. سورة الفاتحة)
@@ -25,20 +19,7 @@ struct SurahMetadata: Codable, Identifiable, Sendable {
     var id: Int { number }
 }
 
-// MARK: - Detail Response (Verses for a specific Surah)
-struct SurahDetailResponse: Codable, Sendable {
-    let code: Int
-    let status: String
-    let data: [SurahEdition]
-}
-
-struct SurahEdition: Codable, Sendable {
-    let number: Int
-    let name: String
-    let englishName: String
-    let ayahs: [Ayah]
-}
-
+// MARK: - Verse
 struct Ayah: Codable, Identifiable, Sendable {
     let number: Int
     let text: String

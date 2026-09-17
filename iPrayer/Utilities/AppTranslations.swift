@@ -46,6 +46,10 @@ struct AppTranslations {
             "Good evening": ["ar": "مساء الخير", "ur": "شام بخیر", "fr": "Bonsoir", "zh-Hans": "晚上好", "de": "Guten Abend", "hi": "शुभ संध्या", "tr": "İyi akşamlar", "ru": "Добрый вечер"],
             "Duas": ["ar": "الأدعية", "ur": "دعائیں", "fr": "Duas", "zh-Hans": "祈祷", "de": "Duas", "hi": "दुआएं", "tr": "Dualar", "ru": "Дуа"],
             "at": ["ar": "في", "ur": "پر", "fr": "à", "zh-Hans": "在", "de": "um", "hi": "पर", "tr": "saat", "ru": "в"],
+            "Next Prayer": ["ar": "الصلاة القادمة", "ur": "اگلی نماز", "fr": "Prochaine prière", "zh-Hans": "下一个祈祷", "de": "Nächstes Gebet", "hi": "अगली प्रार्थना", "tr": "Sonraki Namaz", "ru": "Следующая молитва"],
+            "Tomorrow's schedule": ["ar": "جدول الغد", "ur": "کل کا شیڈول", "fr": "Programme de demain", "zh-Hans": "明日时间表", "de": "Plan für morgen", "hi": "कल का शेड्यूल", "tr": "Yarının programı", "ru": "Расписание на завтра"],
+            "Location access is needed to show prayer times.": ["ar": "يلزم الوصول إلى الموقع لعرض مواقيت الصلاة.", "ur": "نماز کے اوقات دکھانے کے لیے مقام تک رسائی درکار ہے۔", "fr": "L'accès à la localisation est nécessaire pour afficher les horaires de prière.", "zh-Hans": "需要位置权限才能显示祈祷时间。", "de": "Standortzugriff wird benötigt, um Gebetszeiten anzuzeigen.", "hi": "नमाज़ के वक्त दिखाने के लिए स्थान की अनुमति आवश्यक है।", "tr": "Namaz vakitlerini göstermek için konum erişimi gerekli.", "ru": "Для показа времени молитв нужен доступ к геопозиции."],
+            "Open Settings": ["ar": "فتح الإعدادات", "ur": "سیٹنگز کھولیں", "fr": "Ouvrir les réglages", "zh-Hans": "打开设置", "de": "Einstellungen öffnen", "hi": "सेटिंग्स खोलें", "tr": "Ayarları Aç", "ru": "Открыть настройки"],
 
             "Duas Library": ["ar": "مكتبة الأدعية", "ur": "دعاؤں کی لائبریری", "fr": "Bibliothèque de Duas", "zh-Hans": "杜阿图书馆", "de": "Duas Bibliothek", "hi": "दुआ पुस्तकालय", "tr": "Dualar Kütüphanesi", "ru": "Библиотека дуа"],
             "Morning & Evening": ["ar": "الصباح والمساء", "ur": "صبح اور شام", "fr": "Matin et Soir", "zh-Hans": "早晨和晚上", "de": "Morgen & Abend", "hi": "सुबह और शाम", "tr": "Sabah ve Akşam", "ru": "Утро и вечер"],

@@ -116,7 +116,7 @@ struct AyahWidgetView: View {
             }
             
             Text(ayah.arabicText)
-                .font(.custom("KFGQPC Uthmanic Script HAFS Regular", size: 22))
+                .font(.custom("KFGQPC Uthmanic Script HAFS", size: 22))
                 .foregroundColor(.white)
                 .lineLimit(2)
                 .minimumScaleFactor(0.5)

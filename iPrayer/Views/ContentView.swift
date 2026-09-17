@@ -18,11 +18,6 @@ struct ContentView: View {
     @EnvironmentObject var viewModel: PrayerViewModel
     @State private var selectedTab: Tab = .prayers
     
-    // Hide native tab bar logic
-    init() {
-        UITabBar.appearance().isHidden = true
-    }
-    
     var body: some View {
         NavigationStack {
             ZStack {

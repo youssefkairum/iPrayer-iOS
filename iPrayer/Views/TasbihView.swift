@@ -12,6 +12,7 @@ struct TasbihView: View {
     @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
     @AppStorage(UDKey.tasbihTarget.rawValue) private var cycleTarget: Int = 33
     @State private var ripples: [UUID] = []
+    @State private var syncTask: Task<Void, Never>?
     
     var progress: CGFloat {
         if cycleTarget == 0 { return 0 }
@@ -155,7 +156,13 @@ struct TasbihView: View {
             }
         }
         .onChange(of: count) { _, newValue in
-            CloudSyncManager.shared.sync(key: "tasbihCount", value: newValue)
+            // Debounce: every tap would otherwise write to the iCloud key-value store immediately
+            syncTask?.cancel()
+            syncTask = Task {
+                try? await Task.sleep(for: .seconds(2))
+                guard !Task.isCancelled else { return }
+                CloudSyncManager.shared.sync(key: "tasbihCount", value: newValue)
+            }
         }
         .onChange(of: cycleTarget) { _, newValue in
             CloudSyncManager.shared.sync(key: "tasbihTarget", value: newValue)

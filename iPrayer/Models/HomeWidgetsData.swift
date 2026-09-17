@@ -90,6 +90,13 @@ class HomeWidgetsData: ObservableObject {
     
     // MARK: - Logic
     
+    /// Re-runs the day-change checks. Called when the app returns to the foreground,
+    /// since init only runs once and the app may stay alive across midnight.
+    func refreshDayState() {
+        checkAndResetDhikr()
+        checkAndResetTracker()
+    }
+    
     func incrementDhikr() {
         checkAndResetDhikr()
         dhikrCount += 1
