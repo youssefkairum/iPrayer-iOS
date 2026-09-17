@@ -23,6 +23,15 @@ nonisolated struct AppTranslations {
         return String(format: format, locale: Locale(identifier: language), arguments: arguments)
     }
     
+    /// Translated format string for text that contains a minute count.
+    /// Arabic takes the plural "دقائق" for 3 to 10 and the singular form "دقيقة" from 11 up,
+    /// so one fixed string can't be correct for every reminder option.
+    static func minutesFormat(_ key: String, minutes: Int, language: String) -> String {
+        let format = translate(key, to: language)
+        guard language == "ar", (3...10).contains(minutes) else { return format }
+        return format.replacingOccurrences(of: "دقيقة", with: "دقائق")
+    }
+    
     // Built once. It used to be rebuilt on every call, and views call translate many times per render.
     private static let table: [String: [String: String]] = [
             // MARK: - Prayer Names

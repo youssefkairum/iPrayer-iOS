@@ -386,7 +386,7 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                 if reminderMinutes > 0, reminderTime > Date() {
                     let reminder = UNMutableNotificationContent()
                     reminder.title = translatedName
-                    reminder.body = String(format: AppTranslations.translate("%@ in %lld minutes", to: language), translatedName, reminderMinutes)
+                    reminder.body = String(format: AppTranslations.minutesFormat("%@ in %lld minutes", minutes: reminderMinutes, language: language), translatedName, reminderMinutes)
                     reminder.sound = .default
                     
                     let reminderComponents = cal.dateComponents([.year, .month, .day, .hour, .minute], from: reminderTime)

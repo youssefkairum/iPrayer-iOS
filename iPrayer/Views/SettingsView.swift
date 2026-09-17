@@ -326,7 +326,7 @@ struct SettingsView: View {
     private func reminderLabel(for minutes: Int) -> String {
         minutes == 0
             ? AppTranslations.translate("Off", to: appLanguage)
-            : String(format: AppTranslations.translate("%lld min before", to: appLanguage), minutes)
+            : String(format: AppTranslations.minutesFormat("%lld min before", minutes: minutes, language: appLanguage), minutes)
     }
     
     private var notificationsCard: some View {
