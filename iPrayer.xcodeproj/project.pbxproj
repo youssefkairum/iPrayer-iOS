@@ -46,8 +46,8 @@
 		986B92E42FC490FD0033E808 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		986B92E62FC490FE0033E808 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		986B93022FC4A8280033E808 /* iPrayerWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = iPrayerWidgetExtension.entitlements; sourceTree = "<group>"; };
-		F7F897CF6B4DA4FE528FA384 /* PrayerAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PrayerAttributes.swift; path = iPrayer/PrayerAttributes.swift; sourceTree = "<group>"; };
 		B7A1C0012FD0000100AA0001 /* SharedPrayerSchedule.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SharedPrayerSchedule.swift; path = iPrayer/SharedPrayerSchedule.swift; sourceTree = "<group>"; };
+		F7F897CF6B4DA4FE528FA384 /* PrayerAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PrayerAttributes.swift; path = iPrayer/PrayerAttributes.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
