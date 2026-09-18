@@ -32,9 +32,12 @@ and what is still open. The README describes the product; this describes the wor
   (AppTranslations.swift) is the usual conflict point, resolved by keeping both sides then checking for
   duplicate keys (a duplicate dictionary literal key crashes at runtime); Xcode re-extracts the String Catalog on
   every build and leaves it modified, discard that unless a commit means to include it.
-- **19 September 2026, later:** branch `account-deletion` (PR pending) adds the App Store account-deletion flow;
-  see section 6. `-userName` with Arabic text does not survive `simctl launch` (stays as the persisted value).
-  **Next: release prep in section 6, starting with device verification of what section 5 lists.**
+- **19 September 2026, later:** branch `account-deletion` (PR #16, for the owner to merge) carries the release:
+  the App Store account-deletion flow (section 6), build number 4, the README licence made consistent (all rights
+  reserved; the MIT claim and the missing LICENSE file are gone), `docs/AppStoreRelease.md` (submission checklist,
+  release notes, review notes, privacy answers, a draft rights email to EveryAyah) and `docs/screenshots/` (iPhone
+  6.9" and iPad 13", five screens each, simulator captures). Release configuration builds clean.
+  **Next: merge #16, then the device pass in section 6 (widgets, watch, two-device deletion), then archive.**
 
 ## 2. Map of the code
 
@@ -219,6 +222,10 @@ watchOS runtime in Xcode > Settings > Components, pair a watch simulator with th
 - `simctl spawn <sim> defaults write <bundle>` writes a domain the app *reads* but its own writes go to the
   container plist (`get_app_container … data`/Library/Preferences). Read state from the container plist.
 - `simctl pbcopy` needs `LC_ALL=en_US.UTF-8` for Arabic.
+- Store captures on a freshly booted simulator: the first launches take 20 to 30 s to show anything, so wait 30 s
+  per screen (12 s gave blank captures). `simctl privacy <sim> grant location <bundle>` works; `grant notifications`
+  is refused, so tap Allow once through the Simulator tool. The iPad Pro 13-inch simulator ignored `-hasSeenOnboarding`
+  style launch arguments entirely; `simctl spawn <sim> defaults write <bundle> key value` before launching works there.
 - Runtime logs: `xcrun simctl spawn <sim> log show --last 60s --predicate 'process == "iPrayer"'`.
 - No Simulator.app in Xcode 27 to drive with AppleScript.
 - **Device vs simulator paths:** on a real iPhone `FileManager.enumerator(at:)` hands back URLs whose
@@ -270,14 +277,16 @@ Urdu/Hindi/Russian/Chinese (now including 39 duas and the onboarding, Tasbih, Qi
   client secret), so the alert points to Settings > Apple Account > Sign in with Apple. Verified on the simulator
   in English and Arabic (row, alert, signed-out card, cleared profile keys); the KVS erase is code-verified only,
   the simulator has no KVS file without a real sign-in.
-- Audio rights: contact EveryAyah; stay non-commercial.
+- Audio rights: an email to EveryAyah is drafted in `docs/AppStoreRelease.md`, NOT sent; stay non-commercial.
 - App Privacy label: "Data Not Collected" is defensible (nothing goes to developer servers).
 - Onboarding copy: DONE in PR #8 (now "backups go to your own iCloud; iPrayer runs no servers").
 - "Sign in with Apple" button text follows the DEVICE language (Apple's button; no API). A custom button with
   Apple's official translations is possible but adds review risk; left as is.
-- New screenshots for the store; review notes pointing at recitation + audio background mode.
-- README claims MIT and a LICENSE file; there is no LICENSE file and the README also says
-  "All rights reserved" — author's call.
+- Store screenshots and review notes: DONE in `docs/` (see above). The screenshots are raw simulator captures;
+  add frames or captions if wanted. Not yet uploaded to App Store Connect.
+- Licence: README now says all rights reserved (matching the in-app copyright line) with the bundled data's own
+  licences pointed to; the MIT badge and LICENSE reference were removed. Switch to MIT later if wanted, but note the
+  Tanzil text, KFGQPC font and EveryAyah audio could not be MIT anyway.
 - Translations were written by the model: Arabic/French/German/Turkish confident; Urdu/Hindi/Russian/
   Chinese need a native read. This now includes 39 dua translations (7 languages each).
 - Verse widget: confirm on a device that the KFGQPC font renders in both Home Screen sizes and the Lock
