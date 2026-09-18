@@ -4,7 +4,7 @@
 //
 //  Location, prayer calculation, compass heading and the settings received from the phone.
 //  Also writes SharedPrayerConfig to the App Group so the complications compute their own timeline,
-//  exactly as the iPhone widget does.
+//  exactly as the iPhone widget does, and keeps the location fresh with a background refresh.
 //
 
 import Foundation
@@ -22,16 +22,29 @@ final class WatchModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     @Published private(set) var todayPrayers: [ScheduledPrayer] = []
     @Published private(set) var nextPrayer: ScheduledPrayer?
+    /// The one after `nextPrayer`, for the "then ..." line
+    @Published private(set) var followingPrayer: ScheduledPrayer?
     @Published var currentHeading: Double = 0
     @Published private(set) var qiblaDirection: Double = 0
+    @Published private(set) var distanceToKaabaMetres: Double = 0
     @Published private(set) var locationSource: LocationSource = .none
     @Published private(set) var locationDenied = false
+    @Published private(set) var locationName: String = ""
     @Published private(set) var language = "en"
     @Published private(set) var prayerNames: [String: String] = [:]
+    @Published private(set) var hijriDate: String = ""
+    
+    var headingAvailable: Bool { CLLocationManager.headingAvailable() }
     
     private let locationManager = CLLocationManager()
+    private let geocoder = CLGeocoder()
     private var tick: Timer?
     private var coordinates: (latitude: Double, longitude: Double)?
+    private var lastFix: Date?
+    
+    private static let kaaba = CLLocation(latitude: 21.422487, longitude: 39.826206)
+    private static let backgroundRefreshInterval: TimeInterval = 6 * 3600
+    static let backgroundRefreshIdentifier = "iPrayerWatch.refresh"
     
     private override init() {
         super.init()
@@ -43,17 +56,12 @@ final class WatchModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     // MARK: - Lifecycle
     
+    /// Called when the app becomes active
     func start() {
         WatchSync.shared.activate()
-        switch locationManager.authorizationStatus {
-        case .notDetermined:
-            locationManager.requestWhenInUseAuthorization()
-        case .denied, .restricted:
-            locationDenied = true
-        default:
-            locationManager.requestLocation()
-        }
+        requestLocationIfAllowed()
         refresh()
+        scheduleBackgroundRefresh()
         
         // Roll to the next prayer as time passes while the app stays open
         tick?.invalidate()
@@ -66,8 +74,41 @@ final class WatchModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
     
+    func stop() {
+        tick?.invalidate()
+        tick = nil
+    }
+    
+    /// Runs in the background a few times a day: a fresh location fix so the complications follow
+    /// the wearer, then a recompute. CoreLocation answers asynchronously; give it a few seconds.
+    func backgroundRefresh() async {
+        requestLocationIfAllowed()
+        try? await Task.sleep(for: .seconds(8))
+        refresh()
+        scheduleBackgroundRefresh()
+    }
+    
+    private func scheduleBackgroundRefresh() {
+        let date = Date().addingTimeInterval(Self.backgroundRefreshInterval)
+        // The identifier travels as userInfo and matches the app's `.backgroundTask(.appRefresh(...))` handler
+        WKApplication.shared().scheduleBackgroundRefresh(withPreferredDate: date, userInfo: Self.backgroundRefreshIdentifier as NSString) { _ in }
+    }
+    
+    private func requestLocationIfAllowed() {
+        switch locationManager.authorizationStatus {
+        case .notDetermined:
+            locationManager.requestWhenInUseAuthorization()
+        case .denied, .restricted:
+            locationDenied = true
+        default:
+            locationDenied = false
+            // One fix is enough; the watch is not a navigation device
+            locationManager.requestLocation()
+        }
+    }
+    
     func startCompass() {
-        if CLLocationManager.headingAvailable() { locationManager.startUpdatingHeading() }
+        if headingAvailable { locationManager.startUpdatingHeading() }
     }
     
     func stopCompass() {
@@ -80,6 +121,7 @@ final class WatchModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         let defaults = UserDefaults.standard
         language = defaults.string(forKey: UDKey.appLanguage.rawValue) ?? "en"
         if let names = defaults.dictionary(forKey: "watchPrayerNames") as? [String: String] { prayerNames = names }
+        locationName = defaults.string(forKey: "watchLocationName") ?? ""
         if let source = LocationSource(rawValue: defaults.string(forKey: "watchLocationSource") ?? ""), source != .none {
             coordinates = (defaults.double(forKey: "watchLatitude"), defaults.double(forKey: "watchLongitude"))
             locationSource = source
@@ -125,6 +167,7 @@ final class WatchModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     // MARK: - Calculation
     
     func refresh() {
+        hijriDate = Self.hijriString(for: Date(), language: language)
         guard let coordinates else { return }
         let defaults = UserDefaults.standard
         let method = defaults.string(forKey: UDKey.calculationMethod.rawValue) ?? "muslimWorldLeague"
@@ -135,8 +178,13 @@ final class WatchModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         let all = PrayerSchedule.prayers(latitude: coordinates.latitude, longitude: coordinates.longitude,
                                          parameters: parameters, dayOffsets: 0...1, from: now)
         todayPrayers = all.filter { Calendar.current.isDate($0.time, inSameDayAs: now) }
-        nextPrayer = all.first { $0.time > now }
-        qiblaDirection = Qibla(coordinates: Coordinates(latitude: coordinates.latitude, longitude: coordinates.longitude)).direction
+        let upcoming = all.filter { $0.time > now }
+        nextPrayer = upcoming.first
+        followingPrayer = upcoming.dropFirst().first
+        
+        let here = Coordinates(latitude: coordinates.latitude, longitude: coordinates.longitude)
+        qiblaDirection = Qibla(coordinates: here).direction
+        distanceToKaabaMetres = CLLocation(latitude: coordinates.latitude, longitude: coordinates.longitude).distance(from: Self.kaaba)
         
         // The complications read this, like the iPhone widget does
         SharedPrayerConfig(
@@ -149,6 +197,29 @@ final class WatchModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             header: AppTranslations.translate("Next Prayer", to: language)
         ).save()
         WidgetCenter.shared.reloadAllTimelines()
+    }
+    
+    private static func hijriString(for date: Date, language: String) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .islamicUmmAlQura)
+        formatter.locale = Locale(identifier: language)
+        formatter.setLocalizedDateFormatFromTemplate("d MMMM y")
+        return formatter.string(from: date)
+    }
+    
+    /// The city for the header, looked up once per fix and remembered
+    private func updateLocationName(latitude: Double, longitude: Double) {
+        geocoder.reverseGeocodeLocation(CLLocation(latitude: latitude, longitude: longitude)) { placemarks, _ in
+            let name = placemarks?.first.flatMap { $0.locality ?? $0.administrativeArea } ?? ""
+            guard !name.isEmpty else { return }
+            // No self capture across the actor hop: the model is a singleton
+            Task { @MainActor in WatchModel.shared.setLocationName(name) }
+        }
+    }
+    
+    private func setLocationName(_ name: String) {
+        locationName = name
+        UserDefaults.standard.set(name, forKey: "watchLocationName")
     }
     
     // MARK: - CLLocationManagerDelegate (nonisolated: CoreLocation calls these on its own thread)
@@ -173,8 +244,16 @@ final class WatchModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         let latitude = location.coordinate.latitude
         let longitude = location.coordinate.longitude
         Task { @MainActor in
+            // Skip a fix that barely moved: no recompute, no geocoding, no complication reload
+            if let current = self.coordinates, self.locationSource == .watch,
+               abs(current.latitude - latitude) < 0.01, abs(current.longitude - longitude) < 0.01 {
+                self.lastFix = Date()
+                return
+            }
+            self.lastFix = Date()
             self.store(latitude: latitude, longitude: longitude, source: .watch)
             self.refresh()
+            self.updateLocationName(latitude: latitude, longitude: longitude)
         }
     }
     
