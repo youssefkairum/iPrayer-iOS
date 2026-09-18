@@ -175,7 +175,7 @@ struct AyahWidgetView: View {
             Text(ayah.displayText)
                 .font(.custom("KFGQPC Uthmanic Script HAFS", size: 21))
                 .foregroundColor(.white)
-                .lineSpacing(4)
+                .lineSpacing(3)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)

@@ -45,7 +45,7 @@ struct PrayerListView: View {
         // No inner NavigationView: pushes go through the NavigationStack in ContentView,
         // whose gradient background would otherwise be hidden by the navigation container.
         ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 13) {
                 
                 // 1. DASHBOARD HEADER
                 // The location pill sits on the date line so the greeting has the full width: with a name
@@ -319,20 +319,32 @@ struct DayScheduleCard: View {
         return formatter.string(from: day)
     }
     
-    /// Hour and minute only: the prayer name already says which half of the day it is
+    /// Hour and minute in the app language ("6:42", or "18:42" where the locale uses 24-hour time)
     private var timeFormatter: DateFormatter {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: appLanguage)
-        let uses12Hour = DateFormatter.dateFormat(fromTemplate: "j", options: 0, locale: formatter.locale)?.contains("a") ?? true
-        formatter.dateFormat = uses12Hour ? "h:mm" : "H:mm"
+        formatter.dateFormat = usesTwelveHourClock ? "h:mm" : "H:mm"
         return formatter
+    }
+    
+    /// "AM" / "PM" (or the locale's equivalent), empty for 24-hour locales
+    private var periodFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: appLanguage)
+        formatter.dateFormat = usesTwelveHourClock ? "a" : ""
+        return formatter
+    }
+    
+    private var usesTwelveHourClock: Bool {
+        DateFormatter.dateFormat(fromTemplate: "j", options: 0, locale: Locale(identifier: appLanguage))?.contains("a") ?? true
     }
     
     var body: some View {
         let formatter = timeFormatter
+        let period = periodFormatter
         
-        // One quiet row: the day on the left, then a name over a time for each prayer
-        HStack(spacing: 0) {
+        // One quiet row: the day on the left, then each prayer's symbol over its time
+        HStack(spacing: 5) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.custom("AvenirNext-DemiBold", size: 12))
@@ -345,23 +357,29 @@ struct DayScheduleCard: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
-            .frame(width: 66, alignment: .leading)
+            .frame(width: 58, alignment: .leading)
             
             ForEach(prayers) { prayer in
-                VStack(spacing: 3) {
-                    // Each name takes its prayer's accent, the same tone the hero card and Live Activity use
-                    Text(AppTranslations.translate(prayer.name, to: appLanguage))
-                        .font(.custom("AvenirNext-DemiBold", size: 10))
+                VStack(spacing: 2) {
+                    // The prayer's symbol in its own accent, the same tone the hero card and Live Activity use
+                    Image(systemName: prayer.icon)
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(PrayerPalette.palette(for: prayer.name).accent)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+                        .frame(height: 14)
                     Text(formatter.string(from: prayer.time))
                         .font(.system(size: 13, weight: .semibold, design: .rounded))
                         .foregroundColor(.white)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
+                    if usesTwelveHourClock {
+                        Text(period.string(from: prayer.time))
+                            .font(.system(size: 8, weight: .bold, design: .rounded))
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                    }
                 }
                 .frame(maxWidth: .infinity)
+                .accessibilityLabel("\(AppTranslations.translate(prayer.name, to: appLanguage)) \(formatter.string(from: prayer.time)) \(period.string(from: prayer.time))")
             }
         }
         .premiumWidgetCard(height: nil)

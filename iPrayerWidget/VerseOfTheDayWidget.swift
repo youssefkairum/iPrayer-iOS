@@ -61,6 +61,46 @@ struct VerseOfTheDayWidgetView: View {
     private var isLarge: Bool { family == .systemLarge }
     
     var body: some View {
+        switch family {
+        case .accessoryInline:
+            // One line on the Lock Screen: the reference, since a verse can't fit
+            Text("\(Image(systemName: "book.fill")) \(entry.verse?.reference ?? entry.header)")
+                .widgetURL(link)
+        case .accessoryRectangular:
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 4) {
+                    Image(systemName: "book.fill")
+                        .font(.caption2)
+                    Text(entry.verse?.reference ?? entry.header)
+                        .font(.caption2.weight(.semibold))
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+                .widgetAccentable()
+                if let verse = entry.verse {
+                    Text(verse.displayText)
+                        .font(.custom("KFGQPC Uthmanic Script HAFS", size: 14))
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .environment(\.layoutDirection, .rightToLeft)
+                } else {
+                    Text("Open iPrayer to load today's verse")
+                        .font(.caption2)
+                }
+            }
+            .widgetURL(link)
+        default:
+            homeScreenBody
+        }
+    }
+    
+    private var link: URL? {
+        entry.verse.flatMap { URL(string: "iprayer://verse/\($0.surahNumber)/\($0.numberInSurah)") }
+    }
+    
+    private var homeScreenBody: some View {
         VStack(alignment: .leading, spacing: isLarge ? 12 : 8) {
             HStack(spacing: 6) {
                 Image(systemName: "book.fill")
@@ -97,7 +137,7 @@ struct VerseOfTheDayWidgetView: View {
             
             Spacer(minLength: 0)
         }
-        .widgetURL(entry.verse.flatMap { URL(string: "iprayer://verse/\($0.surahNumber)/\($0.numberInSurah)") })
+        .widgetURL(link)
     }
 }
 
@@ -117,11 +157,17 @@ struct VerseOfTheDayWidget: Widget {
         }
         .configurationDisplayName("Verse of the Day")
         .description("A verse from the Quran, new every day. Tap to read it in context.")
-        .supportedFamilies([.systemMedium, .systemLarge])
+        .supportedFamilies([.systemMedium, .systemLarge, .accessoryRectangular, .accessoryInline])
     }
 }
 
 #Preview(as: .systemMedium) {
+    VerseOfTheDayWidget()
+} timeline: {
+    VerseEntry.placeholder
+}
+
+#Preview(as: .accessoryRectangular) {
     VerseOfTheDayWidget()
 } timeline: {
     VerseEntry.placeholder

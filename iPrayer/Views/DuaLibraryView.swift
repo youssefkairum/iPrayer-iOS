@@ -237,10 +237,12 @@ struct DuaCardView: View {
                     Text("×\(count)")
                         .font(.caption.weight(.bold))
                         .foregroundColor(.black)
+                        .fixedSize()
                         .padding(.horizontal, 7)
                         .padding(.vertical, 2)
                         .background(Color.teal)
                         .clipShape(Capsule())
+                        .layoutPriority(1)
                 }
                 
                 Spacer(minLength: 4)
@@ -257,21 +259,27 @@ struct DuaCardView: View {
                           systemImage: copied ? "checkmark" : "doc.on.doc")
                         .font(.caption.weight(.semibold))
                         .foregroundColor(copied ? .green : .teal)
+                        .lineLimit(1)
+                        .fixedSize()
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .glassEffect(.regular.interactive(), in: .capsule)
                 }
                 .buttonStyle(.plain)
+                .layoutPriority(1)
                 
                 ShareLink(item: shareText) {
                     Label(AppTranslations.translate("Share", to: appLanguage), systemImage: "square.and.arrow.up")
                         .font(.caption.weight(.semibold))
                         .foregroundColor(.teal)
+                        .lineLimit(1)
+                        .fixedSize()
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .glassEffect(.regular.interactive(), in: .capsule)
                 }
                 .buttonStyle(.plain)
+                .layoutPriority(1)
             }
         }
         .padding(18)
