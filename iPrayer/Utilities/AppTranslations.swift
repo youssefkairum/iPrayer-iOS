@@ -40,6 +40,12 @@ nonisolated struct AppTranslations {
               !defaults.bool(forKey: UDKey.installedAsUpdate.rawValue),
               let language = languageMatchingDevice() else { return }
         defaults.set(language, forKey: UDKey.appLanguage.rawValue)
+    /// "© 2026 Youssef Keram. All rights reserved." in the app language. Right-to-left languages lead with
+    /// the phrase: a Latin sentence followed by Arabic puts the Arabic full stop on the wrong side.
+    static func copyrightLine(language: String, year: Int = Calendar.current.component(.year, from: Date())) -> String {
+        let rights = translate("All rights reserved.", to: language)
+        let owner = "\u{2068}© \(year) Youssef Keram\u{2069}"   // first-strong isolate keeps the Latin part together
+        return ["ar", "ur"].contains(language) ? "\(rights) \(owner)" : "\(owner). \(rights)"
     }
     
     static func translate(_ text: String, to language: String) -> String {
@@ -227,6 +233,7 @@ nonisolated struct AppTranslations {
             "O Allah, send blessings upon Muhammad": ["ar": "اللهم صلِّ على محمد", "ur": "اے اللہ محمد ﷺ پر درود بھیج", "fr": "Ô Allah, bénis Muhammad", "zh-Hans": "真主啊，求你赐福穆罕默德", "de": "O Allah, segne Muhammad", "hi": "ऐ अल्लाह, मुहम्मद पर दुरूद भेज", "tr": "Allah'ım, Muhammed'e salât eyle", "ru": "О Аллах, благослови Мухаммада"],
             "Turn left": ["ar": "استدر يساراً", "ur": "بائیں مڑیں", "fr": "Tournez à gauche", "zh-Hans": "向左转", "de": "Nach links drehen", "hi": "बाएँ मुड़ें", "tr": "Sola dön", "ru": "Повернитесь влево"],
             "Turn right": ["ar": "استدر يميناً", "ur": "دائیں مڑیں", "fr": "Tournez à droite", "zh-Hans": "向右转", "de": "Nach rechts drehen", "hi": "दाएँ मुड़ें", "tr": "Sağa dön", "ru": "Повернитесь вправо"],
+            "All rights reserved.": ["ar": "جميع الحقوق محفوظة.", "ur": "جملہ حقوق محفوظ ہیں۔", "fr": "Tous droits réservés.", "zh-Hans": "版权所有。", "de": "Alle Rechte vorbehalten.", "hi": "सर्वाधिकार सुरक्षित।", "tr": "Tüm hakları saklıdır.", "ru": "Все права защищены."],
             "All": ["ar": "الكل", "ur": "سب", "fr": "Tout", "zh-Hans": "全部", "de": "Alle", "hi": "सभी", "tr": "Tümü", "ru": "Все"],
             "Search duas": ["ar": "ابحث في الأدعية", "ur": "دعائیں تلاش کریں", "fr": "Rechercher une doua", "zh-Hans": "搜索祈祷词", "de": "Duas suchen", "hi": "दुआ खोजें", "tr": "Dua ara", "ru": "Поиск дуа"],
             "Knowledge": ["ar": "العلم", "ur": "علم", "fr": "Savoir", "zh-Hans": "知识", "de": "Wissen", "hi": "ज्ञान", "tr": "İlim", "ru": "Знание"],

@@ -13,6 +13,7 @@ struct SplashScreenView: View {
     @State private var textOffset: CGFloat = 30
     @State private var textOpacity: Double = 0.0
     @State private var glowPulse: CGFloat = 1.0
+    @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
     @State private var footerOpacity: Double = 0.0
     
     var body: some View {
@@ -76,7 +77,7 @@ struct SplashScreenView: View {
                 
                 // 4. Copyright Footer
                 let year = Calendar.current.component(.year, from: Date())
-                Text("© \(String(year)) Youssef Keram. All rights reserved.")
+                Text(AppTranslations.copyrightLine(language: appLanguage, year: year))
                     .font(.system(size: 13))
                     .foregroundColor(.gray)
                     .padding(.bottom, 40)
