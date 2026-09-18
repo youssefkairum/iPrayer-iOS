@@ -19,11 +19,20 @@ struct iPrayerWatchApp: App {
                 .environmentObject(model)
         }
         .onChange(of: scenePhase) { _, phase in
-            // Back on the wrist after a while: new day, new location, fresh times
-            if phase == .active {
+            switch phase {
+            case .active:
+                // Back on the wrist after a while: new day, new location, fresh times
                 HomeWidgetsData.shared.refreshDayState()
                 model.start()
+            case .background:
+                model.stop()
+            default:
+                break
             }
+        }
+        // A few times a day, off-wrist: refresh the location so the complications follow the wearer
+        .backgroundTask(.appRefresh(WatchModel.backgroundRefreshIdentifier)) {
+            await WatchModel.shared.backgroundRefresh()
         }
     }
 }
