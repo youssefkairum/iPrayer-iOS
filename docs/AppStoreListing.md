@@ -2,7 +2,7 @@
 
 Character counts verified against App Store Connect limits. Keywords avoid words already in the name and subtitle.
 
-Arabic: every paragraph and bullet must START with an Arabic word. App Store Connect picks each paragraph's direction from its first strong character, so a line that opens with a Latin word (iPrayer, Live Activities) renders left-to-right with its punctuation on the wrong side.
+Arabic: every paragraph and bullet must START with an Arabic word. App Store Connect picks each paragraph's direction from its first strong character, so a line that opens with a Latin word (iPrayer, Live Activities) renders left-to-right with its punctuation on the wrong side. The Promotional Text field is a forced left-to-right input, so keep it pure Arabic (no Latin words) with no trailing full stop; if it still renders wrong, wrap the whole text in U+2067 … U+2069 (right-to-left isolate).
 
 ## English (primary)
 
@@ -96,7 +96,7 @@ Whether you are looking for athan times, a Quran app with audio, a Qibla finder 
 ### Promotional Text (170)
 
 ```
-مواقيت الصلاة، القرآن بالتلاوة، القبلة، التسبيح والأدعية اليومية. جديد: تطبيق Apple Watch وأدوات والتلاوة دون اتصال. مجاني، بلا إعلانات، بلا حساب.
+مواقيت الصلاة، والقرآن بالتلاوة، والقبلة، والتسبيح، والأدعية اليومية. جديد: تطبيق ساعة آبل، والأدوات، والتلاوة دون اتصال. مجاني، بلا إعلانات، بلا حساب
 ```
 
 ### Keywords (100)
