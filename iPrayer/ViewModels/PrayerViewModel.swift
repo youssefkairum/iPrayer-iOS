@@ -94,7 +94,8 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         applyHeadingOrientation()
         UIDevice.current.beginGeneratingDeviceOrientationNotifications()
         orientationObserver = NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.applyHeadingOrientation() }
+            guard let self else { return }
+            Task { @MainActor in self.applyHeadingOrientation() }
         }
         locationManager.startUpdatingHeading()
     }
