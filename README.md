@@ -67,6 +67,7 @@ Prayer times, the Quran text, Duas and the Tasbih all work offline. The network 
 
 ### ☁️ Account & Sync
 - **Sign in with Apple** (optional) enables iCloud key-value sync of settings, Tasbih count, reading position, bookmarks, and the prayer tracker and streak.
+- **Sign out and delete my data** (Settings > Account) removes the profile and every synced value from iCloud and signs out; on-device data stays until the app is deleted. iPrayer runs no servers, so the Sign in with Apple grant itself is revoked from Settings > Apple Account.
 - **Privacy:** Location is requested during onboarding with an explanation, and is used only to calculate prayer times and the Qibla direction.
 
 ---

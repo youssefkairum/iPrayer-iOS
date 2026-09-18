@@ -32,6 +32,8 @@ and what is still open. The README describes the product; this describes the wor
   (AppTranslations.swift) is the usual conflict point, resolved by keeping both sides then checking for
   duplicate keys (a duplicate dictionary literal key crashes at runtime); Xcode re-extracts the String Catalog on
   every build and leaves it modified, discard that unless a commit means to include it.
+- **19 September 2026, later:** branch `account-deletion` (PR pending) adds the App Store account-deletion flow;
+  see section 6. `-userName` with Arabic text does not survive `simctl launch` (stays as the persisted value).
   **Next: release prep in section 6, starting with device verification of what section 5 lists.**
 
 ## 2. Map of the code
@@ -261,8 +263,13 @@ Urdu/Hindi/Russian/Chinese (now including 39 duas and the onboarding, Tasbih, Qi
 ## 6. Open items
 
 **Compliance / release**
-- Account deletion (guideline 5.1.1 v): sign-out keeps name/email in iCloud KVS by design; add
-  "Sign out and delete my data" that also clears the iCloud keys.
+- Account deletion (guideline 5.1.1 v): DONE (`account-deletion` branch): Settings > Account has "Sign out and
+  delete my data" behind an alert; `AccountManager.deleteAccount` calls `CloudSyncManager.eraseCloudData` (removes
+  every synced key from KVS, stops syncing) then `logout()`. On-device data is kept on purpose (deleting the app
+  removes it). The Sign in with Apple grant cannot be revoked without a server (the REST revoke endpoint needs a
+  client secret), so the alert points to Settings > Apple Account > Sign in with Apple. Verified on the simulator
+  in English and Arabic (row, alert, signed-out card, cleared profile keys); the KVS erase is code-verified only,
+  the simulator has no KVS file without a real sign-in.
 - Audio rights: contact EveryAyah; stay non-commercial.
 - App Privacy label: "Data Not Collected" is defensible (nothing goes to developer servers).
 - Onboarding copy: DONE in PR #8 (now "backups go to your own iCloud; iPrayer runs no servers").
