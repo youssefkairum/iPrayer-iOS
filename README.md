@@ -8,7 +8,7 @@
 
 **iPrayer** is a comprehensive, beautifully designed iOS application built with **SwiftUI**. It is an all-in-one companion for daily Islamic practice: accurate prayer times with adhan notifications, a Qibla compass, a fully offline Quran reader, a Dua library, a Tasbih counter, Home Screen and Lock Screen widgets, and a Live Activity that counts down to the next prayer.
 
-Everything works offline. The only network use is reverse geocoding for the city name and optional iCloud sync.
+Prayer times, the Quran text, Duas and the Tasbih all work offline. The network is used only for Quran recitation audio (unless a surah is downloaded), reverse geocoding for the city name, and optional iCloud sync.
 
 ## ✨ Key Features
 
@@ -36,6 +36,7 @@ Everything works offline. The only network use is reverse geocoding for the city
 - **Pick Up Where You Left Off:** The reader resumes at the exact verse, and "Continue Reading" shows it.
 - **Verse Actions:** Tap a verse to copy, share or bookmark it. Bookmarks appear on the Quran tab.
 - **Search:** Find surahs by name or number, or search the verse text. Matching ignores vowel marks and accepts both Uthmani and modern spelling.
+- **Recitation:** Listen verse by verse with a choice of six reciters. The verse being recited is highlighted and the page follows along. Start from any verse, and control playback from the Lock Screen. Audio streams from the internet, or download any surah for offline listening.
 - **Comfortable Reading:** Adjustable text size, paper and dark themes, a link to the next surah, and the screen stays awake while you read.
 
 ### 🤲 Dua Library
@@ -133,6 +134,9 @@ iPrayer/
 ├── Managers/
 │   ├── QuranDataCache.swift       # Offline Quran cache and verse search (actor)
 │   ├── QuranBookmarks.swift
+│   ├── QuranAudioPlayer.swift     # Verse-by-verse recitation, streamed or from downloads
+│   ├── QuranAudioDownloads.swift  # Per-surah offline audio
+│   ├── VerseOfTheDay.swift
 │   ├── CloudSyncManager.swift     # iCloud key-value sync
 │   ├── AccountManager.swift       # Sign in with Apple
 │   └── NotificationManager.swift  # Quran reminders
@@ -157,6 +161,7 @@ iPrayerWidget/
 ## 🙏 Acknowledgements
 - **Quran text:** Uthmani text of the [Tanzil Project](https://tanzil.net), in the JSON layout of the [alquran.cloud](https://alquran.cloud) `quran-uthmani` edition. The verse text is bundled unmodified.
 - **Quran font:** KFGQPC Uthmanic Script HAFS, by the King Fahd Glorious Quran Printing Complex.
+- **Recitation audio:** per-verse files from [EveryAyah](https://everyayah.com), which its About page described as licensed under Creative Commons Attribution-NonCommercial 2.5 Canada. The app keeps to the two connections at a time the site asks for.
 - **Prayer times:** [Adhan Swift](https://github.com/batoulapps/adhan-swift) by Batoul Apps.
 
 ---
