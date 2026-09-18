@@ -103,7 +103,7 @@ struct AboutView: View {
                                     icon: "clock.fill", url: "https://github.com/batoulapps/adhan-swift")
                         }
 
-                        Text("© \(String(Calendar.current.component(.year, from: Date()))) Youssef Keram. All rights reserved.")
+                        Text(AppTranslations.copyrightLine(language: appLanguage))
                             .font(.system(size: 13))
                             .foregroundColor(.gray)
                             .frame(maxWidth: .infinity)

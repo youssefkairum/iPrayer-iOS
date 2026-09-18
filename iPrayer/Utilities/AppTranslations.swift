@@ -9,6 +9,14 @@
 import Foundation
 
 nonisolated struct AppTranslations {
+    /// "© 2026 Youssef Keram. All rights reserved." in the app language. Right-to-left languages lead with
+    /// the phrase: a Latin sentence followed by Arabic puts the Arabic full stop on the wrong side.
+    static func copyrightLine(language: String, year: Int = Calendar.current.component(.year, from: Date())) -> String {
+        let rights = translate("All rights reserved.", to: language)
+        let owner = "\u{2068}© \(year) Youssef Keram\u{2069}"   // first-strong isolate keeps the Latin part together
+        return ["ar", "ur"].contains(language) ? "\(rights) \(owner)" : "\(owner). \(rights)"
+    }
+    
     static func translate(_ text: String, to language: String) -> String {
         table[text]?[language] ?? text
     }
@@ -177,6 +185,7 @@ nonisolated struct AppTranslations {
             "Reset": ["ar": "إعادة ضبط", "ur": "ری سیٹ", "fr": "Réinitialiser", "zh-Hans": "重置", "de": "Zurücksetzen", "hi": "रीसेट", "tr": "Sıfırla", "ru": "Сбросить"],
             "Facing Mecca": ["ar": "باتجاه مكة", "ur": "مکہ کی سمت", "fr": "Face à La Mecque", "zh-Hans": "朝向麦加", "de": "Richtung Mekka", "hi": "मक्का की ओर", "tr": "Mekke'ye dönük", "ru": "Лицом к Мекке"],
             "Qibla": ["ar": "القبلة", "ur": "قبلہ", "fr": "Qibla", "zh-Hans": "朝向", "de": "Qibla", "hi": "क़िबला", "tr": "Kıble", "ru": "Кибла"],
+            "All rights reserved.": ["ar": "جميع الحقوق محفوظة.", "ur": "جملہ حقوق محفوظ ہیں۔", "fr": "Tous droits réservés.", "zh-Hans": "版权所有。", "de": "Alle Rechte vorbehalten.", "hi": "सर्वाधिकार सुरक्षित।", "tr": "Tüm hakları saklıdır.", "ru": "Все права защищены."],
             "All": ["ar": "الكل", "ur": "سب", "fr": "Tout", "zh-Hans": "全部", "de": "Alle", "hi": "सभी", "tr": "Tümü", "ru": "Все"],
             "Search duas": ["ar": "ابحث في الأدعية", "ur": "دعائیں تلاش کریں", "fr": "Rechercher une doua", "zh-Hans": "搜索祈祷词", "de": "Duas suchen", "hi": "दुआ खोजें", "tr": "Dua ara", "ru": "Поиск дуа"],
             "Knowledge": ["ar": "العلم", "ur": "علم", "fr": "Savoir", "zh-Hans": "知识", "de": "Wissen", "hi": "ज्ञान", "tr": "İlim", "ru": "Знание"],
