@@ -10,16 +10,21 @@ import SwiftUI
 struct QuranView: View {
     @StateObject private var quranVM = QuranViewModel()
     @ObservedObject private var bookmarks = QuranBookmarks.shared
+    @ObservedObject private var downloads = QuranAudioDownloads.shared
+    @AppStorage(UDKey.quranReciter.rawValue) private var reciterID: String = QuranReciter.default.id
     @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
     @AppStorage(UDKey.lastReadSurahName.rawValue) private var lastReadName: String = ""
     @AppStorage(UDKey.lastReadSurahEnglish.rawValue) private var lastReadEnglish: String = ""
     @AppStorage(UDKey.lastReadSurahNumber.rawValue) private var lastReadNumber: Int = 0
     @AppStorage(UDKey.lastReadVerse.rawValue) private var lastReadVerse: Int = 0
     @State private var searchText = ""
+    /// A verse to open from outside the tab: a deep link (the widget), or in Debug the launch arguments
+    /// `-debugOpenSurah 18 -debugOpenVerse 40`, for screenshots and UI checks
+    @ObservedObject private var router = DeepLinkRouter.shared
+    @State private var linkedSurah: SurahMetadata?
+    @State private var linkedVerse: Int?
     #if DEBUG
-    /// Debug-only: `-debugOpenSurah 18 -debugOpenVerse 40` as launch arguments pushes that surah's reader
-    /// at that verse, for screenshots and UI checks
-    @State private var debugSurah: SurahMetadata?
+    @State private var debugLinkConsumed = false
     #endif
     
     private var isSearchActive: Bool {
@@ -69,16 +74,33 @@ struct QuranView: View {
         .onChange(of: searchText) { _, newValue in
             quranVM.updateSearch(newValue)
         }
-        #if DEBUG
-        .navigationDestination(item: $debugSurah) { surah in
-            let verse = UserDefaults.standard.integer(forKey: "debugOpenVerse")
-            SurahDetailView(surah: surah, initialVerse: verse > 0 ? verse : nil)
+        .navigationDestination(item: $linkedSurah) { surah in
+            SurahDetailView(surah: surah, initialVerse: linkedVerse, marksInitialVerse: linkedVerse != nil)
         }
-        .onChange(of: quranVM.surahs.count) { _, _ in
-            let number = UserDefaults.standard.integer(forKey: "debugOpenSurah")
-            if number > 0, debugSurah == nil {
-                debugSurah = quranVM.surah(number: number)
-            }
+        .onChange(of: quranVM.surahs.count) { _, _ in openLinkedVerseIfPossible() }
+        .onChange(of: router.pendingVerse) { _, _ in openLinkedVerseIfPossible() }
+        .onAppear { openLinkedVerseIfPossible() }
+    }
+    
+    /// Pushes the reader for a pending link once the surah list is loaded. Debug launch arguments are
+    /// honoured once, on the first opportunity.
+    private func openLinkedVerseIfPossible() {
+        guard !quranVM.surahs.isEmpty else { return }
+        if let link = router.pendingVerse {
+            router.pendingVerse = nil
+            linkedVerse = link.verse
+            linkedSurah = nil
+            // Pop any open reader first so the new push lands
+            DispatchQueue.main.async { linkedSurah = quranVM.surah(number: link.surah) }
+            return
+        }
+        #if DEBUG
+        let number = UserDefaults.standard.integer(forKey: "debugOpenSurah")
+        if number > 0, linkedSurah == nil, !debugLinkConsumed {
+            debugLinkConsumed = true
+            let verse = UserDefaults.standard.integer(forKey: "debugOpenVerse")
+            linkedVerse = verse > 0 ? verse : nil
+            linkedSurah = quranVM.surah(number: number)
         }
         #endif
     }
@@ -143,7 +165,7 @@ struct QuranView: View {
                 LazyVStack(spacing: 10) {
                     ForEach(bookmarks.items) { bookmark in
                         if let surah = quranVM.surah(number: bookmark.surah) {
-                            NavigationLink(destination: SurahDetailView(surah: surah, initialVerse: bookmark.verse)) {
+                            NavigationLink(destination: SurahDetailView(surah: surah, initialVerse: bookmark.verse, marksInitialVerse: true)) {
                                 VerseRow(
                                     arabicText: bookmark.snippet,
                                     reference: "\(bookmark.surahEnglishName) \(bookmark.surah):\(bookmark.verse)",
@@ -198,7 +220,7 @@ struct QuranView: View {
                 LazyVStack(spacing: 10) {
                     ForEach(quranVM.matchingVerses) { result in
                         if let surah = quranVM.surah(number: result.surahNumber) {
-                            NavigationLink(destination: SurahDetailView(surah: surah, initialVerse: result.ayah.numberInSurah)) {
+                            NavigationLink(destination: SurahDetailView(surah: surah, initialVerse: result.ayah.numberInSurah, marksInitialVerse: true)) {
                                 VerseRow(
                                     arabicText: result.ayah.text,
                                     reference: "\(surah.englishName) \(surah.number):\(result.ayah.numberInSurah)",
@@ -237,7 +259,11 @@ struct QuranView: View {
         LazyVStack(spacing: 12) {
             ForEach(surahs) { surah in
                 NavigationLink(destination: SurahDetailView(surah: surah)) {
-                    SurahRow(surah: surah, appLanguage: appLanguage)
+                    SurahRow(
+                        surah: surah,
+                        appLanguage: appLanguage,
+                        hasOfflineAudio: downloads.state(for: surah.number, reciter: QuranReciter.with(id: reciterID)) == .downloaded
+                    )
                 }
             }
         }
@@ -318,6 +344,8 @@ private let rowFill = Color.white.opacity(0.07)
 struct SurahRow: View {
     let surah: SurahMetadata
     let appLanguage: String
+    /// The recitation is downloaded for the reciter currently chosen
+    var hasOfflineAudio: Bool = false
     
     var body: some View {
         HStack(spacing: 15) {
@@ -334,10 +362,18 @@ struct SurahRow: View {
             }
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(surah.englishName)
-                    .font(.custom("AvenirNext-DemiBold", size: 18))
-                    .foregroundColor(.white)
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(surah.englishName)
+                        .font(.custom("AvenirNext-DemiBold", size: 18))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                    if hasOfflineAudio {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .font(.system(size: 13))
+                            .foregroundColor(.teal)
+                            .accessibilityLabel(AppTranslations.translate("Downloaded Audio", to: appLanguage))
+                    }
+                }
                 
                 // The inner Text keeps using the translated "%@ • %lld Verses" catalog entry
                 Text("\(Text("\(surah.englishNameTranslation) • \(surah.numberOfAyahs) Verses")) • \(AppTranslations.translate(surah.revelationType, to: appLanguage))")

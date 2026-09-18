@@ -13,6 +13,8 @@
 		986B92F42FC490FF0033E808 /* iPrayerWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 986B92E22FC490FD0033E808 /* iPrayerWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AC03CA45D00E80CA653B74F5 /* PrayerAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7F897CF6B4DA4FE528FA384 /* PrayerAttributes.swift */; };
 		B7A1C0022FD0000100AA0001 /* SharedPrayerSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A1C0012FD0000100AA0001 /* SharedPrayerSchedule.swift */; };
+		B7A1C0062FD0000100AA0002 /* KFGQPC Uthmanic Script HAFS Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = B7A1C0052FD0000100AA0002 /* KFGQPC Uthmanic Script HAFS Regular.otf */; };
+		B7A1C0082FD0000100AA0002 /* SharedVerseOfTheDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A1C0072FD0000100AA0002 /* SharedVerseOfTheDay.swift */; };
 		B7A1C0032FD0000100AA0001 /* Adhan in Frameworks */ = {isa = PBXBuildFile; productRef = B7A1C0042FD0000100AA0001 /* Adhan */; };
 /* End PBXBuildFile section */
 
@@ -47,6 +49,8 @@
 		986B92E62FC490FE0033E808 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		986B93022FC4A8280033E808 /* iPrayerWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = iPrayerWidgetExtension.entitlements; sourceTree = "<group>"; };
 		B7A1C0012FD0000100AA0001 /* SharedPrayerSchedule.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SharedPrayerSchedule.swift; path = iPrayer/SharedPrayerSchedule.swift; sourceTree = "<group>"; };
+		B7A1C0052FD0000100AA0002 /* KFGQPC Uthmanic Script HAFS Regular.otf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; name = "KFGQPC Uthmanic Script HAFS Regular.otf"; path = "iPrayer/KFGQPC Uthmanic Script HAFS Regular.otf"; sourceTree = "<group>"; };
+		B7A1C0072FD0000100AA0002 /* SharedVerseOfTheDay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SharedVerseOfTheDay.swift; path = iPrayer/SharedVerseOfTheDay.swift; sourceTree = "<group>"; };
 		F7F897CF6B4DA4FE528FA384 /* PrayerAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PrayerAttributes.swift; path = iPrayer/PrayerAttributes.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -108,6 +112,8 @@
 				981F32D12ED3B11B00F1C158 /* Products */,
 				F7F897CF6B4DA4FE528FA384 /* PrayerAttributes.swift */,
 				B7A1C0012FD0000100AA0001 /* SharedPrayerSchedule.swift */,
+				B7A1C0052FD0000100AA0002 /* KFGQPC Uthmanic Script HAFS Regular.otf */,
+				B7A1C0072FD0000100AA0002 /* SharedVerseOfTheDay.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -233,6 +239,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B7A1C0062FD0000100AA0002 /* KFGQPC Uthmanic Script HAFS Regular.otf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -252,6 +259,7 @@
 			files = (
 				AC03CA45D00E80CA653B74F5 /* PrayerAttributes.swift in Sources */,
 				B7A1C0022FD0000100AA0001 /* SharedPrayerSchedule.swift in Sources */,
+				B7A1C0082FD0000100AA0002 /* SharedVerseOfTheDay.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -402,12 +410,12 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "iPrayer-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = iPrayer;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "to know user's location for displaying accurate prayer times";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "iPrayer uses your location to calculate prayer times and the Qibla direction.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIAppFonts = "(KFGQPC Uthmanic Script HAFS Regular.otf)";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UIBackgroundModes = fetch;
+				INFOPLIST_KEY_UIBackgroundModes = "audio fetch";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -442,12 +450,12 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "iPrayer-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = iPrayer;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "to know user's location for displaying accurate prayer times";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "iPrayer uses your location to calculate prayer times and the Qibla direction.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIAppFonts = "(KFGQPC Uthmanic Script HAFS Regular.otf)";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UIBackgroundModes = fetch;
+				INFOPLIST_KEY_UIBackgroundModes = "audio fetch";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";

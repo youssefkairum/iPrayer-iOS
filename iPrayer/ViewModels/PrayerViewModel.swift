@@ -350,6 +350,8 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         // Entries precomputed by older versions of the app are no longer read
         UserDefaults(suiteName: SharedPrayerConfig.suiteName)?.removeObject(forKey: "widgetTimelineData")
         
+        // The verse widget's references follow the in-app language too
+        VerseOfTheDay.shared.shareSchedule()
         WidgetCenter.shared.reloadAllTimelines()
     }
     
@@ -446,7 +448,8 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             startsInString: AppTranslations.translate("Starts in", to: appLang),
             nextString: AppTranslations.translate("NEXT", to: appLang),
             nowString: AppTranslations.translate("Now", to: appLang),
-            openHintString: AppTranslations.translate("Tap to open iPrayer", to: appLang)
+            openHintString: AppTranslations.translate("Tap to open iPrayer", to: appLang),
+            prayerKey: prayer.name
         )
         // Once the prayer time passes the activity turns stale and the widget shows "Now"
         // instead of a countdown stuck at zero, until the app gets to run and moves it on.
