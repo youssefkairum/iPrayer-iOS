@@ -77,34 +77,84 @@ struct StreakWidgetView: View {
 }
 
 // MARK: - Duas Library Widget
-struct DuasLibraryWidgetView: View {
+struct DuaOfTheDayWidgetView: View {
     @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
+    // Observed only so the card re-renders when the day changes (the verse model publishes at local midnight)
+    @ObservedObject private var verseOfTheDay = VerseOfTheDay.shared
+    
+    private var dua: AuthenticDua? { DuaLibraryData.shared.duaOfTheDay() }
     
     var body: some View {
-        VStack(alignment: .center, spacing: 12) {
-            Spacer(minLength: 0)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                    .foregroundColor(.teal)
+                Text(AppTranslations.translate("Dua of the Day", to: appLanguage))
+                    .font(.caption.bold())
+                    .foregroundColor(.gray)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.forward")
+                    .font(.caption2)
+                    .foregroundColor(.teal.opacity(0.7))
+            }
             
-            Image(systemName: "hands.sparkles.fill")
-                .font(.system(size: 38))
-                .foregroundColor(.teal)
-            
-            Text(AppTranslations.translate("Duas", to: appLanguage))
-                .font(.custom("AvenirNext-DemiBold", size: 16))
-                .foregroundColor(.white)
-            
-            Spacer(minLength: 0)
+            if let dua {
+                Text(dua.displayArabic)
+                    .font(.custom("KFGQPC Uthmanic Script HAFS", size: 15))
+                    .foregroundColor(.white)
+                    .lineSpacing(2)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    // Arabic reads right to left whatever the app's layout direction is
+                    .environment(\.layoutDirection, .rightToLeft)
+                
+                if appLanguage == "ar" {
+                    Spacer(minLength: 0)
+                    Text(AppTranslations.translate(dua.category, to: appLanguage))
+                        .font(.caption)
+                        .foregroundColor(.teal)
+                        .lineLimit(1)
+                } else {
+                    // The translation fills what the Arabic leaves; the library shows the rest
+                    Text(AppTranslations.translate(dua.englishTranslation, to: appLanguage))
+                        .font(.custom("AvenirNext-Medium", size: 11))
+                        .foregroundColor(.white.opacity(0.7))
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .premiumWidgetCard()
     }
 }
 
-// MARK: - Ayah Widget
+// MARK: - Verse of the Day
+/// A verse picked from the whole Quran by date (see VerseOfTheDay). Tapping it opens the reader at that verse.
 struct AyahWidgetView: View {
     @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
-    let ayah = HomeWidgetsData.shared.todaysAyah
+    @ObservedObject private var model = VerseOfTheDay.shared
     
     var body: some View {
+        if let result = model.verse, let surah = model.surah {
+            NavigationLink(destination: SurahDetailView(surah: surah, initialVerse: result.ayah.numberInSurah, marksInitialVerse: true)) {
+                card(for: result.ayah, in: surah)
+            }
+            .buttonStyle(CardPressStyle())
+        }
+    }
+    
+    private func reference(for ayah: Ayah, in surah: SurahMetadata) -> String {
+        appLanguage == "ar"
+            ? "\(surah.name) - \(QuranTextEncoder.arabicDigits(ayah.numberInSurah))"
+            : "\(surah.englishName) \(surah.number):\(ayah.numberInSurah)"
+    }
+    
+    private func card(for ayah: Ayah, in surah: SurahMetadata) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: "book.fill")
@@ -113,28 +163,25 @@ struct AyahWidgetView: View {
                     .font(.caption.bold())
                     .foregroundColor(.gray)
                 Spacer()
+                Text(reference(for: ayah, in: surah))
+                    .font(.caption)
+                    .foregroundColor(.teal)
+                Image(systemName: "chevron.forward")
+                    .font(.caption2)
+                    .foregroundColor(.teal.opacity(0.7))
             }
             
-            Text(ayah.arabicText)
-                .font(.custom("KFGQPC Uthmanic Script HAFS", size: 22))
+            // Long verses are cut after two lines so the card always fits above the tab bar; it opens the reader at the verse
+            Text(ayah.displayText)
+                .font(.custom("KFGQPC Uthmanic Script HAFS", size: 21))
                 .foregroundColor(.white)
-                .lineLimit(3)
-                .minimumScaleFactor(0.5)
+                .lineSpacing(4)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                // Arabic reads right to left whatever the app's layout direction is
                 .environment(\.layoutDirection, .rightToLeft)
-            
-            // Only an English rendering is bundled; Arabic readers don't need it
-            if appLanguage != "ar" {
-                Text(ayah.englishText)
-                    .font(.custom("AvenirNext-Regular", size: 14))
-                    .foregroundColor(.white.opacity(0.8))
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            
-            Text(ayah.reference)
-                .font(.caption)
-                .foregroundColor(.teal)
         }
         .premiumWidgetCard(height: nil)
     }

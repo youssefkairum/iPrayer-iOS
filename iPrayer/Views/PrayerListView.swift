@@ -11,6 +11,7 @@ struct PrayerListView: View {
     @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
     @StateObject private var accountManager = AccountManager.shared
     @Environment(\.openURL) private var openURL
+    @ObservedObject private var entrance = AppEntrance.shared
     
     // Grid layout for the home widgets
     private let columns = [
@@ -44,55 +45,56 @@ struct PrayerListView: View {
         // No inner NavigationView: pushes go through the NavigationStack in ContentView,
         // whose gradient background would otherwise be hidden by the navigation container.
         ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 25) {
+            VStack(alignment: .leading, spacing: 14) {
                 
                 // 1. DASHBOARD HEADER
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(islamicDate)
-                        .font(.custom("AvenirNext-Medium", size: 16))
-                        .foregroundColor(.gray)
-                    
-                    HStack(alignment: .top) {
-                        if !firstName.isEmpty {
-                            VStack(alignment: .leading, spacing: 0) {
-                                HStack(spacing: 0) {
-                                    Text(AppTranslations.translate(timeGreetingString, to: appLanguage))
-                                    Text(",")
-                                }
-                                Text(firstName)
-                            }
-                            .font(.custom("AvenirNext-Bold", size: 34))
-                            .foregroundColor(.white)
+                // The location pill sits on the date line so the greeting has the full width: with a name
+                // it stays on one line (shrinking a little if needed) instead of wrapping and pushing the
+                // Verse of the Day under the tab bar.
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(alignment: .center) {
+                        Text(islamicDate)
+                            .font(.custom("AvenirNext-Medium", size: 16))
+                            .foregroundColor(.gray)
                             .lineLimit(1)
-                            .minimumScaleFactor(0.5)
-                        } else {
-                            Text(AppTranslations.translate(timeGreetingString, to: appLanguage))
-                                .font(.custom("AvenirNext-Bold", size: 34))
-                                .foregroundColor(.white)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.5)
-                        }
+                            .minimumScaleFactor(0.8)
                         
                         Spacer()
                         
                         // Location Pill
-                        HStack {
+                        HStack(spacing: 5) {
                             Image(systemName: "location.fill")
+                                .font(.system(size: 12))
                                 .foregroundColor(.teal)
                             Text(viewModel.locationName)
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(.white)
+                                .lineLimit(1)
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color.white.opacity(0.1))
-                        .cornerRadius(20)
-                        .padding(.top, 8)
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 6)
+                        .glassEffect(.regular, in: .capsule)
                     }
+                    
+                    Group {
+                        if !firstName.isEmpty {
+                            // One Text so the comma and name can't wrap onto a second line
+                            Text("\(AppTranslations.translate(timeGreetingString, to: appLanguage)), \(firstName)")
+                        } else {
+                            Text(AppTranslations.translate(timeGreetingString, to: appLanguage))
+                        }
+                    }
+                    .font(.custom("AvenirNext-Bold", size: 34))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .padding(.horizontal)
+                .entrance(0, shown: entrance.contentRevealed)
                 
                 // 2. HERO CARD (Next Prayer) — Tappable
+                Group {
                 if let nextPrayer = viewModel.prayerTimes.first(where: { $0.isNext }) {
                     NavigationLink(destination: PrayerDetailView(nextPrayerName: nextPrayer.name)
                         .environmentObject(viewModel)
@@ -103,7 +105,7 @@ struct PrayerListView: View {
                             icon: nextPrayer.icon
                         )
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(CardPressStyle())
                     .padding(.horizontal)
                 } else if viewModel.locationAuthorization == .notDetermined {
                     // Location hasn't been decided yet (the onboarding slide was skipped): ask here, with the reason
@@ -132,29 +134,34 @@ struct PrayerListView: View {
                         .padding(.top, 50)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
+                }
+                .entrance(1, shown: entrance.contentRevealed)
                 
                 // 3. WIDGETS GRID
                 LazyVGrid(columns: columns, spacing: 10) {
                     StreakWidgetView()
-                    NavigationLink(destination: DuaLibraryView()) {
-                        DuasLibraryWidgetView()
+                    NavigationLink(destination: DuaLibraryView(highlightID: DuaLibraryData.shared.duaOfTheDay()?.id)) {
+                        DuaOfTheDayWidgetView()
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(CardPressStyle())
                 }
                 .padding(.horizontal)
+                .entrance(2, shown: entrance.contentRevealed)
                 
                 // 4. THE FOLLOWING DAY
                 // The hero card already opens the current schedule, so this card looks one day further ahead
                 if !viewModel.followingDayPrayerTimes.isEmpty {
                     DayScheduleCard(prayers: viewModel.followingDayPrayerTimes)
                         .padding(.horizontal)
+                        .entrance(3, shown: entrance.contentRevealed)
                 }
                 
                 // 5. VERSE OF THE DAY
                 AyahWidgetView()
                     .padding(.horizontal)
+                    .entrance(4, shown: entrance.contentRevealed)
             }
-            .padding(.top, 20)
+            .padding(.top, 12)
             .padding(.bottom, 100) // Clear the floating tab bar
         }
         .navigationBarHidden(true)
@@ -272,8 +279,7 @@ struct LocationErrorCard: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 10)
-                    .background(Color.teal)
-                    .cornerRadius(12)
+                    .glassEffect(.regular.tint(.teal).interactive(), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
         }
         .frame(maxWidth: .infinity)
@@ -313,44 +319,49 @@ struct DayScheduleCard: View {
         return formatter.string(from: day)
     }
     
+    /// Hour and minute only: the prayer name already says which half of the day it is
+    private var timeFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: appLanguage)
+        let uses12Hour = DateFormatter.dateFormat(fromTemplate: "j", options: 0, locale: formatter.locale)?.contains("a") ?? true
+        formatter.dateFormat = uses12Hour ? "h:mm" : "H:mm"
+        return formatter
+    }
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "calendar")
-                    .foregroundColor(.teal)
+        let formatter = timeFormatter
+        
+        // One quiet row: the day on the left, then a name over a time for each prayer
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.custom("AvenirNext-DemiBold", size: 14))
+                    .font(.custom("AvenirNext-DemiBold", size: 12))
                     .foregroundColor(.white)
-                Spacer()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                 Text(dateText)
-                    .font(.custom("AvenirNext-Medium", size: 12))
+                    .font(.custom("AvenirNext-Medium", size: 10))
                     .foregroundColor(.gray)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
+            .frame(width: 66, alignment: .leading)
             
-            VStack(spacing: 0) {
-                ForEach(prayers) { prayer in
-                    HStack(spacing: 12) {
-                        Image(systemName: prayer.icon)
-                            .font(.system(size: 14))
-                            .frame(width: 22)
-                            .foregroundColor(.white.opacity(0.8))
-                        
-                        Text(AppTranslations.translate(prayer.name, to: appLanguage))
-                            .font(.custom("AvenirNext-Medium", size: 16))
-                            .foregroundColor(.white)
-                        
-                        Spacer()
-                        
-                        Text(prayer.time, style: .time)
-                            .font(.system(size: 15, weight: .regular, design: .monospaced))
-                            .foregroundColor(.white.opacity(0.8))
-                    }
-                    .padding(.vertical, 9)
-                    
-                    if prayer.id != prayers.last?.id {
-                        Divider().background(Color.white.opacity(0.08))
-                    }
+            ForEach(prayers) { prayer in
+                VStack(spacing: 3) {
+                    // Each name takes its prayer's accent, the same tone the hero card and Live Activity use
+                    Text(AppTranslations.translate(prayer.name, to: appLanguage))
+                        .font(.custom("AvenirNext-DemiBold", size: 10))
+                        .foregroundColor(PrayerPalette.palette(for: prayer.name).accent)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    Text(formatter.string(from: prayer.time))
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                 }
+                .frame(maxWidth: .infinity)
             }
         }
         .premiumWidgetCard(height: nil)

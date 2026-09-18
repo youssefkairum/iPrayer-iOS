@@ -2,12 +2,6 @@ import Foundation
 import SwiftUI
 import Combine
 
-struct AyahSnippet: Codable {
-    let englishText: String
-    let arabicText: String
-    let reference: String
-}
-
 class HomeWidgetsData: ObservableObject {
     static let shared = HomeWidgetsData()
     
@@ -52,24 +46,6 @@ class HomeWidgetsData: ObservableObject {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
-    
-    // MARK: - Curated Content
-    let dailyAyahs: [AyahSnippet] = [
-        AyahSnippet(englishText: "Indeed, with hardship [will be] ease.", arabicText: "إِنَّ مَعَ الْعُسْرِ يُسْرًا", reference: "Quran 94:6"),
-        AyahSnippet(englishText: "So remember Me; I will remember you.", arabicText: "فَاذْكُرُونِي أَذْكُرْكُمْ", reference: "Quran 2:152"),
-        AyahSnippet(englishText: "And He found you lost and guided [you].", arabicText: "وَوَجَدَكَ ضَالًّا فَهَدَىٰ", reference: "Quran 93:7"),
-        AyahSnippet(englishText: "My mercy encompasses all things.", arabicText: "وَرَحْمَتِي وَسِعَتْ كُلَّ شَيْءٍ", reference: "Quran 7:156"),
-        AyahSnippet(englishText: "Allah does not burden a soul beyond that it can bear.", arabicText: "لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا", reference: "Quran 2:286"),
-        AyahSnippet(englishText: "And whoever relies upon Allah - then He is sufficient for him.", arabicText: "وَمَن يَتَوَكَّلْ عَلَى اللَّهِ فَهُوَ حَسْبُهُ", reference: "Quran 65:3"),
-        AyahSnippet(englishText: "Unquestionably, by the remembrance of Allah hearts are assured.", arabicText: "أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ", reference: "Quran 13:28")
-    ]
-    
-    // Computed Properties
-    var todaysAyah: AyahSnippet {
-        let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
-        let index = dayOfYear % dailyAyahs.count
-        return dailyAyahs[index]
-    }
     
     init() {
         loadPersistedState()
