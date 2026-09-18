@@ -353,6 +353,7 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         // The verse widget's references follow the in-app language too
         VerseOfTheDay.shared.shareSchedule()
         WidgetCenter.shared.reloadAllTimelines()
+        PhoneWatchSync.shared.schedulePush()
     }
     
     // MARK: - Notifications

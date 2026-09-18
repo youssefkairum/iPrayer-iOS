@@ -1,6 +1,9 @@
 import Foundation
 import SwiftUI
 import Combine
+#if os(watchOS)
+import WatchKit
+#endif
 
 class HomeWidgetsData: ObservableObject {
     static let shared = HomeWidgetsData()
@@ -10,14 +13,14 @@ class HomeWidgetsData: ObservableObject {
     @Published var currentStreak: Int = 0 {
         didSet {
             UserDefaults.standard.set(currentStreak, forKey: UDKey.currentStreak.rawValue)
-            CloudSyncManager.shared.sync(key: UDKey.currentStreak.rawValue, value: currentStreak)
+            share(key: UDKey.currentStreak.rawValue, value: currentStreak)
         }
     }
     
     @Published var dailyPrayersCompleted: [Bool] = [false, false, false, false, false] {
         didSet {
             UserDefaults.standard.set(dailyPrayersCompleted, forKey: UDKey.dailyPrayersCompleted.rawValue)
-            CloudSyncManager.shared.sync(key: UDKey.dailyPrayersCompleted.rawValue, value: dailyPrayersCompleted)
+            share(key: UDKey.dailyPrayersCompleted.rawValue, value: dailyPrayersCompleted)
         }
     }
     
@@ -25,7 +28,7 @@ class HomeWidgetsData: ObservableObject {
         get { UserDefaults.standard.string(forKey: UDKey.lastCompletedStreakDate.rawValue) ?? "" }
         set {
             UserDefaults.standard.set(newValue, forKey: UDKey.lastCompletedStreakDate.rawValue)
-            CloudSyncManager.shared.sync(key: UDKey.lastCompletedStreakDate.rawValue, value: newValue)
+            share(key: UDKey.lastCompletedStreakDate.rawValue, value: newValue)
         }
     }
     
@@ -33,8 +36,18 @@ class HomeWidgetsData: ObservableObject {
         get { UserDefaults.standard.string(forKey: UDKey.lastTrackerDate.rawValue) ?? "" }
         set {
             UserDefaults.standard.set(newValue, forKey: UDKey.lastTrackerDate.rawValue)
-            CloudSyncManager.shared.sync(key: UDKey.lastTrackerDate.rawValue, value: newValue)
+            share(key: UDKey.lastTrackerDate.rawValue, value: newValue)
         }
+    }
+    
+    /// The phone sends changes to iCloud and the watch; the watch sends them to the phone.
+    private func share(key: String, value: Any) {
+        #if os(iOS)
+        CloudSyncManager.shared.sync(key: key, value: value)
+        PhoneWatchSync.shared.schedulePush()
+        #elseif os(watchOS)
+        WatchSync.shared.schedulePush()
+        #endif
     }
     
     /// Day stamps are persisted and compared across devices, so they must not depend on the device's
@@ -81,7 +94,11 @@ class HomeWidgetsData: ObservableObject {
     func togglePrayer(index: Int) {
         guard index >= 0 && index < 5 else { return }
         dailyPrayersCompleted[index].toggle()
+        #if os(iOS)
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        #elseif os(watchOS)
+        WKInterfaceDevice.current().play(.click)
+        #endif
         evaluateStreak()
     }
     

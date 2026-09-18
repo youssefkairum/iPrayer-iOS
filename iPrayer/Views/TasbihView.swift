@@ -165,7 +165,9 @@ struct TasbihView: View {
         }
         .onChange(of: cycleTarget) { _, newValue in
             CloudSyncManager.shared.sync(key: "tasbihTarget", value: newValue)
+            markTouched()
         }
+        .onChange(of: count) { _, _ in markTouched() }
         .onAppear {
             if cycleTarget == 0 {
                 cycleTarget = 33
@@ -174,6 +176,12 @@ struct TasbihView: View {
     }
     
     // MARK: - Actions
+    
+    /// Stamps the change so the watch knows the phone is newer, then sends it
+    private func markTouched() {
+        UserDefaults.standard.set(Date(), forKey: UDKey.tasbihUpdatedAt.rawValue)
+        PhoneWatchSync.shared.schedulePush()
+    }
     
     private func incrementCounter() {
         let generator = UIImpactFeedbackGenerator(style: .medium)

@@ -13,9 +13,21 @@
 		986B92F42FC490FF0033E808 /* iPrayerWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 986B92E22FC490FD0033E808 /* iPrayerWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AC03CA45D00E80CA653B74F5 /* PrayerAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7F897CF6B4DA4FE528FA384 /* PrayerAttributes.swift */; };
 		B7A1C0022FD0000100AA0001 /* SharedPrayerSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A1C0012FD0000100AA0001 /* SharedPrayerSchedule.swift */; };
+		B7A1C0032FD0000100AA0001 /* Adhan in Frameworks */ = {isa = PBXBuildFile; productRef = B7A1C0042FD0000100AA0001 /* Adhan */; };
 		B7A1C0062FD0000100AA0002 /* KFGQPC Uthmanic Script HAFS Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = B7A1C0052FD0000100AA0002 /* KFGQPC Uthmanic Script HAFS Regular.otf */; };
 		B7A1C0082FD0000100AA0002 /* SharedVerseOfTheDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A1C0072FD0000100AA0002 /* SharedVerseOfTheDay.swift */; };
-		B7A1C0032FD0000100AA0001 /* Adhan in Frameworks */ = {isa = PBXBuildFile; productRef = B7A1C0042FD0000100AA0001 /* Adhan */; };
+		B7A1C10D2FD0000100AA0003 /* Adhan in Frameworks */ = {isa = PBXBuildFile; productRef = B7A1C10C2FD0000100AA0003 /* Adhan */; };
+		B7A1C10E2FD0000100AA0003 /* SharedPrayerSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A1C0012FD0000100AA0001 /* SharedPrayerSchedule.swift */; };
+		B7A1C10F2FD0000100AA0003 /* AppTranslations.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A1C1132FD0000100AA0003 /* AppTranslations.swift */; };
+		B7A1C1102FD0000100AA0003 /* HomeWidgetsData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A1C1142FD0000100AA0003 /* HomeWidgetsData.swift */; };
+		B7A1C1112FD0000100AA0003 /* UserDefaultsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A1C1152FD0000100AA0003 /* UserDefaultsKeys.swift */; };
+		B7A1C1122FD0000100AA0003 /* SharedWatchState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A1C1162FD0000100AA0003 /* SharedWatchState.swift */; };
+		B7A1C12C2FD0000100AA0003 /* Adhan in Frameworks */ = {isa = PBXBuildFile; productRef = B7A1C12B2FD0000100AA0003 /* Adhan */; };
+		B7A1C12D2FD0000100AA0003 /* SharedPrayerSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A1C0012FD0000100AA0001 /* SharedPrayerSchedule.swift */; };
+		B7A1C12E2FD0000100AA0003 /* iPrayerWatchWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B7A1C1222FD0000100AA0003 /* iPrayerWatchWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B7A1C1312FD0000100AA0003 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 986B92E42FC490FD0033E808 /* WidgetKit.framework */; };
+		B7A1C1322FD0000100AA0003 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 986B92E62FC490FE0033E808 /* SwiftUI.framework */; };
+		B7A1C1422FD0000100AA0003 /* iPrayerWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = B7A1C1022FD0000100AA0003 /* iPrayerWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -25,6 +37,20 @@
 			proxyType = 1;
 			remoteGlobalIDString = 986B92E12FC490FD0033E808;
 			remoteInfo = iPrayerWidgetExtension;
+		};
+		B7A1C12F2FD0000100AA0003 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 981F32C82ED3B11B00F1C158 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B7A1C1212FD0000100AA0003;
+			remoteInfo = iPrayerWatchWidgetExtension;
+		};
+		B7A1C1432FD0000100AA0003 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 981F32C82ED3B11B00F1C158 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B7A1C1012FD0000100AA0003;
+			remoteInfo = iPrayerWatch;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -40,6 +66,28 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B7A1C1062FD0000100AA0003 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B7A1C12E2FD0000100AA0003 /* iPrayerWatchWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B7A1C1412FD0000100AA0003 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				B7A1C1422FD0000100AA0003 /* iPrayerWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -51,6 +99,12 @@
 		B7A1C0012FD0000100AA0001 /* SharedPrayerSchedule.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SharedPrayerSchedule.swift; path = iPrayer/SharedPrayerSchedule.swift; sourceTree = "<group>"; };
 		B7A1C0052FD0000100AA0002 /* KFGQPC Uthmanic Script HAFS Regular.otf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; name = "KFGQPC Uthmanic Script HAFS Regular.otf"; path = "iPrayer/KFGQPC Uthmanic Script HAFS Regular.otf"; sourceTree = "<group>"; };
 		B7A1C0072FD0000100AA0002 /* SharedVerseOfTheDay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SharedVerseOfTheDay.swift; path = iPrayer/SharedVerseOfTheDay.swift; sourceTree = "<group>"; };
+		B7A1C1022FD0000100AA0003 /* iPrayerWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iPrayerWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B7A1C1132FD0000100AA0003 /* AppTranslations.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AppTranslations.swift; path = iPrayer/Utilities/AppTranslations.swift; sourceTree = "<group>"; };
+		B7A1C1142FD0000100AA0003 /* HomeWidgetsData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeWidgetsData.swift; path = iPrayer/Models/HomeWidgetsData.swift; sourceTree = "<group>"; };
+		B7A1C1152FD0000100AA0003 /* UserDefaultsKeys.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = UserDefaultsKeys.swift; path = iPrayer/Utilities/UserDefaultsKeys.swift; sourceTree = "<group>"; };
+		B7A1C1162FD0000100AA0003 /* SharedWatchState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SharedWatchState.swift; path = iPrayer/SharedWatchState.swift; sourceTree = "<group>"; };
+		B7A1C1222FD0000100AA0003 /* iPrayerWatchWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = iPrayerWatchWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7F897CF6B4DA4FE528FA384 /* PrayerAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PrayerAttributes.swift; path = iPrayer/PrayerAttributes.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -61,6 +115,20 @@
 				Info.plist,
 			);
 			target = 986B92E12FC490FD0033E808 /* iPrayerWidgetExtension */;
+		};
+		B7A1C10B2FD0000100AA0003 /* Exceptions for "iPrayerWatch" folder in "iPrayerWatch" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = B7A1C1012FD0000100AA0003 /* iPrayerWatch */;
+		};
+		B7A1C12A2FD0000100AA0003 /* Exceptions for "iPrayerWatchWidget" folder in "iPrayerWatchWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = B7A1C1212FD0000100AA0003 /* iPrayerWatchWidgetExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -76,6 +144,22 @@
 				986B92F82FC490FF0033E808 /* Exceptions for "iPrayerWidget" folder in "iPrayerWidgetExtension" target */,
 			);
 			path = iPrayerWidget;
+			sourceTree = "<group>";
+		};
+		B7A1C10A2FD0000100AA0003 /* iPrayerWatch */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B7A1C10B2FD0000100AA0003 /* Exceptions for "iPrayerWatch" folder in "iPrayerWatch" target */,
+			);
+			path = iPrayerWatch;
+			sourceTree = "<group>";
+		};
+		B7A1C1292FD0000100AA0003 /* iPrayerWatchWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B7A1C12A2FD0000100AA0003 /* Exceptions for "iPrayerWatchWidget" folder in "iPrayerWatchWidgetExtension" target */,
+			);
+			path = iPrayerWatchWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -99,6 +183,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B7A1C1042FD0000100AA0003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B7A1C10D2FD0000100AA0003 /* Adhan in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B7A1C1242FD0000100AA0003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B7A1C1322FD0000100AA0003 /* SwiftUI.framework in Frameworks */,
+				B7A1C1312FD0000100AA0003 /* WidgetKit.framework in Frameworks */,
+				B7A1C12C2FD0000100AA0003 /* Adhan in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -114,6 +216,12 @@
 				B7A1C0012FD0000100AA0001 /* SharedPrayerSchedule.swift */,
 				B7A1C0052FD0000100AA0002 /* KFGQPC Uthmanic Script HAFS Regular.otf */,
 				B7A1C0072FD0000100AA0002 /* SharedVerseOfTheDay.swift */,
+				B7A1C10A2FD0000100AA0003 /* iPrayerWatch */,
+				B7A1C1292FD0000100AA0003 /* iPrayerWatchWidget */,
+				B7A1C1132FD0000100AA0003 /* AppTranslations.swift */,
+				B7A1C1142FD0000100AA0003 /* HomeWidgetsData.swift */,
+				B7A1C1152FD0000100AA0003 /* UserDefaultsKeys.swift */,
+				B7A1C1162FD0000100AA0003 /* SharedWatchState.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -122,6 +230,8 @@
 			children = (
 				981F32D02ED3B11B00F1C158 /* iPrayer.app */,
 				986B92E22FC490FD0033E808 /* iPrayerWidgetExtension.appex */,
+				B7A1C1022FD0000100AA0003 /* iPrayerWatch.app */,
+				B7A1C1222FD0000100AA0003 /* iPrayerWatchWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -146,11 +256,13 @@
 				981F32CD2ED3B11B00F1C158 /* Frameworks */,
 				981F32CE2ED3B11B00F1C158 /* Resources */,
 				986B92F52FC490FF0033E808 /* Embed Foundation Extensions */,
+				B7A1C1412FD0000100AA0003 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				986B92F32FC490FF0033E808 /* PBXTargetDependency */,
+				B7A1C1442FD0000100AA0003 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				981F32D22ED3B11B00F1C158 /* iPrayer */,
@@ -186,6 +298,54 @@
 			productReference = 986B92E22FC490FD0033E808 /* iPrayerWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		B7A1C1012FD0000100AA0003 /* iPrayerWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B7A1C1072FD0000100AA0003 /* Build configuration list for PBXNativeTarget "iPrayerWatch" */;
+			buildPhases = (
+				B7A1C1032FD0000100AA0003 /* Sources */,
+				B7A1C1042FD0000100AA0003 /* Frameworks */,
+				B7A1C1052FD0000100AA0003 /* Resources */,
+				B7A1C1062FD0000100AA0003 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B7A1C1302FD0000100AA0003 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				B7A1C10A2FD0000100AA0003 /* iPrayerWatch */,
+			);
+			name = iPrayerWatch;
+			packageProductDependencies = (
+				B7A1C10C2FD0000100AA0003 /* Adhan */,
+			);
+			productName = iPrayerWatch;
+			productReference = B7A1C1022FD0000100AA0003 /* iPrayerWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
+		B7A1C1212FD0000100AA0003 /* iPrayerWatchWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B7A1C1262FD0000100AA0003 /* Build configuration list for PBXNativeTarget "iPrayerWatchWidgetExtension" */;
+			buildPhases = (
+				B7A1C1232FD0000100AA0003 /* Sources */,
+				B7A1C1242FD0000100AA0003 /* Frameworks */,
+				B7A1C1252FD0000100AA0003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				B7A1C1292FD0000100AA0003 /* iPrayerWatchWidget */,
+			);
+			name = iPrayerWatchWidgetExtension;
+			packageProductDependencies = (
+				B7A1C12B2FD0000100AA0003 /* Adhan */,
+			);
+			productName = iPrayerWatchWidgetExtension;
+			productReference = B7A1C1222FD0000100AA0003 /* iPrayerWatchWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -200,6 +360,12 @@
 						CreatedOnToolsVersion = 26.1.1;
 					};
 					986B92E12FC490FD0033E808 = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					B7A1C1012FD0000100AA0003 = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					B7A1C1212FD0000100AA0003 = {
 						CreatedOnToolsVersion = 26.3;
 					};
 				};
@@ -223,6 +389,8 @@
 			targets = (
 				981F32CF2ED3B11B00F1C158 /* iPrayer */,
 				986B92E12FC490FD0033E808 /* iPrayerWidgetExtension */,
+				B7A1C1012FD0000100AA0003 /* iPrayerWatch */,
+				B7A1C1212FD0000100AA0003 /* iPrayerWatchWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -240,6 +408,20 @@
 			buildActionMask = 2147483647;
 			files = (
 				B7A1C0062FD0000100AA0002 /* KFGQPC Uthmanic Script HAFS Regular.otf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B7A1C1052FD0000100AA0003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B7A1C1252FD0000100AA0003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -263,6 +445,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B7A1C1032FD0000100AA0003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B7A1C10E2FD0000100AA0003 /* SharedPrayerSchedule.swift in Sources */,
+				B7A1C10F2FD0000100AA0003 /* AppTranslations.swift in Sources */,
+				B7A1C1102FD0000100AA0003 /* HomeWidgetsData.swift in Sources */,
+				B7A1C1112FD0000100AA0003 /* UserDefaultsKeys.swift in Sources */,
+				B7A1C1122FD0000100AA0003 /* SharedWatchState.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B7A1C1232FD0000100AA0003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B7A1C12D2FD0000100AA0003 /* SharedPrayerSchedule.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -270,6 +472,16 @@
 			isa = PBXTargetDependency;
 			target = 986B92E12FC490FD0033E808 /* iPrayerWidgetExtension */;
 			targetProxy = 986B92F22FC490FF0033E808 /* PBXContainerItemProxy */;
+		};
+		B7A1C1302FD0000100AA0003 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B7A1C1212FD0000100AA0003 /* iPrayerWatchWidgetExtension */;
+			targetProxy = B7A1C12F2FD0000100AA0003 /* PBXContainerItemProxy */;
+		};
+		B7A1C1442FD0000100AA0003 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B7A1C1012FD0000100AA0003 /* iPrayerWatch */;
+			targetProxy = B7A1C1432FD0000100AA0003 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -541,6 +753,140 @@
 			};
 			name = Release;
 		};
+		B7A1C1082FD0000100AA0003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = iPrayerWatch/iPrayerWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = LQZSTSHZ62;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = iPrayerWatch/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = iPrayer;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = youssefkairum.iPrayer.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		B7A1C1092FD0000100AA0003 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = iPrayerWatch/iPrayerWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = LQZSTSHZ62;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = iPrayerWatch/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = iPrayer;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = youssefkairum.iPrayer.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		B7A1C1272FD0000100AA0003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = iPrayerWatchWidget/iPrayerWatchWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = LQZSTSHZ62;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = iPrayerWatchWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "iPrayer Complications";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = youssefkairum.iPrayer.watchkitapp.complications;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		B7A1C1282FD0000100AA0003 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = iPrayerWatchWidget/iPrayerWatchWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = LQZSTSHZ62;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = iPrayerWatchWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "iPrayer Complications";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = youssefkairum.iPrayer.watchkitapp.complications;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -571,6 +917,24 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		B7A1C1072FD0000100AA0003 /* Build configuration list for PBXNativeTarget "iPrayerWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B7A1C1082FD0000100AA0003 /* Debug */,
+				B7A1C1092FD0000100AA0003 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B7A1C1262FD0000100AA0003 /* Build configuration list for PBXNativeTarget "iPrayerWatchWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B7A1C1272FD0000100AA0003 /* Debug */,
+				B7A1C1282FD0000100AA0003 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -591,6 +955,16 @@
 			productName = Adhan;
 		};
 		B7A1C0042FD0000100AA0001 /* Adhan */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 981F32DE2ED3B27B00F1C158 /* XCRemoteSwiftPackageReference "adhan-swift" */;
+			productName = Adhan;
+		};
+		B7A1C10C2FD0000100AA0003 /* Adhan */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 981F32DE2ED3B27B00F1C158 /* XCRemoteSwiftPackageReference "adhan-swift" */;
+			productName = Adhan;
+		};
+		B7A1C12B2FD0000100AA0003 /* Adhan */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 981F32DE2ED3B27B00F1C158 /* XCRemoteSwiftPackageReference "adhan-swift" */;
 			productName = Adhan;
