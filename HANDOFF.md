@@ -1,6 +1,6 @@
 # iPrayer — Handoff Notes
 
-Written 18 September 2026 at the end of a long working session; updated the same day after the 1.1.0 feature branch was pushed. This is the context a future session
+Written 18 September 2026; updated 19 September 2026 after the post-release round (PRs #7 to #14). This is the context a future session
 needs that is *not* obvious from the code: where things stand, why decisions were made, how to test,
 and what is still open. The README describes the product; this describes the work.
 
@@ -13,20 +13,35 @@ and what is still open. The README describes the product; this describes the wor
 - **Repo:** `youssefkairum/iPrayer-iOS` on GitHub (renamed from `iPrayer`; the local remote points at the
   new name). `gh` is logged in as `youssefkairum` (a second account, `brentwelldigital`, is also present).
   `gh` lives in `~/.local/bin`, which `~/.zshrc` now adds to PATH.
-- **Merged:** PR #1 (reorganisation + first bug pass), PR #2 (up to the Quran reader rebuild + README),
+- **Merged to `main`:** PR #1 (reorganisation + first bug pass), PR #2 (up to the Quran reader rebuild + README),
   PR #3 (project file ordering), PR #4 (Home card shows the following day), PR #5 (the whole 1.1.0 feature
   branch: recitation + downloads + storage manager, Verse of the Day + widgets, Dua library, What's New,
   compact About/Settings, one-screen Home, motion + haptics, Arabic reader labels, privacy manifests),
-  PR #6 (Apple Watch companion + complications + two-way sync). **`main` is the complete 1.1.0 state;
-  no branch is open and no PR is pending.** The watch targets were written straight into project.pbxproj
-  (ids `B7A1C1..`); shared into the watch by explicit file reference: SharedPrayerSchedule, AppTranslations,
-  HomeWidgetsData, UserDefaultsKeys, SharedWatchState. Phone side: PhoneWatchSync.swift.
-  **Next: release prep, in this order.** (1) Verify on devices what section 5 lists as unverified: both
-  Verse of the Day widget sizes on a Home Screen, its Lock Screen family, the watch complications on a
-  face, and a Tasbih/tracker round trip between phone and watch. (2) Account deletion (App Review 5.1.1 v)
-  and the "We never share your data" onboarding copy, both in section 6. (3) Native read of the Urdu/
-  Hindi/Russian/Chinese strings, now including 39 dua translations. (4) Store screenshots and the What's
-  New notes (drafted in the last session's chat; the in-app WhatsNewView still lists the earlier bullets).
+  PR #6 (Apple Watch companion + complications + two-way sync). The watch targets were written straight
+  into project.pbxproj (ids `B7A1C1..`); shared into the watch by explicit file reference: SharedPrayerSchedule,
+  AppTranslations, HomeWidgetsData, UserDefaultsKeys, SharedWatchState. Phone side: PhoneWatchSync.swift.
+- **Open PRs against `main`, each on its own branch cut from `main`, all building clean, none merged yet:**
+  #7 `fix-tracker-reset-and-ipad-reader` (tracker no longer carries yesterday's ticks into a new day; same-day
+  ticks merge with OR on both iCloud and watch paths; reader fills the viewport at small text sizes on iPad) ·
+  #8 `onboarding-overhaul` (one scaffold, animated slides, fixed-height controls, honest sync copy, "Skip for
+  now" from the catalog, fresh installs start in the phone's language) · #9 `tasbih-overhaul` (dhikr chips,
+  target chips, cycle position, reset confirmation) · #10 `qibla-overhaul` (glass dial + rose, needle, turn
+  guidance, distance in device units) · #11 `translate-copyright` (splash + About, RTL-ordered) ·
+  #12 `today-widget-whatsnew` (Today's Prayers widget medium/large; What's New rebuilt in four sections with
+  1.1.0 copy) · #13 `watch-install-prompt` (Settings card when a paired watch lacks the app) ·
+  #14 `watch-production` (background location refresh, city + Hijri + "then" line, container backgrounds,
+  Crown counting, Qibla distance, complication relevance).
+- **`integration/all-overhauls`** (pushed) = `main` + all eight PRs merged, conflicts resolved, builds clean.
+  Use it to see everything at once; it is NOT meant to be merged as-is (merge the PRs). It is also the branch
+  most likely checked out locally.
+- **Merge order and known conflicts.** #8, #9, #10, #11, #12, #13, #14 all add lines at the same spot in
+  AppTranslations.swift (just before the `"All":` key): after the first merges, each later one shows a trivial
+  add/add conflict there; keep both sides, then check for duplicate keys (a duplicate dictionary literal key
+  crashes at runtime). #7 and #14 both edit `iPrayerWatch/iPrayerWatchApp.swift`'s scenePhase handler; take
+  #14's version (it contains #7's behaviour). The String Catalog gets re-extracted by Xcode on every build and
+  shows up as an uncommitted change; discard it (`git checkout -- iPrayer/Localizable.xcstrings`) unless a
+  commit meant to include it.
+  **Next: merge #7 through #14 (in number order is simplest), then release prep in section 6.**
 
 ## 2. Map of the code
 
@@ -206,14 +221,20 @@ mid-entrance, Live Activity colours on the Lock Screen, Liquid Glass surfaces, i
 reader), string tables per language.
 Verified on the owner's iPhone: storage manager (after the /private/var path fix), About and Duas library.
 
-Verified by the owner: the Apple Watch app runs (on their own setup; this Mac has no watch runtime).
+Verified by the owner: the Apple Watch app runs (the PR #6 version; #14 is build-verified only).
+Verified on the simulator for the open PRs: onboarding (all four slides, English and Arabic, fresh install
+in the phone's language, stable page change), Tasbih (seeded count), Qibla (Cairo bearing 136°), copyright
+line in Arabic on the splash, What's New (Arabic), the iPad reader at 14 pt loading through page 8.
 
-Not verified: the watch complications on a watch face · WatchConnectivity round-trips (Tasbih/tracker both ways,
-settings down) · the watch on watchOS 10 specifically · the Verse of the Day widget actually rendered on a Home Screen or Lock Screen (the simulator
-can't add one non-interactively) · how the haptics feel (simulator has none) · iPad landscape · Dynamic
-Island appearance · Live Activity "Now" state · pre-prayer reminder firing · true Airplane-Mode playback
-of downloaded audio · two-device iCloud sync · real midnight rollover of verse/dua/widget · audio *sound*
-· Lock Screen playback controls · the 23 new adhkar translations in Urdu/Hindi/Russian/Chinese.
+Not verified: PR #7's tracker fix across a real midnight on two devices (reasoned + built only) · the Today's
+Prayers widget rendered anywhere · the watch complications on a watch face · the watch background refresh
+actually firing · Crown sensitivity on the watch Tasbih · the Settings "install on watch" card (needs a paired
+watch without the app) · WatchConnectivity round-trips (Tasbih/tracker both ways, settings down) · the watch on
+watchOS 10 specifically · the Verse of the Day widget rendered on a Home Screen or Lock Screen · how the haptics
+feel · iPad landscape · Dynamic Island appearance · Live Activity "Now" state · pre-prayer reminder firing ·
+true Airplane-Mode playback of downloaded audio · two-device iCloud sync · real midnight rollover of
+verse/dua/widget · audio *sound* · Lock Screen playback controls · the model-written translations in
+Urdu/Hindi/Russian/Chinese (now including 39 duas and the onboarding, Tasbih, Qibla, What's New strings).
 
 ## 6. Open items
 
@@ -222,7 +243,9 @@ of downloaded audio · two-device iCloud sync · real midnight rollover of verse
   "Sign out and delete my data" that also clears the iCloud keys.
 - Audio rights: contact EveryAyah; stay non-commercial.
 - App Privacy label: "Data Not Collected" is defensible (nothing goes to developer servers).
-- Onboarding says "We never share your data" — soften (location goes to Apple geocoding, IP to audio host).
+- Onboarding copy: DONE in PR #8 (now "backups go to your own iCloud; iPrayer runs no servers").
+- "Sign in with Apple" button text follows the DEVICE language (Apple's button; no API). A custom button with
+  Apple's official translations is possible but adds review risk; left as is.
 - New screenshots for the store; review notes pointing at recitation + audio background mode.
 - README claims MIT and a LICENSE file; there is no LICENSE file and the README also says
   "All rights reserved" — author's call.
@@ -236,10 +259,11 @@ of downloaded audio · two-device iCloud sync · real midnight rollover of verse
   single-file-per-surah audio with the host's timing files (removes inter-verse gaps), mini player
   outside the reader, continuous play into the next surah, Quran translations (no data bundled),
   right-to-left tweaks beyond layout mirroring, native system `TabView` for the full Liquid Glass tab
-  behaviour, reopen What's New from Settings > About.
+  behaviour, reopen What's New from Settings > About, choosing the calculation method on the watch,
+  local adhan notifications on the watch (phone notifications already mirror to it).
 
 **Known cosmetic**
-- Two What's New bullets wrap at default text size.
+- What's New was rebuilt in PR #12; check the four sections at larger Dynamic Type once merged.
 - Arabic hero card: the "at <time>" line is correct now (first-strong isolate); keep that pattern for any
   new interpolated time strings.
 
