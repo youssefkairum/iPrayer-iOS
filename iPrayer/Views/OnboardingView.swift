@@ -1,3 +1,12 @@
+//
+//  OnboardingView.swift
+//  iPrayer
+//
+//  Four steps: welcome, what the app does, location (asked here, next to the reason, never at launch),
+//  and Sign in with Apple. One scaffold holds the progress, the language menu and the controls, so the
+//  pages only carry content and the buttons never jump between steps.
+//
+
 import SwiftUI
 import AuthenticationServices
 
@@ -7,6 +16,9 @@ struct OnboardingView: View {
     @EnvironmentObject var viewModel: PrayerViewModel
     @StateObject private var accountManager = AccountManager.shared
     @State private var currentTab = OnboardingView.initialSlide
+    @State private var revealed = false
+    
+    private static let stepCount = 4
     
     private static var initialSlide: Int {
         #if DEBUG
@@ -19,234 +31,155 @@ struct OnboardingView: View {
     
     var body: some View {
         ZStack {
-            // Background Gradient
             LinearGradient(gradient: Gradient(colors: [Color(hex: "0F2027"), Color(hex: "203A43"), Color(hex: "2C5364")]), startPoint: .top, endPoint: .bottom)
                 .edgesIgnoringSafeArea(.all)
             
-            // Background Effect
             BackgroundPatternView()
                 .opacity(0.3)
                 .edgesIgnoringSafeArea(.all)
             
-            TabView(selection: $currentTab) {
-                // MARK: - Slide 1: Welcome
-                VStack(spacing: 30) {
-                    Spacer()
-                    
-                    Image(systemName: "moon.stars.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(.teal)
-                        .shadow(color: .teal.opacity(0.5), radius: 20, x: 0, y: 0)
-                    
-                    VStack(spacing: 15) {
-                        Text("Welcome to iPrayer")
-                            .font(.custom("AvenirNext-Bold", size: 36))
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.center)
-                        
-                        Text("Your premium companion for daily prayers, Tasbih, and Quran reading.")
-                            .font(.custom("AvenirNext-Medium", size: 18))
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
-                    }
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        withAnimation { currentTab = 1 }
-                    }) {
-                        Text("Next")
-                            .font(.custom("AvenirNext-Bold", size: 18))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .glassEffect(.regular.tint(.teal).interactive(), in: RoundedRectangle(cornerRadius: 15, style: .continuous))
-                    }
-                    .padding(.horizontal, 40)
-                    .padding(.bottom, 60)
-                }
-                .tag(0)
+            VStack(spacing: 0) {
+                topBar
                 
-                // MARK: - Slide 2: Features
-                VStack(spacing: 30) {
-                    Spacer()
-                    
-                    VStack(alignment: .leading, spacing: 35) {
-                        FeatureRow(icon: "clock.fill", title: "Accurate Prayers", description: "Get precise prayer times based on your location and calculation method.")
-                        FeatureRow(icon: "circle.grid.cross.fill", title: "Tasbih Counter", description: "Keep track of your daily Dhikr with a beautiful, haptic-enabled counter.")
-                        FeatureRow(icon: "book.fill", title: "The Holy Quran", description: "Read the entire Quran and seamlessly save your reading progress.")
-                    }
-                    .padding(.horizontal, 40)
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        withAnimation { currentTab = 2 }
-                    }) {
-                        Text("Next")
-                            .font(.custom("AvenirNext-Bold", size: 18))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .glassEffect(.regular.tint(.teal).interactive(), in: RoundedRectangle(cornerRadius: 15, style: .continuous))
-                    }
-                    .padding(.horizontal, 40)
-                    .padding(.bottom, 60)
+                TabView(selection: $currentTab) {
+                    WelcomeSlide(shown: revealed && currentTab == 0).tag(0)
+                    FeaturesSlide(shown: currentTab == 1).tag(1)
+                    LocationSlide(shown: currentTab == 2).tag(2)
+                    SyncSlide(shown: currentTab == 3).tag(3)
                 }
-                .tag(1)
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                .onChange(of: currentTab) { _, _ in Haptics.selection() }
                 
-                // MARK: - Slide 3: Location (asked here, next to the reason, instead of at launch)
-                VStack(spacing: 30) {
-                    Spacer()
-                    
-                    Image(systemName: "location.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(.teal)
-                        .shadow(color: .teal.opacity(0.5), radius: 20, x: 0, y: 0)
-                    
-                    VStack(spacing: 15) {
-                        Text(AppTranslations.translate("Location Access", to: appLanguage))
-                            .font(.custom("AvenirNext-Bold", size: 36))
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.center)
-                        
-                        Text(AppTranslations.translate("iPrayer uses your location to calculate prayer times and the Qibla direction.", to: appLanguage))
-                            .font(.custom("AvenirNext-Medium", size: 16))
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
-                    }
-                    
-                    Spacer()
-                    
-                    VStack(spacing: 15) {
-                        Button(action: {
-                            if viewModel.locationAuthorization == .notDetermined {
-                                viewModel.requestLocationAccess()
-                            }
-                            withAnimation { currentTab = 3 }
-                        }) {
-                            Group {
-                                if viewModel.locationAuthorization == .notDetermined {
-                                    Text(AppTranslations.translate("Enable Location", to: appLanguage))
-                                } else {
-                                    Text("Next")
-                                }
-                            }
-                            .font(.custom("AvenirNext-Bold", size: 18))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .glassEffect(.regular.tint(.teal).interactive(), in: RoundedRectangle(cornerRadius: 15, style: .continuous))
-                        }
-                        
-                        if viewModel.locationAuthorization == .notDetermined {
-                            Button(action: {
-                                withAnimation { currentTab = 3 }
-                            }) {
-                                Text(AppTranslations.translate("Not now", to: appLanguage))
-                                    .font(.custom("AvenirNext-Medium", size: 16))
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 40)
-                    .padding(.bottom, 60)
-                }
-                .tag(2)
-                
-                // MARK: - Slide 4: Secure Sign In
-                VStack(spacing: 30) {
-                    Spacer()
-                    
-                    Image(systemName: "icloud.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(.blue)
-                        .shadow(color: .blue.opacity(0.5), radius: 20, x: 0, y: 0)
-                    
-                    VStack(spacing: 15) {
-                        Text("Secure Cloud Sync")
-                            .font(.custom("AvenirNext-Bold", size: 36))
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.center)
-                        
-                        Text("Sign in with Apple to securely back up your Tasbih counts and bookmarks across all your devices. We never share your data.")
-                            .font(.custom("AvenirNext-Medium", size: 16))
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
-                    }
-                    
-                    Spacer()
-                    
-                    VStack(spacing: 15) {
-                        SignInWithAppleButton(.signIn) { request in
-                            AccountManager.configure(request)
-                        } onCompletion: { result in
-                            if accountManager.handleSignIn(result) {
-                                finishOnboarding()
-                            }
-                        }
-                        .signInWithAppleButtonStyle(.white)
-                        .frame(height: 50)
-                        
-                        Button(action: {
-                            finishOnboarding()
-                        }) {
-                            Text("Skip for now")
-                                .font(.custom("AvenirNext-Medium", size: 16))
-                                .foregroundColor(.gray)
-                        }
-                        .padding(.top, 10)
-                    }
-                    .padding(.horizontal, 40)
-                    .padding(.bottom, 60)
-                }
-                .tag(3)
+                controls
+                    .padding(.horizontal, 28)
+                    .padding(.bottom, 24)
             }
-            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
+        }
+        .onAppear { revealed = true }
+    }
+    
+    // MARK: - Top: progress and language
+    
+    private var topBar: some View {
+        HStack(alignment: .center) {
+            // Step progress: the current step is the long capsule
+            HStack(spacing: 6) {
+                ForEach(0..<Self.stepCount, id: \.self) { step in
+                    Capsule()
+                        .fill(step == currentTab ? Color.teal : Color.white.opacity(step < currentTab ? 0.5 : 0.18))
+                        .frame(width: step == currentTab ? 26 : 8, height: 8)
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: currentTab)
+                }
+            }
             
-            // Language Selector Floating Top Right
-            VStack {
-                HStack {
-                    Spacer()
-                    Menu {
-                        Picker("Language", selection: $appLanguage) {
-                            Text("🇺🇸 English").tag("en")
-                            Text("🇸🇦 العربية (Arabic)").tag("ar")
-                            Text("🇫🇷 Français (French)").tag("fr")
-                            Text("🇩🇪 Deutsch (German)").tag("de")
-                            Text("🇮🇳 हिन्दी (Hindi)").tag("hi")
-                            Text("🇷🇺 Русский (Russian)").tag("ru")
-                            Text("🇹🇷 Türkçe (Turkish)").tag("tr")
-                            Text("🇵🇰 اردو (Urdu)").tag("ur")
-                            Text("🇨🇳 中文 (Chinese)").tag("zh-Hans")
-                        }
-                    } label: {
-                        HStack(spacing: 5) {
-                            Text(flag(for: appLanguage))
-                                .font(.title2)
-                            Image(systemName: "chevron.down")
-                                .font(.caption)
-                                .foregroundColor(.white)
-                        }
-                        .padding(10)
-                        .glassEffect(.regular.interactive(), in: .capsule)
-                    }
-                    // This overlay respects the safe area, so a small offset clears the status bar on every device
-                    .padding(.top, 8)
-                    .padding(.trailing, 20)
+            Spacer()
+            
+            Menu {
+                Picker("Language", selection: $appLanguage) {
+                    Text("🇺🇸 English").tag("en")
+                    Text("🇸🇦 العربية (Arabic)").tag("ar")
+                    Text("🇫🇷 Français (French)").tag("fr")
+                    Text("🇩🇪 Deutsch (German)").tag("de")
+                    Text("🇮🇳 हिन्दी (Hindi)").tag("hi")
+                    Text("🇷🇺 Русский (Russian)").tag("ru")
+                    Text("🇹🇷 Türkçe (Turkish)").tag("tr")
+                    Text("🇵🇰 اردو (Urdu)").tag("ur")
+                    Text("🇨🇳 中文 (Chinese)").tag("zh-Hans")
                 }
-                Spacer()
+            } label: {
+                HStack(spacing: 6) {
+                    Text(flag(for: appLanguage))
+                        .font(.title3)
+                    Text(languageName(for: appLanguage))
+                        .font(.custom("AvenirNext-DemiBold", size: 13))
+                        .foregroundColor(.white)
+                    Image(systemName: "chevron.down")
+                        .font(.caption2)
+                        .foregroundColor(.white.opacity(0.8))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .glassEffect(.regular.interactive(), in: .capsule)
             }
-            .zIndex(10)
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 12)
+    }
+    
+    // MARK: - Bottom: the step's actions
+    
+    @ViewBuilder
+    private var controls: some View {
+        switch currentTab {
+        case 0, 1:
+            primaryButton(AppTranslations.translate("Continue", to: appLanguage)) { advance() }
+        case 2:
+            VStack(spacing: 12) {
+                let asksPermission = viewModel.locationAuthorization == .notDetermined
+                primaryButton(AppTranslations.translate(asksPermission ? "Enable Location" : "Continue", to: appLanguage)) {
+                    if asksPermission { viewModel.requestLocationAccess() }
+                    advance()
+                }
+                if asksPermission {
+                    secondaryButton(AppTranslations.translate("Not now", to: appLanguage)) { advance() }
+                }
+            }
+        default:
+            VStack(spacing: 12) {
+                SignInWithAppleButton(.signIn) { request in
+                    AccountManager.configure(request)
+                } onCompletion: { result in
+                    if accountManager.handleSignIn(result) {
+                        finishOnboarding()
+                    }
+                }
+                .signInWithAppleButtonStyle(.white)
+                .frame(height: 52)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                
+                secondaryButton(AppTranslations.translate("Skip for now", to: appLanguage)) { finishOnboarding() }
+            }
+        }
+    }
+    
+    private func primaryButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button {
+            Haptics.tap()
+            action()
+        } label: {
+            Text(title)
+                .font(.custom("AvenirNext-Bold", size: 17))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .glassEffect(.regular.tint(.teal).interactive(), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+    }
+    
+    private func secondaryButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.custom("AvenirNext-Medium", size: 15))
+                .foregroundColor(.white.opacity(0.7))
+                .frame(height: 36)
+        }
+    }
+    
+    private func advance() {
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+            currentTab = min(currentTab + 1, Self.stepCount - 1)
+        }
+    }
+    
+    private func finishOnboarding() {
+        Haptics.success()
+        withAnimation(.spring(response: 0.7, dampingFraction: 0.85)) {
+            hasSeenOnboarding = true
         }
     }
     
     private func flag(for lang: String) -> String {
         switch lang {
-        case "en": return "🇺🇸"
         case "ar": return "🇸🇦"
         case "fr": return "🇫🇷"
         case "de": return "🇩🇪"
@@ -259,42 +192,228 @@ struct OnboardingView: View {
         }
     }
     
-    private func finishOnboarding() {
-        Haptics.success()
-        withAnimation(.spring(response: 0.7, dampingFraction: 0.85)) {
-            hasSeenOnboarding = true
+    private func languageName(for lang: String) -> String {
+        switch lang {
+        case "ar": return "العربية"
+        case "fr": return "Français"
+        case "de": return "Deutsch"
+        case "hi": return "हिन्दी"
+        case "ru": return "Русский"
+        case "tr": return "Türkçe"
+        case "ur": return "اردو"
+        case "zh-Hans": return "中文"
+        default: return "English"
         }
     }
 }
 
-// MARK: - Subcomponents
-struct FeatureRow: View {
-    let icon: String
-    let title: String
-    let description: String
+// MARK: - Slides
+
+private struct WelcomeSlide: View {
+    let shown: Bool
+    @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
     
     var body: some View {
-        HStack(spacing: 20) {
-            ZStack {
-                Circle()
-                    .fill(Color.teal.opacity(0.2))
-                    .frame(width: 60, height: 60)
-                
-                Image(systemName: icon)
-                    .font(.title2)
-                    .foregroundColor(.teal)
-            }
+        VStack(spacing: 28) {
+            Spacer()
             
-            VStack(alignment: .leading, spacing: 5) {
-                Text(LocalizedStringKey(title))
-                    .font(.custom("AvenirNext-Bold", size: 20))
-                    .foregroundColor(.white)
-                
-                Text(LocalizedStringKey(description))
-                    .font(.custom("AvenirNext-Medium", size: 14))
-                    .foregroundColor(.gray)
-                    .fixedSize(horizontal: false, vertical: true)
+            Group {
+                if let icon = Bundle.main.icon {
+                    Image(uiImage: icon)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 104, height: 104)
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                } else {
+                    Image(systemName: "moon.stars.fill")
+                        .font(.system(size: 64))
+                        .foregroundColor(.white)
+                        .frame(width: 104, height: 104)
+                        .background(Color.teal)
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                }
             }
+            .shadow(color: .teal.opacity(0.45), radius: 28, x: 0, y: 10)
+            .scaleEffect(shown ? 1 : 0.8)
+            .opacity(shown ? 1 : 0)
+            .animation(.spring(response: 0.7, dampingFraction: 0.7), value: shown)
+            
+            VStack(spacing: 12) {
+                Text("Welcome to iPrayer")
+                    .font(.custom("AvenirNext-Bold", size: 32))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                
+                Text("Your premium companion for daily prayers, Tasbih, and Quran reading.")
+                    .font(.custom("AvenirNext-Medium", size: 16))
+                    .foregroundColor(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 36)
+            }
+            .entrance(1, shown: shown)
+            
+            // A day of prayers, in the colours the app uses for them
+            HStack(spacing: 10) {
+                ForEach(PrayerSchedule.prayerNames, id: \.self) { prayer in
+                    Image(systemName: PrayerSchedule.icon(for: prayer))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 36, height: 36)
+                        .background(PrayerPalette.palette(for: prayer).gradient)
+                        .clipShape(Circle())
+                }
+            }
+            .entrance(2, shown: shown)
+            
+            Spacer()
+            Spacer()
         }
+        .padding(.horizontal, 24)
+    }
+}
+
+private struct FeaturesSlide: View {
+    let shown: Bool
+    @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
+    
+    private var features: [(icon: String, prayer: String, title: String, description: String)] {
+        [
+            ("clock.fill", "Dhuhr", AppTranslations.catalogString("Accurate Prayers", language: appLanguage),
+             AppTranslations.catalogString("Get precise prayer times based on your location and calculation method.", language: appLanguage)),
+            ("book.fill", "Asr", AppTranslations.catalogString("The Holy Quran", language: appLanguage),
+             AppTranslations.translate("Read the mushaf page by page and listen to six reciters, online or offline.", to: appLanguage)),
+            ("hands.and.sparkles.fill", "Fajr", AppTranslations.translate("Duas & Tasbih", to: appLanguage),
+             AppTranslations.translate("Authentic duas with their sources, and a haptic Tasbih that syncs to your watch.", to: appLanguage)),
+            ("apps.iphone", "Maghrib", AppTranslations.translate("Widgets & Apple Watch", to: appLanguage),
+             AppTranslations.translate("The next prayer and a Verse of the Day on your Home Screen, Lock Screen and wrist.", to: appLanguage)),
+            ("safari.fill", "Isha", AppTranslations.catalogString("Qibla Compass", language: appLanguage),
+             AppTranslations.translate("Find the direction of the Kaaba wherever you are.", to: appLanguage))
+        ]
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 8)
+            VStack(alignment: .leading, spacing: 18) {
+                ForEach(Array(features.enumerated()), id: \.offset) { index, feature in
+                    HStack(alignment: .top, spacing: 16) {
+                        Image(systemName: feature.icon)
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 48, height: 48)
+                            .background(PrayerPalette.palette(for: feature.prayer).gradient)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(feature.title)
+                                .font(.custom("AvenirNext-Bold", size: 17))
+                                .foregroundColor(.white)
+                            Text(feature.description)
+                                .font(.custom("AvenirNext-Medium", size: 13))
+                                .foregroundColor(.white.opacity(0.65))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .entrance(index, shown: shown)
+                }
+            }
+            .padding(.horizontal, 28)
+            Spacer(minLength: 8)
+        }
+    }
+}
+
+private struct LocationSlide: View {
+    let shown: Bool
+    @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
+    
+    var body: some View {
+        PermissionSlide(
+            shown: shown,
+            icon: "location.fill",
+            tint: .teal,
+            title: AppTranslations.translate("Location Access", to: appLanguage),
+            message: AppTranslations.translate("iPrayer uses your location to calculate prayer times and the Qibla direction.", to: appLanguage),
+            points: [
+                ("clock.fill", AppTranslations.translate("Prayer Times", to: appLanguage)),
+                ("safari.fill", AppTranslations.catalogString("Qibla Compass", language: appLanguage))
+            ]
+        )
+    }
+}
+
+private struct SyncSlide: View {
+    let shown: Bool
+    @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
+    
+    var body: some View {
+        PermissionSlide(
+            shown: shown,
+            icon: "icloud.fill",
+            tint: .blue,
+            title: AppTranslations.catalogString("Secure Cloud Sync", language: appLanguage),
+            message: AppTranslations.translate("Back up your Tasbih counts, bookmarks and progress to your own iCloud. iPrayer runs no servers of its own.", to: appLanguage),
+            points: [
+                ("circle.grid.cross.fill", AppTranslations.translate("Tasbih", to: appLanguage)),
+                ("bookmark.fill", AppTranslations.translate("Bookmarks", to: appLanguage)),
+                ("flame.fill", AppTranslations.translate("Tracker", to: appLanguage))
+            ]
+        )
+    }
+}
+
+/// Icon in a glass disc, a title, one explaining sentence, and a short list of what it covers
+private struct PermissionSlide: View {
+    let shown: Bool
+    let icon: String
+    let tint: Color
+    let title: String
+    let message: String
+    let points: [(String, String)]
+    
+    var body: some View {
+        VStack(spacing: 26) {
+            Spacer()
+            
+            Image(systemName: icon)
+                .font(.system(size: 40, weight: .semibold))
+                .foregroundColor(tint)
+                .frame(width: 112, height: 112)
+                .glassEffect(.regular, in: .circle)
+                .shadow(color: tint.opacity(0.4), radius: 24, x: 0, y: 8)
+                .scaleEffect(shown ? 1 : 0.8)
+                .opacity(shown ? 1 : 0)
+                .animation(.spring(response: 0.7, dampingFraction: 0.7), value: shown)
+            
+            VStack(spacing: 12) {
+                Text(title)
+                    .font(.custom("AvenirNext-Bold", size: 30))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                Text(message)
+                    .font(.custom("AvenirNext-Medium", size: 15))
+                    .foregroundColor(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 30)
+            }
+            .entrance(1, shown: shown)
+            
+            HStack(spacing: 8) {
+                ForEach(Array(points.enumerated()), id: \.offset) { _, point in
+                    Label(point.1, systemImage: point.0)
+                        .font(.custom("AvenirNext-DemiBold", size: 12))
+                        .foregroundColor(.white.opacity(0.85))
+                        .lineLimit(1)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .glassEffect(.regular, in: .capsule)
+                }
+            }
+            .entrance(2, shown: shown)
+            
+            Spacer()
+            Spacer()
+        }
+        .padding(.horizontal, 24)
     }
 }
