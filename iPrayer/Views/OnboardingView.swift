@@ -147,7 +147,7 @@ struct OnboardingView: View {
                 .frame(height: 52)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 
-                secondaryButton(AppTranslations.translate("Skip for now", to: appLanguage)) { finishOnboarding() }
+                secondaryButton(AppTranslations.catalogString("Skip for now", language: appLanguage)) { finishOnboarding() }
             }
         }
     }
