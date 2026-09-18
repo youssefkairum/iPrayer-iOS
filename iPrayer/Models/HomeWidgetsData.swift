@@ -60,9 +60,25 @@ class HomeWidgetsData: ObservableObject {
         return formatter
     }()
     
+    private var observers: [NSObjectProtocol] = []
+    
     init() {
         loadPersistedState()
         checkAndResetTracker()
+        
+        // The day can change while the app is alive (open, or suspended for days). Listen here, in the
+        // model, so the reset never depends on which screen happens to be showing.
+        var names: [Notification.Name] = [.NSCalendarDayChanged]
+        #if os(iOS)
+        names.append(UIApplication.willEnterForegroundNotification)
+        #elseif os(watchOS)
+        names.append(WKApplication.willEnterForegroundNotification)
+        #endif
+        for name in names {
+            observers.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.checkAndResetTracker() }
+            })
+        }
     }
     
     private func loadPersistedState() {
@@ -71,10 +87,28 @@ class HomeWidgetsData: ObservableObject {
         
         // Only assign real changes so the UI and iCloud aren't poked for nothing
         if currentStreak != savedStreak { currentStreak = savedStreak }
-        if let savedTracker = defaults.array(forKey: UDKey.dailyPrayersCompleted.rawValue) as? [Bool],
+        
+        // A saved tracker only counts if it is today's. Adopting yesterday's ticks here, even for a moment,
+        // republished them to iCloud and the watch before the day check ran.
+        if lastTrackerDateStr == Self.dayFormatter.string(from: Date()),
+           let savedTracker = defaults.array(forKey: UDKey.dailyPrayersCompleted.rawValue) as? [Bool],
            savedTracker.count == 5, savedTracker != dailyPrayersCompleted {
             dailyPrayersCompleted = savedTracker
         }
+    }
+    
+    /// Today's tracker as another device left it in iCloud, if any. Starting a new day from it, rather than
+    /// from blanks, stops a device that wakes up late from wiping progress already made today.
+    private static func todaysTrackerFromCloud(_ today: String) -> [Bool]? {
+        #if os(iOS)
+        let store = NSUbiquitousKeyValueStore.default
+        guard store.string(forKey: UDKey.lastTrackerDate.rawValue) == today,
+              let tracker = store.array(forKey: UDKey.dailyPrayersCompleted.rawValue) as? [Bool],
+              tracker.count == 5 else { return nil }
+        return tracker
+        #else
+        return nil
+        #endif
     }
     
     /// Called by CloudSyncManager after it wrote tracker or streak values from iCloud into UserDefaults.
@@ -106,10 +140,10 @@ class HomeWidgetsData: ObservableObject {
         let formatter = Self.dayFormatter
         let todayStr = formatter.string(from: Date())
         
-        // Reset daily booleans if it's a new day
+        // New day: start from today's progress on another device if iCloud has it, otherwise blank
         if lastTrackerDateStr != todayStr {
-            dailyPrayersCompleted = [false, false, false, false, false]
             lastTrackerDateStr = todayStr
+            dailyPrayersCompleted = Self.todaysTrackerFromCloud(todayStr) ?? [false, false, false, false, false]
         }
         
         // Break streak if missed yesterday
