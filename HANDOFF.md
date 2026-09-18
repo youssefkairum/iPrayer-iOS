@@ -15,30 +15,20 @@ and what is still open. The README describes the product; this describes the wor
   `gh` lives in `~/.local/bin`, which `~/.zshrc` now adds to PATH.
 - **Merged:** PR #1 (reorganisation + first bug pass — merged by the author after its first two commits),
   PR #2 (everything up to the Quran reader rebuild + README), PR #3 (project file ordering).
-- **Open:** PR #4 `home-card-following-day` -> `main` (Home card shows the following day; catalog entries).
-- **Pushed, no PR yet:** `release-1.1.0-features` (branched from PR #4's head, so it carries those two commits
-  plus ten of its own). Everything below is committed there; the working tree is clean. Contents, one commit
-  each where files allowed it (a few files carry more than one feature, so not every intermediate commit
-  builds on its own; the head does, with zero warnings):
-  privacy manifests + export-compliance flag + localised location purpose · shared prayer palette
-  (app/widget/Live Activity) + Haptics.swift + Motion.swift + all translations · Quran recitation, ZIP
-  downloads, storage manager (Settings > Downloaded Audio: per reciter, per surah; verified on device),
-  reader labels in the app language · Verse of the Day from the whole Quran + Home/Lock Screen widget +
-  `iprayer://verse/S/A` deep link · Dua library rebuilt (50 duas incl. Hisn al-Muslim morning/evening adhkar
-  with repeat counts and evening variants; search, category chips, copy/share; Home card deep-links to
-  today's dua) · What's New page, compact About, animated splash/onboarding hand-offs · Home on one screen
-  (one-line greeting, Tomorrow strip with coloured symbols + AM/PM, Dua of the Day card, 2-line verse
-  cap, staggered entrance, pressable cards), compact Settings (Language folded into General), tab-bar
-  bounce + selection haptic · README + these notes.
-  **Next: merge PR #4, then open a PR from `release-1.1.0-features` against `main`.**
-- **Uncommitted on `release-1.1.0-features`: the Apple Watch companion.** Two new targets written straight
-  into project.pbxproj (ids `B7A1C1..`): `iPrayerWatch` (watchOS app, `youssefkairum.iPrayer.watchkitapp`,
-  embedded in the iPhone app via "Embed Watch Content") and `iPrayerWatchWidgetExtension` (complications,
-  `...watchkitapp.complications`, embedded in the watch app). Builds clean with the iPhone scheme. Shared into
-  the watch target by explicit file reference: SharedPrayerSchedule, AppTranslations, HomeWidgetsData,
-  UserDefaultsKeys, SharedWatchState. Phone side: PhoneWatchSync.swift (activated in iPrayerApp.onAppear,
-  pushed after SharedPrayerConfig saves, on tracker/streak/Tasbih changes).
-
+- **Merged:** PR #1 (reorganisation + first bug pass), PR #2 (up to the Quran reader rebuild + README),
+  PR #3 (project file ordering), PR #4 (Home card shows the following day), PR #5 (the whole 1.1.0 feature
+  branch: recitation + downloads + storage manager, Verse of the Day + widgets, Dua library, What's New,
+  compact About/Settings, one-screen Home, motion + haptics, Arabic reader labels, privacy manifests),
+  PR #6 (Apple Watch companion + complications + two-way sync). **`main` is the complete 1.1.0 state;
+  no branch is open and no PR is pending.** The watch targets were written straight into project.pbxproj
+  (ids `B7A1C1..`); shared into the watch by explicit file reference: SharedPrayerSchedule, AppTranslations,
+  HomeWidgetsData, UserDefaultsKeys, SharedWatchState. Phone side: PhoneWatchSync.swift.
+  **Next: release prep, in this order.** (1) Verify on devices what section 5 lists as unverified: both
+  Verse of the Day widget sizes on a Home Screen, its Lock Screen family, the watch complications on a
+  face, and a Tasbih/tracker round trip between phone and watch. (2) Account deletion (App Review 5.1.1 v)
+  and the "We never share your data" onboarding copy, both in section 6. (3) Native read of the Urdu/
+  Hindi/Russian/Chinese strings, now including 39 dua translations. (4) Store screenshots and the What's
+  New notes (drafted in the last session's chat; the in-app WhatsNewView still lists the earlier bullets).
 ## 2. Map of the code
 
 ```
