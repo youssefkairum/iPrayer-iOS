@@ -20,28 +20,19 @@ and what is still open. The README describes the product; this describes the wor
   PR #6 (Apple Watch companion + complications + two-way sync). The watch targets were written straight
   into project.pbxproj (ids `B7A1C1..`); shared into the watch by explicit file reference: SharedPrayerSchedule,
   AppTranslations, HomeWidgetsData, UserDefaultsKeys, SharedWatchState. Phone side: PhoneWatchSync.swift.
-- **Open PRs against `main`, each on its own branch cut from `main`, all building clean, none merged yet:**
-  #7 `fix-tracker-reset-and-ipad-reader` (tracker no longer carries yesterday's ticks into a new day; same-day
-  ticks merge with OR on both iCloud and watch paths; reader fills the viewport at small text sizes on iPad) ·
-  #8 `onboarding-overhaul` (one scaffold, animated slides, fixed-height controls, honest sync copy, "Skip for
-  now" from the catalog, fresh installs start in the phone's language) · #9 `tasbih-overhaul` (dhikr chips,
-  target chips, cycle position, reset confirmation) · #10 `qibla-overhaul` (glass dial + rose, needle, turn
-  guidance, distance in device units) · #11 `translate-copyright` (splash + About, RTL-ordered) ·
-  #12 `today-widget-whatsnew` (Today's Prayers widget medium/large; What's New rebuilt in four sections with
-  1.1.0 copy) · #13 `watch-install-prompt` (Settings card when a paired watch lacks the app) ·
-  #14 `watch-production` (background location refresh, city + Hijri + "then" line, container backgrounds,
-  Crown counting, Qibla distance, complication relevance).
-- **`integration/all-overhauls`** (pushed) = `main` + all eight PRs merged, conflicts resolved, builds clean.
-  Use it to see everything at once; it is NOT meant to be merged as-is (merge the PRs). It is also the branch
-  most likely checked out locally.
-- **Merge order and known conflicts.** #8, #9, #10, #11, #12, #13, #14 all add lines at the same spot in
-  AppTranslations.swift (just before the `"All":` key): after the first merges, each later one shows a trivial
-  add/add conflict there; keep both sides, then check for duplicate keys (a duplicate dictionary literal key
-  crashes at runtime). #7 and #14 both edit `iPrayerWatch/iPrayerWatchApp.swift`'s scenePhase handler; take
-  #14's version (it contains #7's behaviour). The String Catalog gets re-extracted by Xcode on every build and
-  shows up as an uncommitted change; discard it (`git checkout -- iPrayer/Localizable.xcstrings`) unless a
-  commit meant to include it.
-  **Next: merge #7 through #14 (in number order is simplest), then release prep in section 6.**
+- **Also merged (19 September 2026), via the umbrella PR #15:** #7 tracker day reset + iPad reader viewport fill ·
+  #8 onboarding overhaul (one scaffold, animated slides, fixed-height controls, honest sync copy, catalog
+  "Skip for now", fresh installs start in the phone's language) · #9 Tasbih overhaul (dhikr chips, target chips,
+  cycle position, reset confirmation) · #10 Qibla overhaul (glass dial + rose, needle, turn guidance, distance)
+  · #11 translated copyright line (RTL-ordered) · #12 Today's Prayers widget + What's New rebuilt in four
+  sections · #13 Settings card when a paired watch lacks the app · #14 watch production hardening (background
+  location refresh, city + Hijri + "then" line, container backgrounds, Crown counting, complication relevance).
+  **`main` is the complete state; no branch is open, no PR is pending; all feature branches were deleted.**
+- Conventions that held up: one branch per change cut from `main`; the translation table
+  (AppTranslations.swift) is the usual conflict point, resolved by keeping both sides then checking for
+  duplicate keys (a duplicate dictionary literal key crashes at runtime); Xcode re-extracts the String Catalog on
+  every build and leaves it modified, discard that unless a commit means to include it.
+  **Next: release prep in section 6, starting with device verification of what section 5 lists.**
 
 ## 2. Map of the code
 
