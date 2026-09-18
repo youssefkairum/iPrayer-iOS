@@ -9,6 +9,39 @@
 import Foundation
 
 nonisolated struct AppTranslations {
+    /// The nine in-app languages, by the code the app stores
+    static let supportedLanguages = ["en", "ar", "ur", "fr", "de", "hi", "tr", "ru", "zh-Hans"]
+    
+    /// The app language that best matches the phone's own language, or nil when none of ours fits.
+    /// "ar-EG" -> "ar", "zh-Hans-CN" / "zh-CN" -> "zh-Hans"; Traditional Chinese has no match.
+    static func languageMatchingDevice(preferred: [String] = Locale.preferredLanguages) -> String? {
+        for identifier in preferred {
+            let locale = Locale(identifier: identifier)
+            guard let code = locale.language.languageCode?.identifier else { continue }
+            if code == "zh" {
+                let script = locale.language.script?.identifier
+                let region = locale.language.region?.identifier
+                if script == "Hans" || (script == nil && ["CN", "SG", "MY"].contains(region ?? "")) { return "zh-Hans" }
+                continue
+            }
+            if supportedLanguages.contains(code) { return code }
+        }
+        return nil
+    }
+    
+    /// On a fresh install, before anything reads the language, start from the phone's language.
+    /// Never touches a device where a language was already stored or the app was in use before.
+    static func preselectLanguageFromDeviceIfNeeded(defaults: UserDefaults = .standard) {
+        // Registered defaults make string(forKey:) answer "en" on a fresh install, so ask the persisted
+        // domain, which only holds what the app (or its user) actually wrote
+        let persisted = Bundle.main.bundleIdentifier.flatMap { defaults.persistentDomain(forName: $0) } ?? [:]
+        guard persisted[UDKey.appLanguage.rawValue] == nil,
+              !defaults.bool(forKey: UDKey.hasSeenOnboarding.rawValue),
+              !defaults.bool(forKey: UDKey.installedAsUpdate.rawValue),
+              let language = languageMatchingDevice() else { return }
+        defaults.set(language, forKey: UDKey.appLanguage.rawValue)
+    }
+    
     static func translate(_ text: String, to language: String) -> String {
         table[text]?[language] ?? text
     }
