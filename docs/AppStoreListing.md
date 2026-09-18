@@ -2,6 +2,8 @@
 
 Character counts verified against App Store Connect limits. Keywords avoid words already in the name and subtitle.
 
+Arabic: every paragraph and bullet must START with an Arabic word. App Store Connect picks each paragraph's direction from its first strong character, so a line that opens with a Latin word (iPrayer, Live Activities) renders left-to-right with its punctuation on the wrong side.
+
 ## English (primary)
 
 ### Subtitle (30)
@@ -121,13 +123,13 @@ Whether you are looking for athan times, a Quran app with audio, a Qibla finder 
 ### Description
 
 ```
-iPrayer رفيقك الإسلامي المتكامل: مواقيت صلاة دقيقة، والقرآن الكريم كاملاً مع التلاوة، وبوصلة القبلة، وعدّاد التسبيح، والأدعية اليومية، في تطبيق واحد بتصميم أنيق. مجاني، بلا إعلانات، ولا يحتاج إلى حساب.
+رفيقك الإسلامي المتكامل iPrayer: مواقيت صلاة دقيقة، والقرآن الكريم كاملاً مع التلاوة، وبوصلة القبلة، وعدّاد التسبيح، والأدعية اليومية، في تطبيق واحد بتصميم أنيق. مجاني، بلا إعلانات، ولا يحتاج إلى حساب.
 
 مواقيت الصلاة والأذان
 • مواقيت دقيقة لموقعك في أي مكان في العالم، بعشر طرق حساب (رابطة العالم الإسلامي، أم القرى، الهيئة المصرية، ISNA، كراتشي وغيرها) ومذهبي العصر
 • إشعارات الأذان للفجر والظهر والعصر والمغرب والعشاء، مع تذكير اختياري قبل كل صلاة
 • عدّ تنازلي للصلاة القادمة، والتاريخ الهجري، ومواقيت الغد في نظرة
-• Live Activities وDynamic Island تُبقي الصلاة القادمة على شاشة القفل
+• الصلاة القادمة تبقى على شاشة القفل مع Live Activities وDynamic Island
 • تتبّع الصلوات الخمس وحافظ على سلسلتك اليومية
 
 القرآن الكريم
