@@ -41,18 +41,28 @@ struct OnboardingView: View {
             VStack(spacing: 0) {
                 topBar
                 
+                // Each slide plays its entrance once, when first reached, and stays put afterwards: fading a
+                // page out while the next slides in made the change feel rough.
                 TabView(selection: $currentTab) {
-                    WelcomeSlide(shown: revealed && currentTab == 0).tag(0)
-                    FeaturesSlide(shown: currentTab == 1).tag(1)
-                    LocationSlide(shown: currentTab == 2).tag(2)
-                    SyncSlide(shown: currentTab == 3).tag(3)
+                    WelcomeSlide(shown: revealed).tag(0)
+                    FeaturesSlide(shown: currentTab >= 1).tag(1)
+                    LocationSlide(shown: currentTab >= 2).tag(2)
+                    SyncSlide(shown: currentTab >= 3).tag(3)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .onChange(of: currentTab) { _, _ in Haptics.selection() }
                 
-                controls
-                    .padding(.horizontal, 28)
-                    .padding(.bottom, 24)
+                // Fixed height whatever the step shows, so the page area never resizes during a swipe;
+                // the buttons crossfade instead of popping.
+                ZStack(alignment: .top) {
+                    controls
+                        .id(currentTab)
+                        .transition(.opacity)
+                }
+                .animation(.easeInOut(duration: 0.25), value: currentTab)
+                .frame(height: 104, alignment: .top)
+                .padding(.horizontal, 28)
+                .padding(.bottom, 20)
             }
         }
         .onAppear { revealed = true }
@@ -166,7 +176,7 @@ struct OnboardingView: View {
     }
     
     private func advance() {
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+        withAnimation(.easeInOut(duration: 0.35)) {
             currentTab = min(currentTab + 1, Self.stepCount - 1)
         }
     }
