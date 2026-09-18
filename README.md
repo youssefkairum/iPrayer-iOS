@@ -30,6 +30,12 @@ Prayer times, the Quran text, Duas and the Tasbih all work offline. The network 
 - **Self-Sufficient:** The widget computes its own timeline with Adhan from settings shared through an App Group, so it stays correct without opening the app.
 - **Live Activity & Dynamic Island:** A countdown to the next prayer that switches to "Now" when the time arrives.
 
+### ⌚️ Apple Watch
+- **Companion App:** Next prayer with a live countdown, today's times, the prayer tracker, a Tasbih counter with haptics, and a Qibla compass, as vertical pages.
+- **Works on Its Own:** The watch calculates times with Adhan from its own location (falling back to the iPhone's), so it stays correct without the phone nearby.
+- **Complications:** Circular, corner, rectangular and inline watch-face complications showing the next prayer.
+- **Two-Way Sync:** Settings, language and location flow to the watch; Tasbih and tracker changes made on the wrist flow back to the phone and on to iCloud.
+
 ### 📖 The Holy Quran
 - **Fully Offline:** All 114 surahs are bundled with the app. No network is needed.
 - **Faithful Rendering:** Uthmani text drawn with the KFGQPC Hafs font. Recitation signs are re-encoded for the font at display time, so pause marks, open tanween, iqlab and silent-letter marks all appear. The mapping is verified against all 6,236 verses.
@@ -119,6 +125,7 @@ iPrayer/
 ├── PrayerAttributes.swift         # Live Activity attributes (shared with the widget)
 ├── SharedPrayerSchedule.swift     # Prayer calculation shared by the app and the widget
 ├── SharedVerseOfTheDay.swift      # Daily-verse schedule shared with the widget
+├── SharedWatchState.swift         # WatchConnectivity payload shared with the watch app
 ├── Views/
 │   ├── ContentView.swift          # Tab container and floating tab bar
 │   ├── OnboardingView.swift       # Welcome, features, location, sign-in
@@ -148,6 +155,7 @@ iPrayer/
 │   ├── QuranAudioPlayer.swift     # Verse-by-verse recitation, streamed or from downloads
 │   ├── QuranAudioDownloads.swift  # Per-surah offline audio
 │   ├── VerseOfTheDay.swift
+│   ├── PhoneWatchSync.swift       # iPhone side of the Apple Watch link
 │   ├── CloudSyncManager.swift     # iCloud key-value sync
 │   ├── AccountManager.swift       # Sign in with Apple
 │   └── NotificationManager.swift  # Quran reminders
@@ -169,6 +177,15 @@ iPrayerWidget/
 ├── VerseOfTheDayWidget.swift      # Verse of the Day Home Screen and Lock Screen widgets
 ├── iPrayerWidgetLiveActivity.swift
 └── iPrayerWidgetBundle.swift
+
+iPrayerWatch/                      # watchOS companion app (independent)
+├── iPrayerWatchApp.swift
+├── WatchModel.swift               # Location, Adhan calculation, heading, settings from the phone
+├── WatchSync.swift                # Watch side of the iPhone link
+└── Views/                         # Next prayer, today, tracker, Tasbih, Qibla pages
+
+iPrayerWatchWidget/                # Watch-face complications
+└── NextPrayerComplication.swift
 ```
 
 ---

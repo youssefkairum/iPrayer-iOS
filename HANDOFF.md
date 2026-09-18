@@ -31,6 +31,13 @@ and what is still open. The README describes the product; this describes the wor
   cap, staggered entrance, pressable cards), compact Settings (Language folded into General), tab-bar
   bounce + selection haptic · README + these notes.
   **Next: merge PR #4, then open a PR from `release-1.1.0-features` against `main`.**
+- **Uncommitted on `release-1.1.0-features`: the Apple Watch companion.** Two new targets written straight
+  into project.pbxproj (ids `B7A1C1..`): `iPrayerWatch` (watchOS app, `youssefkairum.iPrayer.watchkitapp`,
+  embedded in the iPhone app via "Embed Watch Content") and `iPrayerWatchWidgetExtension` (complications,
+  `...watchkitapp.complications`, embedded in the watch app). Builds clean with the iPhone scheme. Shared into
+  the watch target by explicit file reference: SharedPrayerSchedule, AppTranslations, HomeWidgetsData,
+  UserDefaultsKeys, SharedWatchState. Phone side: PhoneWatchSync.swift (activated in iPrayerApp.onAppear,
+  pushed after SharedPrayerConfig saves, on tracker/streak/Tasbih changes).
 
 ## 2. Map of the code
 
@@ -78,9 +85,16 @@ iPrayer/
   quran-uthmani.json          Tanzil Uthmani text, slimmed to number/text/numberInSurah/page/juz (1.76 MB)
   adhan.caf                   IMA4 notification sound (mp3 is ignored by iOS)
   PrivacyInfo.xcprivacy       required-reason API declaration (UserDefaults, CA92.1 + 1C8F.1)
+  SharedWatchState.swift      compiled into iPhone app + watch app: WatchSyncPayload (settings/location down,
+                              Tasbih + tracker up) with the same date-guard rule as iCloud; Tasbih uses tasbihUpdatedAt
+  Managers/PhoneWatchSync.swift  WCSession on the phone: updateApplicationContext down, applies wrist changes up
 iPrayerWidget/                widget computes its own timeline with Adhan from SharedPrayerConfig; Live Activity UI
   VerseOfTheDayWidget.swift   systemMedium/Large + accessoryRectangular/Inline from SharedVerseSchedule; font is a
                               widget resource registered in iPrayerWidget/Info.plist (INFOPLIST_KEY_ form is NOT merged)
+iPrayerWatch/                 watchOS app: WatchModel (CLLocationManager one-shot fix + heading, Adhan via PrayerSchedule,
+                              writes SharedPrayerConfig to the App Group for the complications), WatchSync (WCSession),
+                              Views/WatchRootView (vertical TabView: next prayer, today, tracker) + WatchPages (Tasbih, Qibla)
+iPrayerWatchWidget/           NextPrayerComplication: accessoryCircular/Corner/Rectangular/Inline from SharedPrayerConfig
 ```
 
 Two localisation systems coexist: `Localizable.xcstrings` for `Text("literal")` and `AppTranslations`
@@ -130,7 +144,14 @@ must follow the *in-app* language (notifications, some labels) goes through
   DeepLinkRouter -> QuranView.openLinkedVerseIfPossible, which waits for the surah list to load.
 - **Dua cards show a plain comma.** The KFGQPC font draws U+060C as a verse ornament (the circles seen on
   device); `displayArabic` swaps it for display only, copy/share keep the real text.
-- **Deployment target 26.0** everywhere (was 26.1/26.6/26.2). iPad is targeted and cannot be dropped.
+- **Watch computes its own times.** The watch asks for its own location (one-shot `requestLocation`, kilometre
+  accuracy) and only uses the phone's coordinates from the sync payload while it has none of its own. Settings,
+  language and translated names come from the phone; the watch never reads iCloud KVS (the phone only syncs
+  KVS when signed in, and the KVS id is per bundle id, so WatchConnectivity is the one reliable channel).
+- **Wrist changes win by date.** Tracker/streak use the same "newer yyyy-MM-dd wins" rule as CloudSyncManager;
+  the Tasbih uses `tasbihUpdatedAt` (set wherever a person changes it) so the last touch wins on either side.
+- **Deployment target 26.0** for the iPhone app and widget; **watchOS 10.0** for the watch app and complications
+  (nothing in them needs newer; Series 4/5 top out at watchOS 10). Everywhere else 26.0 (was 26.1/26.6/26.2). iPad is targeted and cannot be dropped.
 - **Deleted on purpose:** the seven-verse Verse-of-the-Day list, DuaWidget, dhikr counter, KaabaIcon
   catalog, unused API structs, `adhan.mp3`.
 
@@ -154,6 +175,11 @@ e.g. `-lastSeenWhatsNewVersion 1.0.0`, `-hasSeenOnboarding YES`, `-appLanguage a
 (the last one shows the signed-in greeting without signing in).
 Deep links: `xcrun simctl openurl <sim> "iprayer://verse/2/255"` (the simulator shows an "Open in iPrayer?"
 confirmation first).
+
+**Apple Watch:** no watchOS simulator runtime is installed on this Mac (`xcrun simctl list runtimes` shows none),
+only the watchOS 27 SDK, so the watch targets BUILD (as part of the iPhone scheme) but have never RUN. Install a
+watchOS runtime in Xcode > Settings > Components, pair a watch simulator with the iPhone 17 one, then run the
+`iPrayerWatch` scheme (Xcode autocreates it). On a real watch, WatchConnectivity needs the phone app opened once.
 
 **Simulator quirks learned the hard way**
 - The iOS Simulator MCP tool (`attach`/`tap`/`swipe`/`text`) works, but each call takes ~25 s to return.
@@ -191,7 +217,10 @@ mid-entrance, Live Activity colours on the Lock Screen, Liquid Glass surfaces, i
 reader), string tables per language.
 Verified on the owner's iPhone: storage manager (after the /private/var path fix), About and Duas library.
 
-Not verified: the Verse of the Day widget actually rendered on a Home Screen or Lock Screen (the simulator
+Verified by the owner: the Apple Watch app runs (on their own setup; this Mac has no watch runtime).
+
+Not verified: the watch complications on a watch face · WatchConnectivity round-trips (Tasbih/tracker both ways,
+settings down) · the watch on watchOS 10 specifically · the Verse of the Day widget actually rendered on a Home Screen or Lock Screen (the simulator
 can't add one non-interactively) · how the haptics feel (simulator has none) · iPad landscape · Dynamic
 Island appearance · Live Activity "Now" state · pre-prayer reminder firing · true Airplane-Mode playback
 of downloaded audio · two-device iCloud sync · real midnight rollover of verse/dua/widget · audio *sound*
