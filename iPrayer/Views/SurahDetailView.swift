@@ -13,22 +13,41 @@ struct SurahDetailView: View {
     
     @StateObject private var detailVM = SurahDetailViewModel()
     @ObservedObject private var bookmarks = QuranBookmarks.shared
+    @ObservedObject private var audio = QuranAudioPlayer.shared
+    @ObservedObject private var downloads = QuranAudioDownloads.shared
     
     /// The reader moves to the next surah in place, so the back button always returns to the list
     @State private var currentSurah: SurahMetadata
     @State private var openAtVerse: Int?
+    /// The verse marked as "you are here" when arriving from a bookmark or a search result
+    @State private var focusVerse: Int?
     @State private var selectedVerse: Int?
     @State private var showCopied = false
+    /// The verse at the top of the screen; the toolbar play button starts from here
+    @State private var visibleVerse: Int
     
     @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
     @AppStorage(UDKey.quranFontSize.rawValue) private var fontSize: Double = ReaderStyle.defaultFontSize
     @AppStorage(UDKey.quranReaderTheme.rawValue) private var themeRaw: String = ReaderTheme.paper.rawValue
+    @AppStorage(UDKey.quranReciter.rawValue) private var reciterID: String = QuranReciter.default.id
     
-    init(surah: SurahMetadata, initialVerse: Int? = nil) {
+    /// - Parameter marksInitialVerse: highlight `initialVerse` on arrival. Used for bookmarks and search results,
+    ///   where the user picked that exact verse. Continue Reading passes false: its verse is only where the
+    ///   screen happened to be.
+    init(surah: SurahMetadata, initialVerse: Int? = nil, marksInitialVerse: Bool = false) {
         self.initialVerse = initialVerse
         _currentSurah = State(initialValue: surah)
         _openAtVerse = State(initialValue: initialVerse)
+        _focusVerse = State(initialValue: marksInitialVerse ? initialVerse : nil)
+        _visibleVerse = State(initialValue: initialVerse ?? 1)
     }
+    
+    private var reciter: QuranReciter { QuranReciter.with(id: reciterID) }
+    
+    /// Audio belongs to the reader only while it is reciting the surah on screen
+    private var isAudioForThisSurah: Bool { audio.surah?.number == currentSurah.number }
+    private var playingVerse: Int? { isAudioForThisSurah ? audio.verse : nil }
+    private var downloadState: QuranAudioDownloads.State { downloads.state(for: currentSurah.number, reciter: reciter) }
     
     private var theme: ReaderTheme { ReaderTheme(rawValue: themeRaw) ?? .paper }
     private var style: ReaderStyle { ReaderStyle(fontSize: CGFloat(fontSize), theme: theme) }
@@ -58,14 +77,20 @@ struct SurahDetailView: View {
                     nextSurah: detailVM.surah(after: currentSurah.number),
                     style: style,
                     initialVerse: openAtVerse,
+                    focusVerse: focusVerse,
+                    playingVerse: playingVerse,
                     selectedVerse: $selectedVerse,
                     onVisibleVerseChange: { verse in
+                        visibleVerse = verse
                         recordLastRead(verse: verse)
                     },
                     onOpenNextSurah: {
                         guard let next = detailVM.surah(after: currentSurah.number) else { return }
+                        audio.stop()
                         selectedVerse = nil
                         openAtVerse = nil
+                        focusVerse = nil
+                        visibleVerse = 1
                         currentSurah = next
                     }
                 )
@@ -76,15 +101,43 @@ struct SurahDetailView: View {
             }
         }
         .overlay(alignment: .bottom) {
-            if let ayah = selectedAyah {
-                verseActionBar(for: ayah)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 12)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            VStack(spacing: 8) {
+                if let ayah = selectedAyah {
+                    verseActionBar(for: ayah)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                if case .downloading(let fraction) = downloadState {
+                    downloadBar(fraction: fraction)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                } else if let error = downloads.lastError {
+                    messageBar(AppTranslations.translate(error, to: appLanguage)) { downloads.lastError = nil }
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                if isAudioForThisSurah {
+                    playbackBar
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 12)
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.85), value: selectedVerse)
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: isAudioForThisSurah)
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: downloadState == .none)
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                // Recite from the verse at the top of the screen
+                Button {
+                    if isAudioForThisSurah {
+                        audio.togglePlayPause()
+                    } else {
+                        audio.play(surah: currentSurah, from: visibleVerse, reciter: reciter)
+                    }
+                } label: {
+                    Image(systemName: isAudioForThisSurah && audio.isPlaying ? "pause.fill" : "play.fill")
+                }
+                .accessibilityLabel(AppTranslations.translate(isAudioForThisSurah && audio.isPlaying ? "Pause" : "Play", to: appLanguage))
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 appearanceMenu
             }
@@ -97,6 +150,8 @@ struct SurahDetailView: View {
         .task(id: currentSurah.number) {
             await detailVM.load(surahNumber: currentSurah.number)
             recordLastRead(verse: openAtVerse ?? 1)
+            // Session and first verses ready before play is tapped
+            audio.prepare(surah: currentSurah, around: openAtVerse ?? 1, reciter: reciter)
         }
         .onAppear {
             // The status bar follows the window's scheme; the app root flips it while a paper page is showing
@@ -105,8 +160,21 @@ struct SurahDetailView: View {
             UIApplication.shared.isIdleTimerDisabled = true
         }
         .onDisappear {
+            // Recitation is tied to the page on screen; there are no controls for it elsewhere in the app
+            audio.stop()
             AppAppearance.shared.prefersLightStatusBar = false
             UIApplication.shared.isIdleTimerDisabled = false
+        }
+        .onChange(of: selectedVerse) { _, newValue in
+            // The mark has done its job once the user starts interacting with verses
+            if let newValue {
+                focusVerse = nil
+                // A selected verse is a likely "play from here"
+                audio.prefetch(surah: currentSurah, from: newValue, reciter: reciter)
+            }
+        }
+        .onChange(of: reciterID) { _, _ in
+            audio.change(reciter: reciter)
         }
         .onChange(of: themeRaw) { _, _ in
             AppAppearance.shared.prefersLightStatusBar = theme == .paper
@@ -137,6 +205,39 @@ struct SurahDetailView: View {
                 Label(AppTranslations.translate("Paper", to: appLanguage), systemImage: "sun.max").tag(ReaderTheme.paper.rawValue)
                 Label(AppTranslations.translate("Dark", to: appLanguage), systemImage: "moon").tag(ReaderTheme.dark.rawValue)
             }
+            
+            // Menu rows have a fixed maximum width, so the labels here are kept short enough not to wrap
+            // at large text sizes; the section header supplies the context.
+            Section(AppTranslations.translate("Quran Audio", to: appLanguage)) {
+                Picker(AppTranslations.translate("Reciter", to: appLanguage), selection: $reciterID) {
+                    ForEach(QuranReciter.all) { reciter in
+                        Text(reciter.name(for: appLanguage)).tag(reciter.id)
+                    }
+                }
+                .pickerStyle(.menu)
+                
+                // Offline audio for this surah, with the chosen reciter
+                switch downloadState {
+                case .none:
+                    Button {
+                        downloads.download(surah: currentSurah, reciter: reciter)
+                    } label: {
+                        Label(AppTranslations.translate("Download", to: appLanguage), systemImage: "arrow.down.circle")
+                    }
+                case .downloading(let fraction):
+                    Button {
+                        downloads.cancel(surah: currentSurah.number, reciter: reciter)
+                    } label: {
+                        Label("\(AppTranslations.translate("Cancel", to: appLanguage)) \(Int(fraction * 100))%", systemImage: "xmark.circle")
+                    }
+                case .downloaded:
+                    Button(role: .destructive) {
+                        downloads.remove(surah: currentSurah.number, reciter: reciter)
+                    } label: {
+                        Label(AppTranslations.translate("Delete", to: appLanguage), systemImage: "trash")
+                    }
+                }
+            }
         } label: {
             Image(systemName: "textformat.size")
         }
@@ -147,7 +248,16 @@ struct SurahDetailView: View {
     // MARK: - Verse actions
     
     private func reference(for ayah: Ayah) -> String {
-        "\(currentSurah.englishName) \(currentSurah.number):\(ayah.numberInSurah)"
+        reference(verse: ayah.numberInSurah)
+    }
+    
+    /// "Ar-Room 30:4", or the Arabic name with Arabic-Indic digits when the app is in Arabic
+    private func reference(verse: Int) -> String {
+        if appLanguage == "ar" {
+            return "\(currentSurah.name) \(QuranTextEncoder.arabicDigits(currentSurah.number)):\(QuranTextEncoder.arabicDigits(verse))"
+        }
+        let name = appLanguage == "ur" ? currentSurah.name : currentSurah.englishName
+        return "\(name) \(currentSurah.number):\(verse)"
     }
     
     private func shareText(for ayah: Ayah) -> String {
@@ -178,6 +288,11 @@ struct SurahDetailView: View {
             
             Spacer(minLength: 8)
             
+            actionButton("play.fill", label: AppTranslations.translate("Play", to: appLanguage)) {
+                audio.play(surah: currentSurah, from: ayah.numberInSurah, reciter: reciter)
+                selectedVerse = nil
+            }
+            
             actionButton("doc.on.doc", label: AppTranslations.translate("Copy", to: appLanguage)) {
                 UIPasteboard.general.string = shareText(for: ayah)
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
@@ -201,10 +316,108 @@ struct SurahDetailView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(Color(red: 20/255, green: 36/255, blue: 44/255).opacity(0.96))
-        .clipShape(Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.15), lineWidth: 1))
-        .shadow(color: .black.opacity(0.35), radius: 14, x: 0, y: 6)
+        // Liquid Glass with a dark tint, so the white label and teal icons stay readable over the
+        // paper theme as well as the dark one
+        .glassEffect(.regular.tint(Color(red: 20/255, green: 36/255, blue: 44/255).opacity(0.75)).interactive(), in: .capsule)
+    }
+    
+    // MARK: - Download bars
+    
+    private func downloadBar(fraction: Double) -> some View {
+        HStack(spacing: 10) {
+            ProgressView(value: fraction)
+                .progressViewStyle(.circular)
+                .tint(.teal)
+            Text("\(AppTranslations.translate("Downloading audio", to: appLanguage)) \(Int(fraction * 100))%")
+                .font(.custom("AvenirNext-DemiBold", size: 14))
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Spacer(minLength: 8)
+            actionButton("xmark", label: AppTranslations.translate("Cancel Download", to: appLanguage)) {
+                downloads.cancel(surah: currentSurah.number, reciter: reciter)
+            }
+        }
+        .padding(.leading, 18)
+        .padding(.trailing, 10)
+        .padding(.vertical, 8)
+        .glassEffect(.regular.tint(Color(red: 20/255, green: 36/255, blue: 44/255).opacity(0.75)), in: .capsule)
+    }
+    
+    private func messageBar(_ message: String, onClose: @escaping () -> Void) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundColor(.orange)
+            Text(message)
+                .font(.custom("AvenirNext-DemiBold", size: 14))
+                .foregroundColor(.white)
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
+            Spacer(minLength: 8)
+            actionButton("xmark", label: "Close", action: onClose)
+        }
+        .padding(.leading, 18)
+        .padding(.trailing, 10)
+        .padding(.vertical, 8)
+        .glassEffect(.regular.tint(Color(red: 20/255, green: 36/255, blue: 44/255).opacity(0.75)), in: .capsule)
+    }
+    
+    // MARK: - Playback bar
+    
+    private var playbackStatusText: String {
+        if let error = audio.errorMessage {
+            return AppTranslations.translate(error, to: appLanguage)
+        }
+        guard let verse = audio.verse else { return reciter.name(for: appLanguage) }
+        return reference(verse: verse)
+    }
+    
+    private var playbackBar: some View {
+        HStack(spacing: 4) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(playbackStatusText)
+                    .font(.custom("AvenirNext-DemiBold", size: audio.errorMessage == nil ? 14 : 13))
+                    .foregroundColor(audio.errorMessage == nil ? .white : .orange)
+                    .lineLimit(audio.errorMessage == nil ? 1 : 2)
+                    .minimumScaleFactor(0.7)
+                if audio.errorMessage == nil, audio.verse != nil {
+                    Text(reciter.name(for: appLanguage))
+                        .font(.custom("AvenirNext-Medium", size: 11))
+                        .foregroundColor(.white.opacity(0.6))
+                        .lineLimit(1)
+                }
+            }
+            .padding(.leading, 8)
+            
+            Spacer(minLength: 8)
+            
+            // Playback order follows the text, so these never mirror in right-to-left layouts
+            HStack(spacing: 4) {
+                actionButton("backward.end.fill", label: "Previous") { audio.previous() }
+                
+                if audio.isBuffering && audio.errorMessage == nil {
+                    ProgressView().tint(.teal).frame(width: 42, height: 38)
+                } else {
+                    actionButton(audio.isPlaying ? "pause.fill" : "play.fill",
+                                 label: AppTranslations.translate(audio.isPlaying ? "Pause" : "Play", to: appLanguage)) {
+                        if audio.errorMessage != nil {
+                            // Try again from where it stopped
+                            audio.play(surah: currentSurah, from: audio.verse ?? visibleVerse, reciter: reciter)
+                        } else {
+                            audio.togglePlayPause()
+                        }
+                    }
+                }
+                
+                actionButton("forward.end.fill", label: "Next") { audio.next() }
+            }
+            .environment(\.layoutDirection, .leftToRight)
+            
+            actionButton("xmark", label: "Close") { audio.stop() }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .glassEffect(.regular.tint(Color(red: 20/255, green: 36/255, blue: 44/255).opacity(0.75)).interactive(), in: .capsule)
     }
     
     private func actionIcon(_ systemName: String) -> some View {

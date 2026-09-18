@@ -61,6 +61,7 @@ actor QuranDataCache {
     private var cachedSurahs: [SurahMetadata]?
     private var cachedFullQuran: [Int: [Ayah]]? // keyed by surah number
     private var searchIndex: [SearchEntry]?
+    private var dailyVersePool: [VerseSearchResult]?
     
     private init() {}
     
@@ -155,5 +156,39 @@ actor QuranDataCache {
             if results.count >= limit { break }
         }
         return results
+    }
+    
+    // MARK: - Verse of the Day
+    
+    /// Length bounds, in letters without vowel marks. They leave out the bare letter openings ("طه", "الٓمٓ")
+    /// and page-long verses such as 2:282, which would not fit a Home card. About 3,900 verses remain.
+    private static let dailyVerseLetterRange = 40...220
+    
+    /// The verse for a calendar day. The same day gives the same verse on every device, consecutive days land
+    /// far apart in the Quran, and no verse repeats until the whole pool has been shown (over ten years).
+    func verseOfTheDay(dayNumber: Int) async throws -> VerseSearchResult {
+        if dailyVersePool == nil {
+            let quran = try loadQuran()
+            var pool: [VerseSearchResult] = []
+            for surahNumber in quran.keys.sorted() {
+                for ayah in quran[surahNumber] ?? [] where Self.dailyVerseLetterRange.contains(QuranTextEncoder.searchKey(ayah.text).count) {
+                    pool.append(VerseSearchResult(surahNumber: surahNumber, ayah: ayah))
+                }
+            }
+            dailyVersePool = pool
+        }
+        
+        guard let pool = dailyVersePool, !pool.isEmpty else {
+            throw NSError(domain: "QuranDataCache", code: 404, userInfo: [NSLocalizedDescriptionKey: "No verses available."])
+        }
+        
+        // Multiplying by a step that shares no factor with the pool size visits every verse exactly once
+        // per cycle, in a scattered order rather than walking through the Quran verse by verse.
+        func gcd(_ a: Int, _ b: Int) -> Int { b == 0 ? a : gcd(b, a % b) }
+        var step = 2659
+        while gcd(step, pool.count) != 1 { step += 2 }
+        
+        let day = ((dayNumber % pool.count) + pool.count) % pool.count
+        return pool[(day * step) % pool.count]
     }
 }

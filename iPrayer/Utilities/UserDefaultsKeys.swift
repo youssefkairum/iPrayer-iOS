@@ -12,6 +12,8 @@ enum UDKey: String, CaseIterable {
     // General Settings
     case appLanguage = "appLanguage"
     case hasSeenOnboarding = "hasSeenOnboarding"
+    case lastSeenWhatsNewVersion = "lastSeenWhatsNewVersion"
+    case installedAsUpdate = "installedAsUpdate"   // decided once: was the app already in use before this build?
     
     // Prayer Settings
     case calculationMethod = "calculationMethod"
@@ -27,6 +29,7 @@ enum UDKey: String, CaseIterable {
     // Quran reader appearance
     case quranFontSize = "quranFontSize"
     case quranReaderTheme = "quranReaderTheme"      // "paper" or "dark"
+    case quranReciter = "quranReciter"              // QuranReciter.id
     
     // Tasbih
     case tasbihCount = "tasbihCount"
