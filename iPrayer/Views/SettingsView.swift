@@ -23,6 +23,7 @@ struct SettingsView: View {
     @Environment(\.openURL) private var openURL
     
     @StateObject private var accountManager = AccountManager.shared
+    @State private var confirmDeleteAccount = false
     
     @EnvironmentObject var viewModel: PrayerViewModel
     @Environment(\.requestReview) var requestReview
@@ -104,6 +105,26 @@ struct SettingsView: View {
                                                 .background(Color.red.opacity(0.1))
                                                 .clipShape(Circle())
                                         }
+                                    }
+                                    
+                                    // Account deletion (App Store guideline 5.1.1 v)
+                                    Button {
+                                        Haptics.warning()
+                                        confirmDeleteAccount = true
+                                    } label: {
+                                        Label(AppTranslations.translate("Sign out and delete my data", to: appLanguage), systemImage: "trash")
+                                            .font(.custom("AvenirNext-Medium", size: 13))
+                                            .foregroundColor(.red.opacity(0.85))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .padding(.top, 2)
+                                    .alert(AppTranslations.translate("Delete your iPrayer data?", to: appLanguage), isPresented: $confirmDeleteAccount) {
+                                        Button(AppTranslations.translate("Delete", to: appLanguage), role: .destructive) {
+                                            withAnimation { accountManager.deleteAccount() }
+                                        }
+                                        Button(AppTranslations.translate("Cancel", to: appLanguage), role: .cancel) {}
+                                    } message: {
+                                        Text(AppTranslations.translate("Removes your name, email, bookmarks, reading position, Tasbih and prayer tracker from iCloud and signs you out. What is on this device stays until you delete the app. To stop using your Apple Account with iPrayer, see Settings > Apple Account > Sign in with Apple.", to: appLanguage))
                                     }
                                 }
                             } else {

@@ -101,4 +101,13 @@ class AccountManager: ObservableObject {
         userEmail = ""
         appleUserId = ""
     }
+    
+    /// Account deletion (App Store guideline 5.1.1 v): wipes the iCloud copy of the profile and every
+    /// synced value, then signs out. Data on this device is left alone; deleting the app removes it.
+    /// iPrayer runs no server, so the Sign in with Apple grant itself can only be revoked by the person
+    /// in Settings > Apple Account > Sign in with Apple; the confirmation text says so.
+    func deleteAccount() {
+        CloudSyncManager.shared.eraseCloudData()
+        logout()
+    }
 }

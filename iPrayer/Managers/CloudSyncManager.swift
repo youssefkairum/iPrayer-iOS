@@ -59,6 +59,16 @@ class CloudSyncManager {
         isSyncing = false
     }
     
+    /// Removes everything the app ever put in iCloud (profile, settings, progress, tracker) and stops
+    /// syncing, so the next local change cannot push any of it back up. Used by account deletion.
+    func eraseCloudData() {
+        isSyncing = false
+        for key in stringKeys + intKeys + boolArrayKeys {
+            store.removeObject(forKey: key)
+        }
+        store.synchronize()
+    }
+    
     // Explicitly push a value to the cloud when it changes locally
     func sync(key: String, value: Any) {
         guard isSyncing else { return }

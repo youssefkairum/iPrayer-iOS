@@ -4,7 +4,7 @@
 ![Language](https://img.shields.io/badge/Language-Swift-orange.svg)
 ![UI Framework](https://img.shields.io/badge/UI-SwiftUI-purple.svg)
 ![Version](https://img.shields.io/badge/Version-1.1.0-teal.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
+![License](https://img.shields.io/badge/License-All%20rights%20reserved-lightgrey.svg)
 
 **iPrayer** is a comprehensive, beautifully designed iOS application built with **SwiftUI**. It is an all-in-one companion for daily Islamic practice: accurate prayer times with adhan notifications, a Qibla compass, a fully offline Quran reader, a Dua library, a Tasbih counter, Home Screen and Lock Screen widgets, and a Live Activity that counts down to the next prayer.
 
@@ -67,6 +67,7 @@ Prayer times, the Quran text, Duas and the Tasbih all work offline. The network 
 
 ### ☁️ Account & Sync
 - **Sign in with Apple** (optional) enables iCloud key-value sync of settings, Tasbih count, reading position, bookmarks, and the prayer tracker and streak.
+- **Sign out and delete my data** (Settings > Account) removes the profile and every synced value from iCloud and signs out; on-device data stays until the app is deleted. iPrayer runs no servers, so the Sign in with Apple grant itself is revoked from Settings > Apple Account.
 - **Privacy:** Location is requested during onboarding with an explanation, and is used only to calculate prayer times and the Qibla direction.
 
 ---
@@ -199,11 +200,11 @@ iPrayerWatchWidget/                # Watch-face complications
 ---
 
 ## 📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
+The iPrayer source and design are © Youssef Keram, all rights reserved. The bundled Quran text, font, recitation audio and prayer-time library keep their own licences, listed under Acknowledgements; none of them is covered by this notice.
 
 ---
 
 ## 👤 Author
 Youssef Keram
 
-Copyright © 2025 All rights reserved.
+Copyright © 2026 Youssef Keram. All rights reserved.
