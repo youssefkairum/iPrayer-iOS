@@ -32,12 +32,16 @@ and what is still open. The README describes the product; this describes the wor
   (AppTranslations.swift) is the usual conflict point, resolved by keeping both sides then checking for
   duplicate keys (a duplicate dictionary literal key crashes at runtime); Xcode re-extracts the String Catalog on
   every build and leaves it modified, discard that unless a commit means to include it.
-- **19 September 2026, later:** branch `account-deletion` (PR #16, for the owner to merge) carries the release:
+- **19 September 2026, later:** PR #16 (`account-deletion`, MERGED to `main`, branch deleted) carried the release:
   the App Store account-deletion flow (section 6), build number 4, the README licence made consistent (all rights
   reserved; the MIT claim and the missing LICENSE file are gone), `docs/AppStoreRelease.md` (submission checklist,
   release notes, review notes, privacy answers, a draft rights email to EveryAyah) and `docs/screenshots/` (iPhone
   6.9" and iPad 13", five screens each, simulator captures). Release configuration builds clean.
-  **Next: merge #16, then the device pass in section 6 (widgets, watch, two-device deletion), then archive.**
+  A Release archive of `main` (1.1.0 build 4, widget + watch app + complication embedded, development-signed; Xcode
+  re-signs for distribution on upload) was built with `xcodebuild archive` and filed in
+  `~/Library/Developer/Xcode/Archives/2026-09-19/iPrayer 1.1.0 (4).xcarchive`, so Organizer can upload it directly.
+  **Next (owner only): Organizer > Distribute App (or re-archive), paste `docs/AppStoreRelease.md` into App Store
+  Connect with `docs/screenshots/`, submit; device pass in section 6; the EveryAyah email.**
 
 ## 2. Map of the code
 
