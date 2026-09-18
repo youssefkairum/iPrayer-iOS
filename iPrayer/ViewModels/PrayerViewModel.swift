@@ -32,6 +32,10 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     @Published var prayerTimes: [PrayerItem] = []
     @Published var todayPrayerTimes: [PrayerItem] = []
+    /// The day after the one in `prayerTimes`. The Home card shows it so it never repeats the list
+    /// behind the hero card: normally that is tomorrow, and after Isha (when `prayerTimes` has already
+    /// moved on to tomorrow) it is the day after.
+    @Published var followingDayPrayerTimes: [PrayerItem] = []
     @Published var locationName: String = "Locating..."
     @Published var qiblaDirection: Double = 0.0
     @Published var currentHeading: Double = 0.0
@@ -261,6 +265,20 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             PrayerItem(name: "Isha", time: displayPrayers.isha, isNext: !isNextDay && next == .isha)
         ]
         
+        // The day after the displayed one, for the Home card
+        var followingItems: [PrayerItem] = []
+        if let followingDate = cal.date(byAdding: .day, value: isNextDay ? 2 : 1, to: Date()),
+           let following = PrayerTimes(coordinates: coordinates, date: cal.dateComponents([.year, .month, .day], from: followingDate), calculationParameters: params) {
+            followingItems = [
+                PrayerItem(name: "Fajr", time: following.fajr, isNext: false),
+                PrayerItem(name: "Sunrise", time: following.sunrise, isNext: false),
+                PrayerItem(name: "Dhuhr", time: following.dhuhr, isNext: false),
+                PrayerItem(name: "Asr", time: following.asr, isNext: false),
+                PrayerItem(name: "Maghrib", time: following.maghrib, isNext: false),
+                PrayerItem(name: "Isha", time: following.isha, isNext: false)
+            ]
+        }
+        
         let todayItems = [
             PrayerItem(name: "Fajr", time: todayPrayers.fajr, isNext: false),
             PrayerItem(name: "Sunrise", time: todayPrayers.sunrise, isNext: false),
@@ -275,6 +293,7 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         withAnimation(.easeInOut) {
             self.prayerTimes = newItems
             self.todayPrayerTimes = todayItems
+            self.followingDayPrayerTimes = followingItems
         }
         
         let formatter = DateFormatter()

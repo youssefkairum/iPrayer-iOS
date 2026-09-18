@@ -143,9 +143,10 @@ struct PrayerListView: View {
                 }
                 .padding(.horizontal)
                 
-                // 4. FULL DAY AT A GLANCE
-                if !viewModel.prayerTimes.isEmpty {
-                    DayScheduleCard(prayers: viewModel.prayerTimes)
+                // 4. THE FOLLOWING DAY
+                // The hero card already opens the current schedule, so this card looks one day further ahead
+                if !viewModel.followingDayPrayerTimes.isEmpty {
+                    DayScheduleCard(prayers: viewModel.followingDayPrayerTimes)
                         .padding(.horizontal)
                 }
                 
@@ -286,15 +287,30 @@ struct LocationErrorCard: View {
     }
 }
 
-/// All of the day's times in one compact card, so the schedule is visible without leaving Home.
+/// The following day's times in one compact card, so Home shows what comes next without repeating
+/// the schedule behind the hero card.
 struct DayScheduleCard: View {
     let prayers: [PrayerItem]
     @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
     
-    /// After Isha the view model switches the list to tomorrow's times.
-    private var isShowingTomorrow: Bool {
-        guard let first = prayers.first else { return false }
-        return Calendar.current.isDateInTomorrow(first.time)
+    private var day: Date { prayers.first?.time ?? Date() }
+    
+    /// "Tomorrow", or the weekday name once the hero card has itself moved on to tomorrow (after Isha)
+    private var title: String {
+        if Calendar.current.isDateInTomorrow(day) {
+            return AppTranslations.translate("Tomorrow", to: appLanguage)
+        }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: appLanguage)
+        formatter.dateFormat = "EEEE"
+        return formatter.string(from: day)
+    }
+    
+    private var dateText: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: appLanguage)
+        formatter.setLocalizedDateFormatFromTemplate("EEE d MMM")
+        return formatter.string(from: day)
     }
     
     var body: some View {
@@ -302,32 +318,32 @@ struct DayScheduleCard: View {
             HStack {
                 Image(systemName: "calendar")
                     .foregroundColor(.teal)
-                Text(AppTranslations.translate(isShowingTomorrow ? "Tomorrow's schedule" : "Prayer Times", to: appLanguage))
+                Text(title)
                     .font(.custom("AvenirNext-DemiBold", size: 14))
                     .foregroundColor(.white)
                 Spacer()
+                Text(dateText)
+                    .font(.custom("AvenirNext-Medium", size: 12))
+                    .foregroundColor(.gray)
             }
             
             VStack(spacing: 0) {
                 ForEach(prayers) { prayer in
-                    let isPast = !prayer.isNext && prayer.time < Date()
-                    let accent = PrayerTheme.theme(for: prayer.name).shadowColor
-                    
                     HStack(spacing: 12) {
                         Image(systemName: prayer.icon)
                             .font(.system(size: 14))
                             .frame(width: 22)
-                            .foregroundColor(prayer.isNext ? accent : (isPast ? .gray : .white.opacity(0.8)))
+                            .foregroundColor(.white.opacity(0.8))
                         
                         Text(AppTranslations.translate(prayer.name, to: appLanguage))
-                            .font(.custom(prayer.isNext ? "AvenirNext-Bold" : "AvenirNext-Medium", size: 16))
-                            .foregroundColor(isPast ? .gray : .white)
+                            .font(.custom("AvenirNext-Medium", size: 16))
+                            .foregroundColor(.white)
                         
                         Spacer()
                         
                         Text(prayer.time, style: .time)
-                            .font(.system(size: 15, weight: prayer.isNext ? .bold : .regular, design: .monospaced))
-                            .foregroundColor(prayer.isNext ? accent : (isPast ? .gray : .white.opacity(0.8)))
+                            .font(.system(size: 15, weight: .regular, design: .monospaced))
+                            .foregroundColor(.white.opacity(0.8))
                     }
                     .padding(.vertical, 9)
                     

@@ -17,6 +17,26 @@
         }
       }
     },
+    "%@ %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$lld"
+          }
+        }
+      }
+    },
+    "%@ • %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ • %2$@"
+          }
+        }
+      }
+    },
     "%@ • %lld Verses" : {
       "localizations" : {
         "en" : {
@@ -70,6 +90,12 @@
 
     },
     "100" : {
+
+    },
+    "A+" : {
+
+    },
+    "A−" : {
 
     },
     "About" : {
