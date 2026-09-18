@@ -49,14 +49,21 @@ iPrayer/
     QuranView.swift           surah list, pinned search (names + verse text), bookmarks, Continue Reading
     SurahDetailView.swift     reader screen: text size/theme/reciter/download menu, verse action bar, playback bar
     MushafTextView.swift      UITextView-based reader: page-by-page loading, highlights, resume, auto-follow
-    OnboardingView.swift      4 slides: welcome, features, location (asks permission), sign-in
-    WhatsNewView.swift        one-line bullets; contentVersion gate
+    OnboardingView.swift      one scaffold (progress capsules, language menu, fixed-height controls that crossfade)
+                              + 4 slides that animate in once; fresh installs start in the phone's language
+    WhatsNewView.swift        four sections (Quran / Every day / Everywhere / Look and feel), prayer-coloured
+                              tiles, contentVersion gate; `-debugShowWhatsNew 1` forces it
+    TasbihView.swift          Dhikr chips (6 phrases, `tasbihDhikr` key), target chips, position-in-cycle count,
+                              whole band taps, reset confirmation
+    QiblaCompassView.swift    glass dial + 72-tick rose, needle to the Kaaba, turn guidance card, distance from
+                              SharedPrayerConfig coords in device units, no-location card
     HomeWidgets.swift         streak/tracker card, Dua of the Day card, Verse of the Day card (2-line cap)
     DuaLibraryView.swift      search + category chips (Liquid Glass), cards with copy/share, repeat badge, evening text
     AudioStorageView.swift    downloaded-audio manager: per reciter / per surah sizes and deletion
     AboutView.swift           fits one screen; acknowledgements as provider name + subtitle
     SettingsView.swift        Account, Prayer Calculation, Notifications, Quran Audio, General (language + about)
     Motion.swift              AppEntrance flag, CardPressStyle, .entrance(index:shown:) stagger
+    SettingsView.swift        + Apple Watch card (only when PhoneWatchSync says paired && !installed)
     PrayerTheme.swift         PrayerTheme (reads PrayerPalette) + AppAppearance (status-bar scheme flip)
   ViewModels/PrayerViewModel  location, Adhan calc, notifications (7 days + pre-prayer), widget config, Live Activity
   Managers/
@@ -84,12 +91,18 @@ iPrayer/
                               Tasbih + tracker up) with the same date-guard rule as iCloud; Tasbih uses tasbihUpdatedAt
   Managers/PhoneWatchSync.swift  WCSession on the phone: updateApplicationContext down, applies wrist changes up
 iPrayerWidget/                widget computes its own timeline with Adhan from SharedPrayerConfig; Live Activity UI
+  TodayPrayersWidget.swift    systemMedium/Large: all six times, passed ticked/dimmed, next highlighted; entry per
+                              prayer time, reload at midnight; computes with Adhan from SharedPrayerConfig
   VerseOfTheDayWidget.swift   systemMedium/Large + accessoryRectangular/Inline from SharedVerseSchedule; font is a
                               widget resource registered in iPrayerWidget/Info.plist (INFOPLIST_KEY_ form is NOT merged)
-iPrayerWatch/                 watchOS app: WatchModel (CLLocationManager one-shot fix + heading, Adhan via PrayerSchedule,
-                              writes SharedPrayerConfig to the App Group for the complications), WatchSync (WCSession),
-                              Views/WatchRootView (vertical TabView: next prayer, today, tracker) + WatchPages (Tasbih, Qibla)
-iPrayerWatchWidget/           NextPrayerComplication: accessoryCircular/Corner/Rectangular/Inline from SharedPrayerConfig
+iPrayerWatch/                 watchOS app (min 10.0): WatchModel (one-shot fix on activation, 6-hourly background refresh
+                              `iPrayerWatch.refresh`, ignores fixes that barely moved, reverse-geocoded city, Hijri date,
+                              next + following prayer, Adhan via PrayerSchedule, writes SharedPrayerConfig for the
+                              complications), WatchSync (WCSession), Views/WatchRootView (NavigationStack + vertical TabView
+                              with per-page container backgrounds: next prayer, today, tracker) + WatchPages (Tasbih with
+                              Digital Crown, Qibla with distance + no-compass state)
+iPrayerWatchWidget/           NextPrayerComplication: accessoryCircular/Corner/Rectangular/Inline from SharedPrayerConfig,
+                              with TimelineEntryRelevance so the Smart Stack surfaces it near prayer time
 ```
 
 Two localisation systems coexist: `Localizable.xcstrings` for `Text("literal")` and `AppTranslations`
@@ -145,6 +158,20 @@ must follow the *in-app* language (notifications, some labels) goes through
   KVS when signed in, and the KVS id is per bundle id, so WatchConnectivity is the one reliable channel).
 - **Wrist changes win by date.** Tracker/streak use the same "newer yyyy-MM-dd wins" rule as CloudSyncManager;
   the Tasbih uses `tasbihUpdatedAt` (set wherever a person changes it) so the last touch wins on either side.
+- **Tracker day rules (PR #7).** A saved tracker is adopted only if saved today; a new day starts from today's
+  iCloud tracker when another device has one (never blanks over it); same-day ticks merge with OR and the
+  streak keeps the larger count, on both the iCloud and the watch paths; the model observes the day change and
+  foreground itself. The Tasbih uses `tasbihUpdatedAt`, last touch wins.
+- **Fresh installs start in the phone's language.** `AppTranslations.preselectLanguageFromDeviceIfNeeded` runs
+  in `iPrayerApp.init` after the update-vs-fresh decision. It reads the PERSISTED defaults domain because a
+  registered "en" default makes `string(forKey:)` look chosen on a brand-new install.
+- **Onboarding controls have a fixed height (104 pt) and crossfade**; slides animate in once and never out.
+  Anything else made the features -> location page change feel rough.
+- **"Sign in with Apple" text follows the device language** (Apple's button, no API). Not replaced with a custom
+  button: review risk for little gain.
+- **Copyright line** is built by `AppTranslations.copyrightLine`: RTL languages lead with the phrase, the
+  Latin name+year sit in a first-strong isolate.
+- **Tasbih changing the dhikr keeps the count** (people run one count across phrases).
 - **Deployment target 26.0** for the iPhone app and widget; **watchOS 10.0** for the watch app and complications
   (nothing in them needs newer; Series 4/5 top out at watchOS 10). Everywhere else 26.0 (was 26.1/26.6/26.2). iPad is targeted and cannot be dropped.
 - **Deleted on purpose:** the seven-verse Verse-of-the-Day list, DuaWidget, dhikr counter, KaabaIcon
@@ -170,6 +197,10 @@ e.g. `-lastSeenWhatsNewVersion 1.0.0`, `-hasSeenOnboarding YES`, `-appLanguage a
 (the last one shows the signed-in greeting without signing in).
 Deep links: `xcrun simctl openurl <sim> "iprayer://verse/2/255"` (the simulator shows an "Open in iPrayer?"
 confirmation first).
+Fresh-install-in-Arabic test: `simctl uninstall`, install, then launch with
+`-AppleLanguages "(ar)" -hasSeenOnboarding NO -installedAsUpdate NO` (the sim's already-granted location makes
+the app think it is an update otherwise). `-tasbihCount 47` seeds the Tasbih. If `xcodebuild` says the build
+database is locked, Xcode is building at the same time: wait and retry.
 
 **Apple Watch:** no watchOS simulator runtime is installed on this Mac (`xcrun simctl list runtimes` shows none),
 only the watchOS 27 SDK, so the watch targets BUILD (as part of the iPhone scheme) but have never RUN. Install a
