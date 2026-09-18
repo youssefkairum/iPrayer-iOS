@@ -14,7 +14,7 @@ Prayer times, the Quran text, Duas and the Tasbih all work offline. The network 
 
 ### 🕌 Prayer Times
 - **Accurate Calculation:** Times for Fajr, Sunrise, Dhuhr, Asr, Maghrib and Isha from your location, using the [Adhan](https://github.com/batoulapps/adhan-swift) library.
-- **Home Dashboard:** A themed "hero" card counting down to the next prayer, the full day's schedule at a glance, the Hijri date, and a Verse of the Day.
+- **Home Dashboard:** Everything on one screen: the Hijri date and your location, a themed "hero" card counting down to the next prayer, the prayer tracker, a Dua of the Day, tomorrow's times as a row of coloured symbols, and a Verse of the Day.
 - **11 Calculation Methods:** Muslim World League, Egyptian, Karachi, Umm Al-Qura, Dubai, ISNA, Kuwait, Qatar, Singapore, Turkey and Tehran, with Standard or Hanafi Asr.
 - **Prayer Tracker & Streak:** Mark each of the five prayers as done and build a daily streak.
 
@@ -25,7 +25,8 @@ Prayer times, the Quran text, Duas and the Tasbih all work offline. The network 
 - **Your Choice:** Each of these can be switched on or off in Settings, and all of them follow the in-app language.
 
 ### 📱 Widgets & Live Activity
-- **Widgets:** Small and medium Home Screen widgets plus inline, circular and rectangular Lock Screen widgets showing the next prayer.
+- **Next Prayer Widgets:** Small and medium Home Screen widgets plus inline, circular and rectangular Lock Screen widgets showing the next prayer.
+- **Verse of the Day Widgets:** Medium and large Home Screen widgets and rectangular and inline Lock Screen widgets with the day's verse in the Quran font. Tapping opens the verse in the reader.
 - **Self-Sufficient:** The widget computes its own timeline with Adhan from settings shared through an App Group, so it stays correct without opening the app.
 - **Live Activity & Dynamic Island:** A countdown to the next prayer that switches to "Now" when the time arrives.
 
@@ -37,10 +38,13 @@ Prayer times, the Quran text, Duas and the Tasbih all work offline. The network 
 - **Verse Actions:** Tap a verse to copy, share or bookmark it. Bookmarks appear on the Quran tab.
 - **Search:** Find surahs by name or number, or search the verse text. Matching ignores vowel marks and accepts both Uthmani and modern spelling.
 - **Recitation:** Listen verse by verse with a choice of six reciters. The verse being recited is highlighted and the page follows along. Start from any verse, and control playback from the Lock Screen. Audio streams from the internet, or download any surah for offline listening.
+- **Storage Manager:** Settings lists every downloaded surah by reciter with its size, so you can delete one surah, one reciter, or everything.
 - **Comfortable Reading:** Adjustable text size, paper and dark themes, a link to the next surah, and the screen stays awake while you read.
 
 ### 🤲 Dua Library
-- Authentic supplications grouped by occasion (morning and evening, after prayer, travel, forgiveness and more) with Arabic text, translation and source.
+- **50 Authentic Duas:** Grouped by occasion (morning and evening, sleep, after prayer, anxiety, protection, forgiveness, guidance, travel, home, food, parents, knowledge) with Arabic text, translation and source.
+- **Morning & Evening Adhkar:** The Hisn al-Muslim adhkar in the book's order, with repeat counts and the evening wording where it differs.
+- **Find and Share:** Search Arabic or translation, filter by category, and copy or share any dua. A Dua of the Day on the Home screen opens the library at that dua.
 
 ### 🧭 Qibla Compass
 - **Real-Time Tracking:** Uses the device heading and your coordinates to point towards the Kaaba.
@@ -90,6 +94,9 @@ Debug builds accept these arguments to open a specific screen, which helps with 
 | `-debugInitialTab quran` | Starts on a tab: `quran`, `tasbih`, `qibla` or `settings` |
 | `-debugOpenSurah 18 -debugOpenVerse 40` | Opens that surah in the reader, optionally at a verse |
 | `-debugOnboardingSlide 2` | Starts onboarding on that slide |
+| `-appLanguage ar` / `-userName "Name"` | Any UserDefaults key can be overridden for one run |
+
+Deep link: `iprayer://verse/2/255` opens the reader at a verse (used by the Verse of the Day widget).
 
 ## 🎨 Design System
 Colors: The app uses a consistent Deep Blue/Teal gradient theme.
@@ -111,17 +118,21 @@ iPrayer/
 ├── iPrayerApp.swift               # Entry point, permissions flow, appearance
 ├── PrayerAttributes.swift         # Live Activity attributes (shared with the widget)
 ├── SharedPrayerSchedule.swift     # Prayer calculation shared by the app and the widget
+├── SharedVerseOfTheDay.swift      # Daily-verse schedule shared with the widget
 ├── Views/
 │   ├── ContentView.swift          # Tab container and floating tab bar
 │   ├── OnboardingView.swift       # Welcome, features, location, sign-in
 │   ├── SplashScreenView.swift
 │   ├── PrayerListView.swift       # Home dashboard
 │   ├── PrayerDetailView.swift     # Full schedule
-│   ├── HomeWidgets.swift          # Tracker, streak, Verse of the Day
+│   ├── HomeWidgets.swift          # Tracker, streak, Dua of the Day, Verse of the Day
+│   ├── Motion.swift               # Press style, entrance stagger, app-reveal flag
+│   ├── WhatsNewView.swift
 │   ├── QuranView.swift            # Surah list, search, bookmarks
 │   ├── SurahDetailView.swift      # Reader screen and verse actions
 │   ├── MushafTextView.swift       # Page-based Quran text view
-│   ├── DuaLibraryView.swift
+│   ├── DuaLibraryView.swift       # Search, category chips, copy/share
+│   ├── AudioStorageView.swift     # Downloaded audio manager
 │   ├── QiblaCompassView.swift
 │   ├── TasbihView.swift
 │   ├── SettingsView.swift
@@ -143,6 +154,9 @@ iPrayer/
 ├── Utilities/
 │   ├── QuranTextEncoder.swift     # Display re-encoding for the KFGQPC font
 │   ├── AppTranslations.swift
+│   ├── Haptics.swift
+│   ├── DeepLinks.swift            # iprayer://verse/S/A
+│   ├── ZipArchive.swift
 │   └── UserDefaultsKeys.swift
 ├── Localizable.xcstrings
 ├── quran-uthmani.json             # Offline Quran text
@@ -151,7 +165,8 @@ iPrayer/
 └── KFGQPC Uthmanic Script HAFS Regular.otf
 
 iPrayerWidget/
-├── iPrayerWidget.swift            # Home Screen and Lock Screen widgets
+├── iPrayerWidget.swift            # Next-prayer Home Screen and Lock Screen widgets
+├── VerseOfTheDayWidget.swift      # Verse of the Day Home Screen and Lock Screen widgets
 ├── iPrayerWidgetLiveActivity.swift
 └── iPrayerWidgetBundle.swift
 ```

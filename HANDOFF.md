@@ -1,6 +1,6 @@
 # iPrayer — Handoff Notes
 
-Written 18 September 2026 at the end of a long working session. This is the context a future session
+Written 18 September 2026 at the end of a long working session; updated the same day after the 1.1.0 feature branch was pushed. This is the context a future session
 needs that is *not* obvious from the code: where things stand, why decisions were made, how to test,
 and what is still open. The README describes the product; this describes the work.
 
@@ -15,27 +15,22 @@ and what is still open. The README describes the product; this describes the wor
   `gh` lives in `~/.local/bin`, which `~/.zshrc` now adds to PATH.
 - **Merged:** PR #1 (reorganisation + first bug pass — merged by the author after its first two commits),
   PR #2 (everything up to the Quran reader rebuild + README), PR #3 (project file ordering).
-- **Open:** PR #4 `home-card-following-day` → `main` (Home card shows the following day; catalog entries).
-- **Uncommitted, on the `home-card-following-day` branch, all building with zero warnings:**
-  prayer-colour palette shared with widget/Live Activity · What's New page · Liquid Glass · bookmark
-  "you are here" highlight · update-detection fix for the What's New page · Verse of the Day from the
-  whole Quran · Quran recitation (streaming) · offline audio downloads (ZIP) · audio source licence
-  findings + in-app acknowledgements · playback bug fixes (previous, switch verse, scroll jump, offline
-  runaway) · audio session off the main thread · next-surah link spacing · location purpose string +
-  localisation · privacy manifests + export-compliance flag · downloaded-audio storage manager
-  (Settings > Manage Downloads: per reciter, per surah, verified on device) · compact About + Settings
-  (Language folded into General) · Home fits one screen (Tomorrow strip, Dua of the Day card, 2-line
-  verse cap, one-line greeting) · app-wide motion + haptics (Haptics.swift, Motion.swift) · Dua library
-  rebuilt (31 duas, search, category chips, copy/share, Home card deep-links to today's dua) · reader
-  references follow the app language (Arabic name + digits) · Hisn al-Muslim morning/evening adhkar (50 duas
-  total, repeat counts, evening variants) · Verse of the Day Home Screen widget (`iPrayerVerseWidget`: the app
-  writes 31 days of verses to the App Group via SharedVerseOfTheDay.swift, compiled into both targets; the font
-  is a widget resource registered in iPrayerWidget/Info.plist) · `iprayer://verse/S/A` deep link (DeepLinks.swift)
-  handled in ContentView/QuranView, which also replaced the debug-only open-surah path. NOT verified: the widget
-  rendered on a Home Screen (the simulator can't add one non-interactively); the deep link and the shared
-  schedule were.
-  **First job for the next session: commit this as separate commits, one per feature, then PR.**
-  Do not lump it into PR #4 unreviewed.
+- **Open:** PR #4 `home-card-following-day` -> `main` (Home card shows the following day; catalog entries).
+- **Pushed, no PR yet:** `release-1.1.0-features` (branched from PR #4's head, so it carries those two commits
+  plus ten of its own). Everything below is committed there; the working tree is clean. Contents, one commit
+  each where files allowed it (a few files carry more than one feature, so not every intermediate commit
+  builds on its own; the head does, with zero warnings):
+  privacy manifests + export-compliance flag + localised location purpose · shared prayer palette
+  (app/widget/Live Activity) + Haptics.swift + Motion.swift + all translations · Quran recitation, ZIP
+  downloads, storage manager (Settings > Downloaded Audio: per reciter, per surah; verified on device),
+  reader labels in the app language · Verse of the Day from the whole Quran + Home/Lock Screen widget +
+  `iprayer://verse/S/A` deep link · Dua library rebuilt (50 duas incl. Hisn al-Muslim morning/evening adhkar
+  with repeat counts and evening variants; search, category chips, copy/share; Home card deep-links to
+  today's dua) · What's New page, compact About, animated splash/onboarding hand-offs · Home on one screen
+  (one-line greeting, Tomorrow strip with coloured symbols + AM/PM, Dua of the Day card, 2-line verse
+  cap, staggered entrance, pressable cards), compact Settings (Language folded into General), tab-bar
+  bounce + selection haptic · README + these notes.
+  **Next: merge PR #4, then open a PR from `release-1.1.0-features` against `main`.**
 
 ## 2. Map of the code
 
@@ -43,16 +38,23 @@ and what is still open. The README describes the product; this describes the wor
 iPrayer/
   iPrayerApp.swift            root: permissions timing, What's New trigger, midnight refresh, window scheme
   SharedPrayerSchedule.swift  compiled into BOTH targets: prayer calc params, day schedule, PrayerPalette
+  SharedVerseOfTheDay.swift   compiled into BOTH targets: the 31-day verse schedule the app writes for the widget
   PrayerAttributes.swift      Live Activity state (nonisolated), also in the widget target
   Views/
     ContentView.swift         custom floating tab bar (Liquid Glass); visited tabs kept alive, compass excluded
-    PrayerListView.swift      Home: hero card, tracker, "Tomorrow" schedule card, Verse of the Day, location cards
+    PrayerListView.swift      Home: date line + location pill, one-line greeting, hero card, tracker + Dua of the Day,
+                              Tomorrow strip (coloured symbols, time, AM/PM), Verse of the Day; entrance stagger
     QuranView.swift           surah list, pinned search (names + verse text), bookmarks, Continue Reading
     SurahDetailView.swift     reader screen: text size/theme/reciter/download menu, verse action bar, playback bar
     MushafTextView.swift      UITextView-based reader: page-by-page loading, highlights, resume, auto-follow
     OnboardingView.swift      4 slides: welcome, features, location (asks permission), sign-in
     WhatsNewView.swift        one-line bullets; contentVersion gate
-    HomeWidgets.swift         streak/tracker card, Duas card, Verse of the Day card
+    HomeWidgets.swift         streak/tracker card, Dua of the Day card, Verse of the Day card (2-line cap)
+    DuaLibraryView.swift      search + category chips (Liquid Glass), cards with copy/share, repeat badge, evening text
+    AudioStorageView.swift    downloaded-audio manager: per reciter / per surah sizes and deletion
+    AboutView.swift           fits one screen; acknowledgements as provider name + subtitle
+    SettingsView.swift        Account, Prayer Calculation, Notifications, Quran Audio, General (language + about)
+    Motion.swift              AppEntrance flag, CardPressStyle, .entrance(index:shown:) stagger
     PrayerTheme.swift         PrayerTheme (reads PrayerPalette) + AppAppearance (status-bar scheme flip)
   ViewModels/PrayerViewModel  location, Adhan calc, notifications (7 days + pre-prayer), widget config, Live Activity
   Managers/
@@ -60,7 +62,7 @@ iPrayer/
     QuranAudioPlayer.swift    AVQueuePlayer per-verse streaming/local, prefetch, session mgmt, failure handling
     QuranAudioDownloads.swift per-surah ZIP download (fallback per verse), backup-excluded storage
     QuranBookmarks.swift      bookmarks store (JSON in UserDefaults, iCloud-synced)
-    VerseOfTheDay.swift       date-based pick, refreshes on day change / foreground
+    VerseOfTheDay.swift       date-based pick, refreshes on day change / foreground; shares 31 days with the widget
     CloudSyncManager.swift    NSUbiquitousKeyValueStore sync incl. tracker/streak with date-guarded merge
     AccountManager.swift      Sign in with Apple, credential-revocation check, shared sign-in handler
     NotificationManager.swift daily Quran reminders (in-app language)
@@ -68,12 +70,17 @@ iPrayer/
     QuranTextEncoder.swift    Tanzil→KFGQPC display re-encoding, basmala removal, Arabic digits, search folding
     AppTranslations.swift     in-app translation table (9 languages) + catalogString(...) for xcstrings keys
     ZipArchive.swift          minimal ZIP reader (stored + deflate, CRC-checked)
+    Haptics.swift             tap / soft / rigid / selection / success / warning, used everywhere
+    DeepLinks.swift           DeepLinkRouter: iprayer://verse/S/A -> Quran tab pushes the reader
+  Models/DuaLibraryData.swift 50 duas with sources; duaOfTheDay(); displayArabic swaps the Arabic comma
     UserDefaultsKeys.swift    UDKey enum — every persisted key
   Localizable.xcstrings       String Catalog (Text literals); InfoPlist.xcstrings localises the location prompt
   quran-uthmani.json          Tanzil Uthmani text, slimmed to number/text/numberInSurah/page/juz (1.76 MB)
   adhan.caf                   IMA4 notification sound (mp3 is ignored by iOS)
   PrivacyInfo.xcprivacy       required-reason API declaration (UserDefaults, CA92.1 + 1C8F.1)
 iPrayerWidget/                widget computes its own timeline with Adhan from SharedPrayerConfig; Live Activity UI
+  VerseOfTheDayWidget.swift   systemMedium/Large + accessoryRectangular/Inline from SharedVerseSchedule; font is a
+                              widget resource registered in iPrayerWidget/Info.plist (INFOPLIST_KEY_ form is NOT merged)
 ```
 
 Two localisation systems coexist: `Localizable.xcstrings` for `Text("literal")` and `AppTranslations`
@@ -112,6 +119,17 @@ must follow the *in-app* language (notifications, some labels) goes through
   the blur material on purpose (HIG + performance).
 - **Reader status bar:** the window scheme flips light while the paper theme is on screen
   (`AppAppearance`); app content is pinned dark. `statusBarHidden` and toolbarColorScheme alone did not work.
+- **Home fits one 6.1" screen with the tab bar.** The budget is tight (about 9 pt spare with a signed-in name):
+  greeting on one line (name in the same Text, shrinks before it wraps), location pill on the date line,
+  Tomorrow as one row, verse preview capped at two lines. Adding height anywhere on Home pushes the verse
+  under the tab bar; the owner rejected a two-line greeting for exactly that reason.
+- **Verse widget data.** The extension cannot read the 1.7 MB Quran, so the app writes the next 31 daily
+  verses (font-encoded text + localised reference) to the App Group on every verse refresh and language
+  change; the widget builds one entry per local day and asks again when the list runs out.
+- **Deep link replaced the debug open path.** `iprayer://verse/S/A` and `-debugOpenSurah` both flow through
+  DeepLinkRouter -> QuranView.openLinkedVerseIfPossible, which waits for the surah list to load.
+- **Dua cards show a plain comma.** The KFGQPC font draws U+060C as a verse ornament (the circles seen on
+  device); `displayArabic` swaps it for display only, copy/share keep the real text.
 - **Deployment target 26.0** everywhere (was 26.1/26.6/26.2). iPad is targeted and cannot be dropped.
 - **Deleted on purpose:** the seven-verse Verse-of-the-Day list, DuaWidget, dhikr counter, KaabaIcon
   catalog, unused API structs, `adhan.mp3`.
@@ -132,7 +150,10 @@ xcrun simctl io <sim> screenshot --type=png out.png       # captures no status b
 `-debugInitialTab quran|tasbih|qibla|settings` · `-debugOpenSurah N` · `-debugOpenVerse N` ·
 `-debugOnboardingSlide N` · `-debugShowWhatsNew 1` · `-debugAudioBaseURL https://unreachable.invalid`
 (fails every verse, to test offline handling). Any UserDefaults key can also be overridden for one run,
-e.g. `-lastSeenWhatsNewVersion 1.0.0` or `-hasSeenOnboarding YES`.
+e.g. `-lastSeenWhatsNewVersion 1.0.0`, `-hasSeenOnboarding YES`, `-appLanguage ar`, `-userName "Youssef Keram"`
+(the last one shows the signed-in greeting without signing in).
+Deep links: `xcrun simctl openurl <sim> "iprayer://verse/2/255"` (the simulator shows an "Open in iPrayer?"
+confirmation first).
 
 **Simulator quirks learned the hard way**
 - The iOS Simulator MCP tool (`attach`/`tap`/`swipe`/`text`) works, but each call takes ~25 s to return.
@@ -158,16 +179,23 @@ encoder or the font changes.
 ## 5. Verified vs not verified (as of this handoff)
 
 Verified on the iPhone 17 simulator (screenshots + logs): every tab, onboarding incl. the real location
-prompt, What's New for update vs fresh install, Home "Tomorrow" card, Verse of the Day + tap-through,
+prompt, What's New for update vs fresh install, Home layout with and without a signed-in name (incl. a long
+name), Tomorrow strip, Dua of the Day card -> library scrolled to today's dua, Verse of the Day + tap-through,
 reader open-at-verse with gold mark, selection with no scroll jump, text size + dark theme, next-surah
 link, verse search incl. modern spelling, bookmarks, recitation start/follow/previous/switch-verse,
-ZIP download of Al-Baqara (< 30 s), offline failure handling (via debug host), Live Activity colours on
-the Lock Screen, Liquid Glass surfaces, iPad portrait (Home, reader), string tables per language.
+ZIP download of Al-Baqara (< 30 s), offline failure handling (via debug host), storage manager (single
+surah, whole reciter incl. basmala cleanup), Arabic reader labels in the playback bar, Duas library
+search/chips/badges/copy-share layout, deep link `iprayer://verse/2/255`, the 31-day shared verse
+schedule in the App Group, the widget bundle carrying the font + UIAppFonts, splash -> Home hand-off
+mid-entrance, Live Activity colours on the Lock Screen, Liquid Glass surfaces, iPad portrait (Home,
+reader), string tables per language.
+Verified on the owner's iPhone: storage manager (after the /private/var path fix), About and Duas library.
 
-Not verified: iPad landscape · Dynamic Island appearance (capture can't show it) · Home Screen widget
-on a real Home Screen · Live Activity "Now" state · pre-prayer reminder firing · true Airplane-Mode
-playback of downloaded audio · two-device iCloud sync · real midnight rollover · audio *sound* (can't
-hear the simulator; timings from the player log match file lengths) · Lock Screen playback controls.
+Not verified: the Verse of the Day widget actually rendered on a Home Screen or Lock Screen (the simulator
+can't add one non-interactively) · how the haptics feel (simulator has none) · iPad landscape · Dynamic
+Island appearance · Live Activity "Now" state · pre-prayer reminder firing · true Airplane-Mode playback
+of downloaded audio · two-device iCloud sync · real midnight rollover of verse/dua/widget · audio *sound*
+· Lock Screen playback controls · the 23 new adhkar translations in Urdu/Hindi/Russian/Chinese.
 
 ## 6. Open items
 
@@ -181,7 +209,9 @@ hear the simulator; timings from the player log match file lengths) · Lock Scre
 - README claims MIT and a LICENSE file; there is no LICENSE file and the README also says
   "All rights reserved" — author's call.
 - Translations were written by the model: Arabic/French/German/Turkish confident; Urdu/Hindi/Russian/
-  Chinese need a native read.
+  Chinese need a native read. This now includes 39 dua translations (7 languages each).
+- Verse widget: confirm on a device that the KFGQPC font renders in both Home Screen sizes and the Lock
+  Screen rectangular family; if not, fall back to the system font in the widget only.
 
 **Features suggested, not built**
 - Cache-as-you-listen (save streamed verses), background `URLSession` downloads, "download all",
