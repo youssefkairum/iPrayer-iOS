@@ -76,9 +76,9 @@ struct SplashScreenView: View {
                 
                 // 4. Copyright Footer
                 let year = Calendar.current.component(.year, from: Date())
-                Text("Copyright \(String(year)) Youssef Keram all rights reserved")
-                    .font(.caption2)
-                    .foregroundColor(.white.opacity(0.4))
+                Text("© \(String(year)) Youssef Keram. All rights reserved.")
+                    .font(.system(size: 13))
+                    .foregroundColor(.gray)
                     .padding(.bottom, 40)
                     .opacity(footerOpacity)
             }

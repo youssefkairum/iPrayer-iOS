@@ -61,8 +61,7 @@ struct OnboardingView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.teal)
-                            .cornerRadius(15)
+                            .glassEffect(.regular.tint(.teal).interactive(), in: RoundedRectangle(cornerRadius: 15, style: .continuous))
                     }
                     .padding(.horizontal, 40)
                     .padding(.bottom, 60)
@@ -90,8 +89,7 @@ struct OnboardingView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.teal)
-                            .cornerRadius(15)
+                            .glassEffect(.regular.tint(.teal).interactive(), in: RoundedRectangle(cornerRadius: 15, style: .continuous))
                     }
                     .padding(.horizontal, 40)
                     .padding(.bottom, 60)
@@ -140,8 +138,7 @@ struct OnboardingView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.teal)
-                            .cornerRadius(15)
+                            .glassEffect(.regular.tint(.teal).interactive(), in: RoundedRectangle(cornerRadius: 15, style: .continuous))
                         }
                         
                         if viewModel.locationAuthorization == .notDetermined {
@@ -235,8 +232,7 @@ struct OnboardingView: View {
                                 .foregroundColor(.white)
                         }
                         .padding(10)
-                        .background(Color.black.opacity(0.3))
-                        .cornerRadius(20)
+                        .glassEffect(.regular.interactive(), in: .capsule)
                     }
                     // This overlay respects the safe area, so a small offset clears the status bar on every device
                     .padding(.top, 8)
@@ -264,7 +260,8 @@ struct OnboardingView: View {
     }
     
     private func finishOnboarding() {
-        withAnimation(.easeInOut(duration: 0.8)) {
+        Haptics.success()
+        withAnimation(.spring(response: 0.7, dampingFraction: 0.85)) {
             hasSeenOnboarding = true
         }
     }

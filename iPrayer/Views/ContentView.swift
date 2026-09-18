@@ -65,6 +65,12 @@ struct ContentView: View {
             .onChange(of: selectedTab) { _, newTab in
                 loadedTabs.insert(newTab)
             }
+            // iprayer://verse/2/255 (from the Verse of the Day widget) opens the reader at that verse
+            .onOpenURL { url in
+                if DeepLinkRouter.shared.handle(url) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { selectedTab = .quran }
+                }
+            }
         }
     }
     
@@ -92,18 +98,24 @@ enum Tab: String, CaseIterable {
 
 struct CustomTabBar: View {
     @Binding var selectedTab: Tab
+    /// Bumped per tab when it is chosen, so only that icon bounces
+    @State private var bounces: [Tab: Int] = [:]
     
     var body: some View {
         HStack {
             ForEach(Tab.allCases, id: \.rawValue) { tab in
                 Spacer()
                 Button(action: {
+                    guard selectedTab != tab else { return }
+                    Haptics.selection()
+                    bounces[tab, default: 0] += 1
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         selectedTab = tab
                     }
                 }) {
                     Image(systemName: tab.rawValue)
                         .font(.system(size: 24))
+                        .symbolEffect(.bounce, value: bounces[tab, default: 0])
                         .foregroundColor(selectedTab == tab ? .teal : .gray.opacity(0.8))
                         .scaleEffect(selectedTab == tab ? 1.25 : 1.0)
                         // Glow effect for selected item
@@ -113,13 +125,9 @@ struct CustomTabBar: View {
             }
         }
         .frame(height: 70)
-        .background(Material.ultraThinMaterial)
-        .cornerRadius(30)
-        .overlay(
-            RoundedRectangle(cornerRadius: 30)
-                .stroke(Color.white.opacity(0.2), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
+        // Liquid Glass (iOS 26). It refracts the content scrolling underneath and brings its own edge
+        // highlight and shadow, so the old material, stroke and drop shadow are gone.
+        .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 30, style: .continuous))
         .padding(.horizontal)
     }
 }

@@ -7,16 +7,20 @@ import ActivityKit
 import WidgetKit
 import SwiftUI
 
+private extension PrayerAttributes.ContentState {
+    /// The same colors as the hero card for this prayer
+    var palette: PrayerPalette {
+        PrayerPalette.palette(for: prayerKey ?? PrayerPalette.prayerName(forIcon: prayerIcon) ?? "")
+    }
+}
+
 struct iPrayerWidgetLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: PrayerAttributes.self) { context in
             // Lock Screen UI & Notification Center
             ZStack {
-                LinearGradient(
-                    gradient: Gradient(colors: [Color(red: 0.0, green: 0.65, blue: 0.70), Color(red: 0.0, green: 0.20, blue: 0.35)]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+                // Matches the hero card's gradient for this prayer
+                context.state.palette.gradient
                 
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(alignment: .top) {
@@ -81,7 +85,7 @@ struct iPrayerWidgetLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     HStack {
                         Image(systemName: context.state.prayerIcon)
-                            .foregroundColor(.teal)
+                            .foregroundColor(context.state.palette.accent)
                         Text(context.state.prayerName)
                             .font(.headline)
                             .foregroundColor(.white)
@@ -93,11 +97,11 @@ struct iPrayerWidgetLiveActivity: Widget {
                     if context.isStale {
                         Text(context.state.nowString ?? "Now")
                             .font(.headline)
-                            .foregroundColor(.teal)
+                            .foregroundColor(context.state.palette.accent)
                     } else {
                         Text(timerInterval: context.state.timeRemaining, countsDown: true)
                             .font(.system(.headline, design: .monospaced, weight: .semibold))
-                            .foregroundColor(.teal)
+                            .foregroundColor(context.state.palette.accent)
                     }
                 }
                 
@@ -111,29 +115,29 @@ struct iPrayerWidgetLiveActivity: Widget {
             } compactLeading: {
                 // Compact UI - Left of pill
                 Image(systemName: context.state.prayerIcon)
-                    .foregroundColor(.teal)
+                    .foregroundColor(context.state.palette.accent)
             } compactTrailing: {
                 // Compact UI - Right of pill
                 if context.isStale {
                     Text(context.state.nowString ?? "Now")
                         .font(.subheadline)
-                        .foregroundColor(.teal)
+                        .foregroundColor(context.state.palette.accent)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
                 } else {
                     Text(timerInterval: context.state.timeRemaining, countsDown: true)
                         .font(.system(.subheadline, design: .monospaced))
-                        .foregroundColor(.teal)
+                        .foregroundColor(context.state.palette.accent)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                 }
             } minimal: {
                 // Minimal UI - Circle icon when multiple activities exist
                 Image(systemName: context.state.prayerIcon)
-                    .foregroundColor(.teal)
+                    .foregroundColor(context.state.palette.accent)
             }
             .widgetURL(URL(string: "iprayer://prayers")) // Custom scheme registered in iPrayer-Info.plist
-            .keylineTint(Color.teal)
+            .keylineTint(context.state.palette.accent)
         }
     }
 }

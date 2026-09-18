@@ -39,6 +39,21 @@ nonisolated enum ReaderTheme: String, CaseIterable {
         case .dark: return UIColor(red: 38/255, green: 66/255, blue: 78/255, alpha: 1)
         }
     }
+    /// The verse being recited
+    var playingHighlight: UIColor {
+        switch self {
+        case .paper: return UIColor(red: 208/255, green: 236/255, blue: 216/255, alpha: 1)
+        case .dark: return UIColor(red: 26/255, green: 64/255, blue: 48/255, alpha: 1)
+        }
+    }
+    /// "You are here": marks the verse the reader was opened at from a bookmark or a search result.
+    /// Warm, so it can't be mistaken for the blue selection highlight.
+    var focusHighlight: UIColor {
+        switch self {
+        case .paper: return UIColor(red: 250/255, green: 232/255, blue: 170/255, alpha: 1)
+        case .dark: return UIColor(red: 84/255, green: 68/255, blue: 26/255, alpha: 1)
+        }
+    }
 }
 
 nonisolated struct ReaderStyle: Equatable {
@@ -158,12 +173,16 @@ nonisolated struct MushafTextBuilder {
         result.append(NSAttributedString(string: "السورة التالية\n", attributes: [
             .font: UIFont.systemFont(ofSize: 14, weight: .medium),
             .foregroundColor: style.theme.secondary,
-            .paragraphStyle: centered(rtl: true, spacingBefore: 10)
+            .paragraphStyle: centered(rtl: true, spacingBefore: 10, spacingAfter: 4)
         ]))
+        // Arabic vowel marks and shadda rise well above the font's nominal line, so a 24pt name in a
+        // default-height line overlapped the label above it. Give the line room for those marks.
+        let nameParagraph = centered(rtl: true, spacingAfter: 40)
+        nameParagraph.minimumLineHeight = 38
         result.append(NSAttributedString(string: "\(next.name)  ‹\n", attributes: [
             .font: UIFont.systemFont(ofSize: 24, weight: .bold),
             .foregroundColor: style.theme.accent,
-            .paragraphStyle: centered(rtl: true, spacingAfter: 40),
+            .paragraphStyle: nameParagraph,
             .link: Self.nextSurahLink
         ]))
         return result
@@ -192,6 +211,10 @@ struct MushafTextView: UIViewRepresentable {
     let style: ReaderStyle
     /// Verse to open at (resume reading, a bookmark, or a search result)
     let initialVerse: Int?
+    /// Verse to mark as the destination (bookmark or search result). Cleared by the screen once the user taps a verse.
+    let focusVerse: Int?
+    /// Verse being recited, highlighted and kept in view
+    let playingVerse: Int?
     @Binding var selectedVerse: Int?
     var onVisibleVerseChange: (Int) -> Void
     var onOpenNextSurah: () -> Void
@@ -251,7 +274,7 @@ struct MushafTextView: UIViewRepresentable {
             }
             
             coordinator.loadedPageCount = pageCount
-            coordinator.lastHighlightedVerse = nil
+            coordinator.resetHighlightTracking()       // fresh text carries no highlights
             uiView.attributedText = text
             
             if let anchor, anchor > 1 {
@@ -261,10 +284,26 @@ struct MushafTextView: UIViewRepresentable {
             }
         }
         
-        // Only touch the highlight when the selection actually changed
-        if coordinator.lastHighlightedVerse != selectedVerse {
-            coordinator.updateHighlight(in: uiView, selected: selectedVerse)
+        // Recitation moved on: make sure that verse's page is loaded before highlighting it
+        let playingChanged = coordinator.lastPlayingVerse != playingVerse
+        if playingChanged, let playingVerse {
+            coordinator.ensureLoaded(playingVerse, in: uiView)
+        }
+        
+        // Only touch the highlights when one of them actually changed
+        if coordinator.needsHighlightRefresh
+            || playingChanged
+            || coordinator.lastHighlightedVerse != selectedVerse
+            || coordinator.lastFocusVerse != focusVerse {
+            coordinator.updateHighlight(in: uiView, selected: selectedVerse, focus: focusVerse, playing: playingVerse)
             coordinator.lastHighlightedVerse = selectedVerse
+            coordinator.lastFocusVerse = focusVerse
+            coordinator.lastPlayingVerse = playingVerse
+            coordinator.needsHighlightRefresh = false
+        }
+        
+        if playingChanged, let playingVerse {
+            coordinator.reveal(playingVerse, in: uiView)
         }
     }
     
@@ -279,6 +318,11 @@ struct MushafTextView: UIViewRepresentable {
         var generation = 0
         var isLoadingMore = false
         var lastHighlightedVerse: Int?
+        var lastFocusVerse: Int?
+        var lastPlayingVerse: Int?
+        var needsHighlightRefresh = false
+        /// Verses that currently carry a background color, so only they are touched on the next change
+        private var highlightedVerses: Set<Int> = []
         var topVisibleVerse: Int?
         
         init(_ parent: MushafTextView) {
@@ -326,15 +370,66 @@ struct MushafTextView: UIViewRepresentable {
                     self.loadedPageCount = endIndex
                     self.isLoadingMore = false
                     
-                    // The new pages arrive without a highlight; nothing to restore unless one is active
-                    if let selected = self.parent.selectedVerse {
-                        self.updateHighlight(in: textView, selected: selected)
+                    // The new pages arrive without highlights; restore them if any are active
+                    if self.parent.selectedVerse != nil || self.parent.focusVerse != nil || self.parent.playingVerse != nil {
+                        self.updateHighlight(in: textView, selected: self.parent.selectedVerse, focus: self.parent.focusVerse, playing: self.parent.playingVerse)
                     }
                 }
             }
         }
         
+        // MARK: Following the recitation
+        
+        /// Appends pages, synchronously, until the one holding `verse` is in the text.
+        func ensureLoaded(_ verse: Int, in textView: UITextView) {
+            guard let pageIndex = pages.firstIndex(where: { page in page.contains { $0.numberInSurah == verse } }),
+                  pageIndex >= loadedPageCount else { return }
+            
+            // Discard any background batch in flight; this replaces it
+            generation += 1
+            isLoadingMore = false
+            
+            let endIndex = min(pages.count, pageIndex + 1 + MushafTextView.pageBatch)
+            let builder = self.builder
+            let addition = NSMutableAttributedString()
+            for index in loadedPageCount..<endIndex { addition.append(builder.page(pages[index])) }
+            if endIndex == pages.count { addition.append(builder.ending()) }
+            
+            textView.textStorage.beginEditing()
+            textView.textStorage.append(addition)
+            textView.textStorage.endEditing()
+            loadedPageCount = endIndex
+            needsHighlightRefresh = true
+        }
+        
+        /// Scrolls the recited verse into view, unless the user is scrolling or it is already comfortably visible.
+        func reveal(_ verse: Int, in textView: UITextView) {
+            guard !textView.isDragging, !textView.isDecelerating, textView.bounds.width > 0,
+                  let range = range(ofVerse: verse, in: textView.textStorage) else { return }
+            textView.layoutIfNeeded()
+            
+            guard let start = textView.position(from: textView.beginningOfDocument, offset: range.location),
+                  let end = textView.position(from: start, offset: min(2, range.length)),
+                  let textRange = textView.textRange(from: start, to: end) else { return }
+            let rect = textView.firstRect(for: textRange)
+            guard !rect.isNull, !rect.isInfinite, rect.minY.isFinite, rect.height > 0 else { return }
+            
+            // Leave the lower part of the screen free: the playback bar floats there
+            let visibleTop = textView.contentOffset.y + 40
+            let visibleBottom = textView.contentOffset.y + textView.bounds.height * 0.55
+            guard rect.minY < visibleTop || rect.minY > visibleBottom else { return }
+            
+            let maxOffset = max(0, textView.contentSize.height - textView.bounds.height)
+            let target = min(max(0, rect.minY - 90), maxOffset)
+            textView.setContentOffset(CGPoint(x: 0, y: target), animated: true)
+        }
+        
         // MARK: Reading position
+        
+        /// Programmatic scrolls (following the recitation) also move the reading position
+        func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+            reportVisibleVerse(scrollView)
+        }
         
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
             reportVisibleVerse(scrollView)
@@ -387,50 +482,89 @@ struct MushafTextView: UIViewRepresentable {
             return found
         }
         
-        /// Scrolls so the verse sits near the top. Text layout is lazy, so the position is
-        /// re-applied a couple of times as the estimated heights above it settle.
-        func scroll(_ textView: UITextView, toVerse verse: Int, attempt: Int = 0) {
-            DispatchQueue.main.asyncAfter(deadline: .now() + (attempt == 0 ? 0 : 0.15)) { [weak self, weak textView] in
-                guard let self, let textView, let range = self.range(ofVerse: verse, in: textView.textStorage) else { return }
-                textView.layoutIfNeeded()
+        /// Scrolls so the verse sits near the top.
+        ///
+        /// Two things make a single attempt unreliable. Right after the view is created it may not have a
+        /// size yet, so there is no layout to measure. And text layout is lazy, so the measured position
+        /// shifts as the estimated heights above the verse settle. So: keep trying until a position can be
+        /// measured, then re-apply it a couple more times.
+        func scroll(_ textView: UITextView, toVerse verse: Int, attempt: Int = 0, applied: Int = 0) {
+            guard attempt < 15 else { return }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + (attempt == 0 ? 0 : 0.12)) { [weak self, weak textView] in
+                guard let self, let textView else { return }
                 
-                guard let start = textView.position(from: textView.beginningOfDocument, offset: range.location),
-                      let end = textView.position(from: start, offset: min(2, range.length)),
-                      let textRange = textView.textRange(from: start, to: end) else { return }
+                var didApply = false
+                if textView.bounds.width > 0, let range = self.range(ofVerse: verse, in: textView.textStorage) {
+                    textView.layoutIfNeeded()
+                    if let start = textView.position(from: textView.beginningOfDocument, offset: range.location),
+                       let end = textView.position(from: start, offset: min(2, range.length)),
+                       let textRange = textView.textRange(from: start, to: end) {
+                        let rect = textView.firstRect(for: textRange)
+                        if !rect.isNull, !rect.isInfinite, rect.minY.isFinite, rect.height > 0 {
+                            let maxOffset = max(0, textView.contentSize.height - textView.bounds.height)
+                            let offset = min(max(0, rect.minY - 24), maxOffset)
+                            textView.setContentOffset(CGPoint(x: 0, y: offset), animated: false)
+                            self.topVisibleVerse = verse
+                            didApply = true
+                        }
+                    }
+                }
                 
-                let rect = textView.firstRect(for: textRange)
-                guard !rect.isNull, !rect.isInfinite, rect.minY.isFinite else { return }
-                
-                let maxOffset = max(0, textView.contentSize.height - textView.bounds.height)
-                let offset = min(max(0, rect.minY - 24), maxOffset)
-                textView.setContentOffset(CGPoint(x: 0, y: offset), animated: false)
-                self.topVisibleVerse = verse
-                
-                if attempt < 2 {
-                    self.scroll(textView, toVerse: verse, attempt: attempt + 1)
+                let appliedCount = applied + (didApply ? 1 : 0)
+                if appliedCount < 3 {
+                    self.scroll(textView, toVerse: verse, attempt: attempt + 1, applied: appliedCount)
                 }
             }
         }
         
         // MARK: Selection
         
-        func updateHighlight(in textView: UITextView, selected: Int?) {
+        func resetHighlightTracking() {
+            highlightedVerses.removeAll()
+            needsHighlightRefresh = true
+        }
+        
+        /// Three layers, lowest priority first: the warm "you are here" mark for a verse opened from a bookmark
+        /// or search result, the green verse being recited, and the blue selection. The selection wins if two
+        /// land on the same verse.
+        ///
+        /// Only the verses whose color changes are edited. Re-styling the whole text made the layout engine
+        /// re-measure everything above the viewport in a long surah, and the page jumped away from the verse
+        /// the reader had just tapped. The scroll position is pinned across the edit for the same reason.
+        func updateHighlight(in textView: UITextView, selected: Int?, focus: Int?, playing: Int?) {
+            let theme = parent.style.theme
+            var wanted: [Int: UIColor] = [:]
+            if let focus { wanted[focus] = theme.focusHighlight }
+            if let playing { wanted[playing] = theme.playingHighlight }
+            if let selected { wanted[selected] = theme.highlight }
+            
             let storage = textView.textStorage
-            let fullRange = NSRange(location: 0, length: storage.length)
+            let toClear = highlightedVerses.subtracting(wanted.keys)
+            let toApply = wanted
+            guard !toClear.isEmpty || !toApply.isEmpty else { return }
+            
+            let offset = textView.contentOffset
+            let wasInteracting = textView.isDragging || textView.isDecelerating
             
             storage.beginEditing()
-            storage.removeAttribute(.backgroundColor, range: fullRange)
-            if let selected {
-                let target = MushafTextBuilder.verseLink(selected)
-                let color = parent.style.theme.highlight
-                storage.enumerateAttribute(.link, in: fullRange, options: []) { value, range, _ in
-                    let string = (value as? String) ?? (value as? URL)?.absoluteString
-                    if string == target {
-                        storage.addAttribute(.backgroundColor, value: color, range: range)
-                    }
+            for verse in toClear {
+                if let range = range(ofVerse: verse, in: storage) {
+                    storage.removeAttribute(.backgroundColor, range: range)
+                }
+            }
+            for (verse, color) in toApply {
+                if let range = range(ofVerse: verse, in: storage) {
+                    storage.addAttribute(.backgroundColor, value: color, range: range)
                 }
             }
             storage.endEditing()
+            
+            highlightedVerses = Set(toApply.keys)
+            
+            if !wasInteracting, textView.contentOffset != offset {
+                textView.setContentOffset(offset, animated: false)
+            }
         }
         
         func textView(_ textView: UITextView, primaryActionFor textItem: UITextItem, defaultAction: UIAction) -> UIAction? {

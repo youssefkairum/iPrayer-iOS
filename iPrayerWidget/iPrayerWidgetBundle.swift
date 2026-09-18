@@ -12,6 +12,7 @@ import SwiftUI
 struct iPrayerWidgetBundle: WidgetBundle {
     var body: some Widget {
         iPrayerWidget()
+        VerseOfTheDayWidget()
         iPrayerWidgetLiveActivity()
     }
 }

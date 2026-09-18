@@ -17,6 +17,9 @@ struct SettingsView: View {
     @AppStorage(UDKey.quranRemindersEnabled.rawValue) private var quranRemindersEnabled: Bool = true
     @AppStorage(UDKey.prePrayerReminderMinutes.rawValue) private var prePrayerReminderMinutes: Int = 0
     
+    @AppStorage(UDKey.quranReciter.rawValue) private var reciterID: String = QuranReciter.default.id
+    @ObservedObject private var downloads = QuranAudioDownloads.shared
+    
     @StateObject private var accountManager = AccountManager.shared
     
     @EnvironmentObject var viewModel: PrayerViewModel
@@ -36,20 +39,20 @@ struct SettingsView: View {
                     // Header
                     HStack {
                         Text("Settings")
-                            .font(.custom("AvenirNext-Bold", size: 34))
+                            .font(.custom("AvenirNext-Bold", size: 30))
                             .foregroundColor(.white)
                         Spacer()
                     }
                     .padding(.horizontal)
-                    .padding(.top, 10)
+                    .padding(.top, 6)
                 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 6) {
                         
                         // 1. Account Section
                         SettingsCard(title: "Account (iCloud Sync)", icon: "person.crop.circle.fill") {
                             if accountManager.isLoggedIn {
-                                VStack(alignment: .leading, spacing: 10) {
+                                VStack(alignment: .leading, spacing: 6) {
                                     Text("Signed in securely with Apple")
                                         .font(.caption)
                                         .foregroundColor(.green)
@@ -102,11 +105,12 @@ struct SettingsView: View {
                                     }
                                 }
                             } else {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    Text("Sign in to automatically sync your Tasbih counts and bookmarks across all your Apple devices.")
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Syncs your Tasbih counts and bookmarks across your devices.")
                                         .font(.caption)
                                         .foregroundColor(.gray)
-                                        .fixedSize(horizontal: false, vertical: true)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.8)
                                     
                                     SignInWithAppleButton(.signIn) { request in
                                         AccountManager.configure(request)
@@ -116,7 +120,7 @@ struct SettingsView: View {
                                         }
                                     }
                                     .signInWithAppleButtonStyle(.white)
-                                    .frame(height: 45)
+                                    .frame(height: 40)
                                     .cornerRadius(10)
                                 }
                             }
@@ -124,10 +128,10 @@ struct SettingsView: View {
                         
                         // 2. Calculation Section
                         SettingsCard(title: "Prayer Calculation", icon: "globe") {
-                            VStack(spacing: 10) {
+                            VStack(spacing: 6) {
                                 HStack {
                                     Text("Method")
-                                        .font(.custom("AvenirNext-Medium", size: 16))
+                                        .font(.custom("AvenirNext-Medium", size: 15))
                                         .foregroundColor(.white)
                                     Spacer()
                                     Menu {
@@ -147,7 +151,7 @@ struct SettingsView: View {
                                     } label: {
                                         HStack(spacing: 5) {
                                             Text(methodName(for: calculationMethodValue))
-                                                .font(.custom("AvenirNext-Medium", size: 16))
+                                                .font(.custom("AvenirNext-Medium", size: 15))
                                                 .lineLimit(1)
                                                 .minimumScaleFactor(0.5)
                                             Image(systemName: "chevron.up.chevron.down")
@@ -161,7 +165,7 @@ struct SettingsView: View {
                                 
                                 HStack {
                                     Text("Madhab (Asr)")
-                                        .font(.custom("AvenirNext-Medium", size: 16))
+                                        .font(.custom("AvenirNext-Medium", size: 15))
                                         .foregroundColor(.white)
                                     Spacer()
                                     Menu {
@@ -172,7 +176,7 @@ struct SettingsView: View {
                                     } label: {
                                         HStack(spacing: 5) {
                                             Text(madhabName(for: madhabValue))
-                                                .font(.custom("AvenirNext-Medium", size: 16))
+                                                .font(.custom("AvenirNext-Medium", size: 15))
                                                 .lineLimit(1)
                                                 .minimumScaleFactor(0.5)
                                             Image(systemName: "chevron.up.chevron.down")
@@ -189,7 +193,7 @@ struct SettingsView: View {
                                 }) {
                                     HStack {
                                         Text("Refresh Location Data")
-                                            .font(.custom("AvenirNext-Medium", size: 16))
+                                            .font(.custom("AvenirNext-Medium", size: 15))
                                             .foregroundColor(.white)
                                         Spacer()
                                         Image(systemName: "arrow.clockwise.circle.fill")
@@ -203,11 +207,15 @@ struct SettingsView: View {
                         // Notifications Section
                         notificationsCard
                         
-                        // 2. Language Section
-                        SettingsCard(title: "Language", icon: "character.book.closed.fill") {
+                        // Quran Audio Section
+                        quranAudioCard
+                        
+                        // 3. General Section (language + about)
+                        SettingsCard(title: "General", icon: "info.circle.fill") {
+                            VStack(spacing: 6) {
                             HStack {
                                 Text("App Language")
-                                    .font(.custom("AvenirNext-Medium", size: 16))
+                                    .font(.custom("AvenirNext-Medium", size: 15))
                                     .foregroundColor(.white)
                                 Spacer()
                                 Menu {
@@ -225,7 +233,7 @@ struct SettingsView: View {
                                 } label: {
                                     HStack(spacing: 5) {
                                         Text(languageName(for: appLanguage))
-                                            .font(.custom("AvenirNext-Medium", size: 16))
+                                            .font(.custom("AvenirNext-Medium", size: 15))
                                             .lineLimit(1)
                                             .minimumScaleFactor(0.5)
                                         Image(systemName: "chevron.up.chevron.down")
@@ -234,20 +242,17 @@ struct SettingsView: View {
                                     .foregroundColor(.teal)
                                 }
                             }
-                        }
-                        
-
-                        // 3. About Section
-                        SettingsCard(title: "About", icon: "info.circle.fill") {
-                            VStack(spacing: 10) {
+                                
+                                Divider().background(Color.white.opacity(0.2))
+                                
                                 NavigationLink(destination: AboutView()) {
                                     HStack {
                                         Text("App Version & Info")
-                                            .font(.custom("AvenirNext-Medium", size: 16))
+                                            .font(.custom("AvenirNext-Medium", size: 15))
                                             .foregroundColor(.white)
                                         Spacer()
                                         Text(appVersion)
-                                            .font(.custom("AvenirNext-Medium", size: 16))
+                                            .font(.custom("AvenirNext-Medium", size: 15))
                                             .foregroundColor(.gray)
                                         Image(systemName: "chevron.forward")
                                             .font(.caption)
@@ -262,7 +267,7 @@ struct SettingsView: View {
                                 }) {
                                     HStack {
                                         Text("Rate iPrayer")
-                                            .font(.custom("AvenirNext-Medium", size: 16))
+                                            .font(.custom("AvenirNext-Medium", size: 15))
                                             .foregroundColor(.white)
                                         Spacer()
                                         Image(systemName: "star.fill")
@@ -280,7 +285,7 @@ struct SettingsView: View {
                                 }) {
                                     HStack {
                                         Text(AppTranslations.translate("Manage Notifications & Location", to: appLanguage))
-                                            .font(.custom("AvenirNext-Medium", size: 16))
+                                            .font(.custom("AvenirNext-Medium", size: 15))
                                             .foregroundColor(.white)
                                         Spacer()
                                         Image(systemName: "arrow.up.right.square")
@@ -331,10 +336,10 @@ struct SettingsView: View {
     
     private var notificationsCard: some View {
         SettingsCard(title: AppTranslations.translate("Notifications", to: appLanguage), icon: "bell.badge.fill") {
-            VStack(spacing: 10) {
+            VStack(spacing: 6) {
                 Toggle(isOn: $adhanSoundEnabled) {
                     Text(AppTranslations.translate("Adhan Sound", to: appLanguage))
-                        .font(.custom("AvenirNext-Medium", size: 16))
+                        .font(.custom("AvenirNext-Medium", size: 15))
                         .foregroundColor(.white)
                 }
                 .tint(.teal)
@@ -343,7 +348,7 @@ struct SettingsView: View {
                 
                 HStack {
                     Text(AppTranslations.translate("Pre-Prayer Reminder", to: appLanguage))
-                        .font(.custom("AvenirNext-Medium", size: 16))
+                        .font(.custom("AvenirNext-Medium", size: 15))
                         .foregroundColor(.white)
                     Spacer()
                     Menu {
@@ -355,7 +360,7 @@ struct SettingsView: View {
                     } label: {
                         HStack(spacing: 5) {
                             Text(reminderLabel(for: prePrayerReminderMinutes))
-                                .font(.custom("AvenirNext-Medium", size: 16))
+                                .font(.custom("AvenirNext-Medium", size: 15))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.5)
                             Image(systemName: "chevron.up.chevron.down")
@@ -369,12 +374,71 @@ struct SettingsView: View {
                 
                 Toggle(isOn: $quranRemindersEnabled) {
                     Text(AppTranslations.catalogString("Daily Quran Reminder", language: appLanguage))
-                        .font(.custom("AvenirNext-Medium", size: 16))
+                        .font(.custom("AvenirNext-Medium", size: 15))
                         .foregroundColor(.white)
                 }
                 .tint(.teal)
             }
         }
+    }
+    
+    // MARK: - Quran Audio Card
+    
+    private var quranAudioCard: some View {
+        SettingsCard(title: AppTranslations.translate("Quran Audio", to: appLanguage), icon: "headphones") {
+            VStack(spacing: 6) {
+                HStack {
+                    Text(AppTranslations.translate("Reciter", to: appLanguage))
+                        .font(.custom("AvenirNext-Medium", size: 15))
+                        .foregroundColor(.white)
+                    Spacer()
+                    Menu {
+                        Picker("", selection: $reciterID) {
+                            ForEach(QuranReciter.all) { reciter in
+                                Text(reciter.name(for: appLanguage)).tag(reciter.id)
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Text(QuranReciter.with(id: reciterID).name(for: appLanguage))
+                                .font(.custom("AvenirNext-Medium", size: 15))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.5)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.caption2)
+                        }
+                        .foregroundColor(.teal)
+                    }
+                }
+                
+                Divider().background(Color.white.opacity(0.2))
+                
+                if downloads.totalBytes > 0 {
+                    // One row: the size is the link to the storage manager
+                    NavigationLink(destination: AudioStorageView()) {
+                        HStack {
+                            Text(AppTranslations.translate("Downloaded Audio", to: appLanguage))
+                                .font(.custom("AvenirNext-Medium", size: 15))
+                                .foregroundColor(.white)
+                            Spacer()
+                            Text(downloads.formattedTotalSize)
+                                .font(.custom("AvenirNext-Medium", size: 15))
+                                .foregroundColor(.gray)
+                            Image(systemName: "chevron.forward")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                    }
+                } else {
+                    Text(AppTranslations.translate("Download surahs from the reader to listen offline.", to: appLanguage))
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .onAppear { downloads.rescan() }
     }
     
     // MARK: - Helpers
@@ -449,14 +513,14 @@ struct SettingsCard<Content: View>: View {
                 Image(systemName: icon)
                     .foregroundColor(.teal)
                 Text(LocalizedStringKey(title))
-                    .font(.custom("AvenirNext-DemiBold", size: 17))
+                    .font(.custom("AvenirNext-DemiBold", size: 16))
                     .foregroundColor(.teal)
             }
             .padding(.bottom, 2)
             
             content
         }
-        .padding(.vertical, 12)
+        .padding(.vertical, 10)
         .padding(.horizontal, 15)
         .background(Material.ultraThinMaterial)
         .cornerRadius(25)

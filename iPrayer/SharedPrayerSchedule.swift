@@ -8,6 +8,7 @@
 //
 
 import Foundation
+import SwiftUI
 import Adhan
 
 /// Everything the widget needs to compute prayer times without the app.
@@ -101,5 +102,58 @@ nonisolated enum PrayerSchedule {
             result.append(ScheduledPrayer(name: "Isha", time: times.isha))
         }
         return result.sorted { $0.time < $1.time }
+    }
+}
+
+// MARK: - Colors
+
+/// The per-prayer colors, shared so the hero card, the widget, the Live Activity and the Dynamic Island
+/// always match. Keyed by the ENGLISH prayer name, never the translated one.
+nonisolated struct PrayerPalette {
+    let start: Color
+    let end: Color
+    /// Glow and highlight color used around the hero card
+    let glow: Color
+    /// A tone that stays readable on black, for the Dynamic Island, where a gradient can't be drawn.
+    /// Same as `glow` except for Isha, whose own colors are too dark to see there.
+    let accent: Color
+    
+    var gradient: LinearGradient {
+        LinearGradient(colors: [start, end], startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
+    
+    static func palette(for prayerName: String) -> PrayerPalette {
+        switch prayerName {
+        case "Fajr":
+            return PrayerPalette(start: Color(rgb: 0x4B3B5C), end: Color(rgb: 0xE58C8A), glow: Color(rgb: 0xE58C8A), accent: Color(rgb: 0xE58C8A))
+        case "Sunrise":
+            return PrayerPalette(start: Color(rgb: 0xFF512F), end: Color(rgb: 0xF09819), glow: Color(rgb: 0xF09819), accent: Color(rgb: 0xF09819))
+        case "Dhuhr":
+            return PrayerPalette(start: Color(rgb: 0x2980B9), end: Color(rgb: 0x6DD5FA), glow: Color(rgb: 0x6DD5FA), accent: Color(rgb: 0x6DD5FA))
+        case "Asr":
+            return PrayerPalette(start: Color(rgb: 0xF2994A), end: Color(rgb: 0xF2C94C), glow: Color(rgb: 0xF2994A), accent: Color(rgb: 0xF2B24B))
+        case "Maghrib":
+            return PrayerPalette(start: Color(rgb: 0xC33764), end: Color(rgb: 0x1D2671), glow: Color(rgb: 0xC33764), accent: Color(rgb: 0xE0567F))
+        case "Isha":
+            return PrayerPalette(start: Color(rgb: 0x0F2027), end: Color(rgb: 0x203A43), glow: Color(rgb: 0x203A43), accent: Color(rgb: 0x6FB3C8))
+        default:
+            return PrayerPalette(start: Color.teal.opacity(0.8), end: Color.blue.opacity(0.4), glow: .teal, accent: .teal)
+        }
+    }
+    
+    /// Live Activities started by an older build carry no prayer key, but the icon identifies the prayer.
+    static func prayerName(forIcon icon: String) -> String? {
+        PrayerSchedule.prayerNames.first { PrayerSchedule.icon(for: $0) == icon }
+    }
+}
+
+private extension Color {
+    // nonisolated: the app target defaults to MainActor isolation, and the palette is used from widget code
+    nonisolated init(rgb: UInt32) {
+        self.init(
+            red: Double((rgb >> 16) & 0xFF) / 255.0,
+            green: Double((rgb >> 8) & 0xFF) / 255.0,
+            blue: Double(rgb & 0xFF) / 255.0
+        )
     }
 }
