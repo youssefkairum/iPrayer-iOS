@@ -40,6 +40,8 @@ nonisolated struct AppTranslations {
               !defaults.bool(forKey: UDKey.installedAsUpdate.rawValue),
               let language = languageMatchingDevice() else { return }
         defaults.set(language, forKey: UDKey.appLanguage.rawValue)
+    }
+    
     /// "© 2026 Youssef Keram. All rights reserved." in the app language. Right-to-left languages lead with
     /// the phrase: a Latin sentence followed by Arabic puts the Arabic full stop on the wrong side.
     static func copyrightLine(language: String, year: Int = Calendar.current.component(.year, from: Date())) -> String {
