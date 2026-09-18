@@ -9,6 +9,47 @@
 import Foundation
 
 nonisolated struct AppTranslations {
+    /// The nine in-app languages, by the code the app stores
+    static let supportedLanguages = ["en", "ar", "ur", "fr", "de", "hi", "tr", "ru", "zh-Hans"]
+    
+    /// The app language that best matches the phone's own language, or nil when none of ours fits.
+    /// "ar-EG" -> "ar", "zh-Hans-CN" / "zh-CN" -> "zh-Hans"; Traditional Chinese has no match.
+    static func languageMatchingDevice(preferred: [String] = Locale.preferredLanguages) -> String? {
+        for identifier in preferred {
+            let locale = Locale(identifier: identifier)
+            guard let code = locale.language.languageCode?.identifier else { continue }
+            if code == "zh" {
+                let script = locale.language.script?.identifier
+                let region = locale.language.region?.identifier
+                if script == "Hans" || (script == nil && ["CN", "SG", "MY"].contains(region ?? "")) { return "zh-Hans" }
+                continue
+            }
+            if supportedLanguages.contains(code) { return code }
+        }
+        return nil
+    }
+    
+    /// On a fresh install, before anything reads the language, start from the phone's language.
+    /// Never touches a device where a language was already stored or the app was in use before.
+    static func preselectLanguageFromDeviceIfNeeded(defaults: UserDefaults = .standard) {
+        // Registered defaults make string(forKey:) answer "en" on a fresh install, so ask the persisted
+        // domain, which only holds what the app (or its user) actually wrote
+        let persisted = Bundle.main.bundleIdentifier.flatMap { defaults.persistentDomain(forName: $0) } ?? [:]
+        guard persisted[UDKey.appLanguage.rawValue] == nil,
+              !defaults.bool(forKey: UDKey.hasSeenOnboarding.rawValue),
+              !defaults.bool(forKey: UDKey.installedAsUpdate.rawValue),
+              let language = languageMatchingDevice() else { return }
+        defaults.set(language, forKey: UDKey.appLanguage.rawValue)
+    }
+    
+    /// "© 2026 Youssef Keram. All rights reserved." in the app language. Right-to-left languages lead with
+    /// the phrase: a Latin sentence followed by Arabic puts the Arabic full stop on the wrong side.
+    static func copyrightLine(language: String, year: Int = Calendar.current.component(.year, from: Date())) -> String {
+        let rights = translate("All rights reserved.", to: language)
+        let owner = "\u{2068}© \(year) Youssef Keram\u{2069}"   // first-strong isolate keeps the Latin part together
+        return ["ar", "ur"].contains(language) ? "\(rights) \(owner)" : "\(owner). \(rights)"
+    }
+    
     static func translate(_ text: String, to language: String) -> String {
         table[text]?[language] ?? text
     }
@@ -177,6 +218,39 @@ nonisolated struct AppTranslations {
             "Reset": ["ar": "إعادة ضبط", "ur": "ری سیٹ", "fr": "Réinitialiser", "zh-Hans": "重置", "de": "Zurücksetzen", "hi": "रीसेट", "tr": "Sıfırla", "ru": "Сбросить"],
             "Facing Mecca": ["ar": "باتجاه مكة", "ur": "مکہ کی سمت", "fr": "Face à La Mecque", "zh-Hans": "朝向麦加", "de": "Richtung Mekka", "hi": "मक्का की ओर", "tr": "Mekke'ye dönük", "ru": "Лицом к Мекке"],
             "Qibla": ["ar": "القبلة", "ur": "قبلہ", "fr": "Qibla", "zh-Hans": "朝向", "de": "Qibla", "hi": "क़िबला", "tr": "Kıble", "ru": "Кибла"],
+            "Duas & Tasbih": ["ar": "الأدعية والتسبيح", "ur": "دعائیں اور تسبیح", "fr": "Douas et Tasbih", "zh-Hans": "祈祷词与泰斯比", "de": "Duas und Tasbih", "hi": "दुआएँ और तस्बीह", "tr": "Dualar ve Tesbih", "ru": "Дуа и тасбих"],
+            "Widgets & Apple Watch": ["ar": "الأدوات وساعة آبل", "ur": "ویجٹس اور ایپل واچ", "fr": "Widgets et Apple Watch", "zh-Hans": "小组件与 Apple Watch", "de": "Widgets und Apple Watch", "hi": "विजेट और Apple Watch", "tr": "Widget'lar ve Apple Watch", "ru": "Виджеты и Apple Watch"],
+            "Read the mushaf page by page and listen to six reciters, online or offline.": ["ar": "اقرأ المصحف صفحة صفحة واستمع إلى ستة قراء، متصلاً أو دون اتصال.", "ur": "مصحف صفحہ بہ صفحہ پڑھیں اور چھ قاریوں کو آن لائن یا آف لائن سنیں۔", "fr": "Lisez le mushaf page par page et écoutez six récitateurs, en ligne ou hors ligne.", "zh-Hans": "逐页阅读古兰经，在线或离线聆听六位诵读者。", "de": "Lies den Mushaf Seite für Seite und höre sechs Rezitatoren, online oder offline.", "hi": "मुसहफ़ को पन्ना-दर-पन्ना पढ़ें और छह क़ारियों को ऑनलाइन या ऑफ़लाइन सुनें।", "tr": "Mushafı sayfa sayfa okuyun, altı okuyucuyu çevrimiçi veya çevrimdışı dinleyin.", "ru": "Читайте мусхаф страница за страницей и слушайте шесть чтецов онлайн или офлайн."],
+            "Authentic duas with their sources, and a haptic Tasbih that syncs to your watch.": ["ar": "أدعية صحيحة بمصادرها، وتسبيح لمسي يتزامن مع ساعتك.", "ur": "مستند دعائیں ان کے ماخذ کے ساتھ، اور ہیپٹک تسبیح جو آپ کی گھڑی سے ہم آہنگ رہتی ہے۔", "fr": "Des douas authentiques avec leurs sources, et un Tasbih haptique synchronisé avec votre montre.", "zh-Hans": "有据可查的祈祷词，以及可与手表同步的触感泰斯比计数器。", "de": "Authentische Duas mit Quellen und ein haptischer Tasbih, der mit deiner Uhr synchronisiert.", "hi": "स्रोत सहित प्रामाणिक दुआएँ, और आपकी घड़ी से सिंक होने वाली हैप्टिक तस्बीह।", "tr": "Kaynaklı sahih dualar ve saatinizle eşitlenen dokunsal tesbih.", "ru": "Достоверные дуа с источниками и тасбих с виброоткликом, синхронизируемый с часами."],
+            "The next prayer and a Verse of the Day on your Home Screen, Lock Screen and wrist.": ["ar": "الصلاة القادمة وآية اليوم على الشاشة الرئيسية وشاشة القفل ومعصمك.", "ur": "اگلی نماز اور آج کی آیت آپ کی ہوم اسکرین، لاک اسکرین اور کلائی پر۔", "fr": "La prochaine prière et le verset du jour sur l'écran d'accueil, l'écran verrouillé et votre poignet.", "zh-Hans": "在主屏幕、锁定屏幕和手腕上查看下一次礼拜和每日经文。", "de": "Das nächste Gebet und der Vers des Tages auf Home-Bildschirm, Sperrbildschirm und Handgelenk.", "hi": "अगली नमाज़ और आज की आयत आपकी होम स्क्रीन, लॉक स्क्रीन और कलाई पर।", "tr": "Sonraki namaz ve günün ayeti ana ekranınızda, kilit ekranınızda ve bileğinizde.", "ru": "Следующий намаз и аят дня на главном экране, экране блокировки и на запястье."],
+            "Find the direction of the Kaaba wherever you are.": ["ar": "اعرف اتجاه الكعبة أينما كنت.", "ur": "آپ جہاں بھی ہوں کعبہ کی سمت جانیں۔", "fr": "Trouvez la direction de la Kaaba où que vous soyez.", "zh-Hans": "无论身在何处，都能找到天房的方向。", "de": "Finde die Richtung zur Kaaba, wo immer du bist.", "hi": "आप जहाँ भी हों, काबा की दिशा जानें।", "tr": "Nerede olursanız olun Kâbe'nin yönünü bulun.", "ru": "Найдите направление на Каабу, где бы вы ни были."],
+            "Back up your Tasbih counts, bookmarks and progress to your own iCloud. iPrayer runs no servers of its own.": ["ar": "انسخ عدد التسبيح والإشارات المرجعية وتقدمك احتياطياً إلى iCloud الخاص بك. لا يشغّل iPrayer أي خوادم خاصة به.", "ur": "اپنے تسبیح کے شمار، بُک مارکس اور پیش رفت کا بیک اپ اپنے iCloud میں لیں۔ iPrayer کا اپنا کوئی سرور نہیں۔", "fr": "Sauvegardez vos comptages de Tasbih, vos signets et votre progression dans votre propre iCloud. iPrayer n'exploite aucun serveur.", "zh-Hans": "将您的泰斯比计数、书签和进度备份到您自己的 iCloud。iPrayer 不运行任何自己的服务器。", "de": "Sichere Tasbih-Zählungen, Lesezeichen und Fortschritt in deiner eigenen iCloud. iPrayer betreibt keine eigenen Server.", "hi": "अपने तस्बीह काउंट, बुकमार्क और प्रगति का बैकअप अपने iCloud में लें। iPrayer का अपना कोई सर्वर नहीं है।", "tr": "Tesbih sayımlarınızı, yer işaretlerinizi ve ilerlemenizi kendi iCloud'unuza yedekleyin. iPrayer'ın kendine ait sunucusu yoktur.", "ru": "Сохраняйте счётчики тасбих, закладки и прогресс в собственном iCloud. У iPrayer нет своих серверов."],
+            "Tasbih": ["ar": "التسبيح", "ur": "تسبیح", "fr": "Tasbih", "zh-Hans": "泰斯比", "de": "Tasbih", "hi": "तस्बीह", "tr": "Tesbih", "ru": "Тасбих"],
+            "Reset the count?": ["ar": "إعادة ضبط العدّ؟", "ur": "شمار ری سیٹ کریں؟", "fr": "Remettre le compteur à zéro ?", "zh-Hans": "重置计数？", "de": "Zähler zurücksetzen?", "hi": "गिनती रीसेट करें?", "tr": "Sayaç sıfırlansın mı?", "ru": "Сбросить счёт?"],
+            "Glory be to Allah": ["ar": "سبحان الله", "ur": "اللہ پاک ہے", "fr": "Gloire à Allah", "zh-Hans": "赞美真主超绝", "de": "Gepriesen sei Allah", "hi": "अल्लाह पवित्र है", "tr": "Allah'ı tesbih ederim", "ru": "Пречист Аллах"],
+            "Praise be to Allah": ["ar": "الحمد لله", "ur": "تمام تعریف اللہ کے لیے", "fr": "Louange à Allah", "zh-Hans": "一切赞颂归于真主", "de": "Alles Lob gebührt Allah", "hi": "सारी प्रशंसा अल्लाह के लिए", "tr": "Hamd Allah'a mahsustur", "ru": "Хвала Аллаху"],
+            "Allah is the Greatest": ["ar": "الله أكبر", "ur": "اللہ سب سے بڑا ہے", "fr": "Allah est le plus Grand", "zh-Hans": "真主至大", "de": "Allah ist der Größte", "hi": "अल्लाह सबसे बड़ा है", "tr": "Allah en büyüktür", "ru": "Аллах велик"],
+            "There is no deity but Allah": ["ar": "لا إله إلا الله", "ur": "اللہ کے سوا کوئی معبود نہیں", "fr": "Il n'y a de divinité qu'Allah", "zh-Hans": "除真主外绝无应受崇拜者", "de": "Es gibt keinen Gott außer Allah", "hi": "अल्लाह के सिवा कोई पूज्य नहीं", "tr": "Allah'tan başka ilah yoktur", "ru": "Нет божества, кроме Аллаха"],
+            "I seek Allah's forgiveness": ["ar": "أستغفر الله", "ur": "میں اللہ سے معافی مانگتا ہوں", "fr": "Je demande pardon à Allah", "zh-Hans": "我向真主求饶恕", "de": "Ich bitte Allah um Vergebung", "hi": "मैं अल्लाह से क्षमा माँगता हूँ", "tr": "Allah'tan bağışlanma dilerim", "ru": "Прошу прощения у Аллаха"],
+            "O Allah, send blessings upon Muhammad": ["ar": "اللهم صلِّ على محمد", "ur": "اے اللہ محمد ﷺ پر درود بھیج", "fr": "Ô Allah, bénis Muhammad", "zh-Hans": "真主啊，求你赐福穆罕默德", "de": "O Allah, segne Muhammad", "hi": "ऐ अल्लाह, मुहम्मद पर दुरूद भेज", "tr": "Allah'ım, Muhammed'e salât eyle", "ru": "О Аллах, благослови Мухаммада"],
+            "Turn left": ["ar": "استدر يساراً", "ur": "بائیں مڑیں", "fr": "Tournez à gauche", "zh-Hans": "向左转", "de": "Nach links drehen", "hi": "बाएँ मुड़ें", "tr": "Sola dön", "ru": "Повернитесь влево"],
+            "Turn right": ["ar": "استدر يميناً", "ur": "دائیں مڑیں", "fr": "Tournez à droite", "zh-Hans": "向右转", "de": "Nach rechts drehen", "hi": "दाएँ मुड़ें", "tr": "Sağa dön", "ru": "Повернитесь вправо"],
+            "All rights reserved.": ["ar": "جميع الحقوق محفوظة.", "ur": "جملہ حقوق محفوظ ہیں۔", "fr": "Tous droits réservés.", "zh-Hans": "版权所有。", "de": "Alle Rechte vorbehalten.", "hi": "सर्वाधिकार सुरक्षित।", "tr": "Tüm hakları saklıdır.", "ru": "Все права защищены."],
+            "Quran": ["ar": "القرآن", "ur": "قرآن", "fr": "Coran", "zh-Hans": "古兰经", "de": "Koran", "hi": "क़ुरआन", "tr": "Kur'an", "ru": "Коран"],
+            "Every day": ["ar": "كل يوم", "ur": "ہر روز", "fr": "Au quotidien", "zh-Hans": "每一天", "de": "Jeden Tag", "hi": "हर दिन", "tr": "Her gün", "ru": "Каждый день"],
+            "Everywhere": ["ar": "في كل مكان", "ur": "ہر جگہ", "fr": "Partout", "zh-Hans": "随时随地", "de": "Überall", "hi": "हर जगह", "tr": "Her yerde", "ru": "Везде"],
+            "Look and feel": ["ar": "المظهر والإحساس", "ur": "شکل و احساس", "fr": "Apparence", "zh-Hans": "外观与体验", "de": "Aussehen", "hi": "रूप और अनुभव", "tr": "Görünüm", "ru": "Внешний вид"],
+            "A Home screen that fits everything at a glance": ["ar": "شاشة رئيسية تجمع كل شيء في نظرة", "ur": "ایک ہوم اسکرین جس میں سب کچھ ایک نظر میں", "fr": "Un écran d'accueil qui montre tout d'un coup d'œil", "zh-Hans": "一目了然的主屏幕", "de": "Ein Startbildschirm, der alles auf einen Blick zeigt", "hi": "एक होम स्क्रीन जिसमें सब कुछ एक नज़र में", "tr": "Her şeyi bir bakışta gösteren ana ekran", "ru": "Главный экран, где всё видно сразу"],
+            "Verse of the Day, on Home and as a widget": ["ar": "آية اليوم، في الشاشة الرئيسية وكأداة", "ur": "آج کی آیت، ہوم پر اور ویجٹ کے طور پر", "fr": "Verset du jour, sur l'accueil et en widget", "zh-Hans": "每日经文，在主屏和小组件中", "de": "Vers des Tages, auf Home und als Widget", "hi": "आज की आयत, होम पर और विजेट के रूप में", "tr": "Günün ayeti, ana ekranda ve widget olarak", "ru": "Аят дня на главном экране и в виджете"],
+            "Dua of the Day and a library of 50 duas with the morning and evening adhkar": ["ar": "دعاء اليوم ومكتبة من 50 دعاءً مع أذكار الصباح والمساء", "ur": "آج کی دعا اور صبح و شام کے اذکار سمیت 50 دعاؤں کی لائبریری", "fr": "Doua du jour et une bibliothèque de 50 douas avec les adhkar du matin et du soir", "zh-Hans": "每日祈祷词，以及含晨昏记念词的 50 条祈祷词库", "de": "Dua des Tages und eine Sammlung von 50 Duas mit den Morgen- und Abend-Adhkar", "hi": "आज की दुआ और सुबह-शाम के अज़कार सहित 50 दुआओं की लाइब्रेरी", "tr": "Günün duası ve sabah-akşam zikirleriyle 50 dualık kitaplık", "ru": "Дуа дня и библиотека из 50 дуа с утренними и вечерними азкарами"],
+            "An Apple Watch app with complications": ["ar": "تطبيق لساعة آبل مع مضاعفات", "ur": "کمپلیکیشنز کے ساتھ ایپل واچ ایپ", "fr": "Une app Apple Watch avec complications", "zh-Hans": "带复杂功能的 Apple Watch 应用", "de": "Eine Apple-Watch-App mit Komplikationen", "hi": "कॉम्प्लिकेशन के साथ Apple Watch ऐप", "tr": "Komplikasyonlu bir Apple Watch uygulaması", "ru": "Приложение для Apple Watch с усложнениями"],
+            "Today's prayers and the next prayer as widgets, in each prayer's colors": ["ar": "صلوات اليوم والصلاة القادمة كأدوات، بألوان كل صلاة", "ur": "آج کی نمازیں اور اگلی نماز ویجٹس کے طور پر، ہر نماز کے رنگوں میں", "fr": "Les prières du jour et la prochaine prière en widgets, aux couleurs de chaque prière", "zh-Hans": "今日礼拜与下一次礼拜小组件，各有专属颜色", "de": "Die heutigen Gebete und das nächste Gebet als Widgets, in den Farben jedes Gebets", "hi": "आज की नमाज़ें और अगली नमाज़ विजेट के रूप में, हर नमाज़ के रंगों में", "tr": "Bugünün namazları ve sonraki namaz, her namazın renginde widget olarak", "ru": "Намазы дня и следующий намаз в виджетах, в цветах каждого намаза"],
+            "A new Liquid Glass look with animations and haptics": ["ar": "مظهر Liquid Glass جديد مع حركات ولمسات اهتزازية", "ur": "حرکات اور ہیپٹکس کے ساتھ نیا Liquid Glass انداز", "fr": "Un nouveau look Liquid Glass avec animations et retours haptiques", "zh-Hans": "全新 Liquid Glass 外观，带动画与触感反馈", "de": "Ein neuer Liquid-Glass-Look mit Animationen und Haptik", "hi": "एनिमेशन और हैप्टिक्स के साथ नया Liquid Glass लुक", "tr": "Animasyonlar ve dokunsal geri bildirimle yeni Liquid Glass görünümü", "ru": "Новый облик Liquid Glass с анимациями и виброоткликом"],
+            "Apple Watch": ["ar": "ساعة آبل", "ur": "ایپل واچ", "fr": "Apple Watch", "zh-Hans": "Apple Watch", "de": "Apple Watch", "hi": "Apple Watch", "tr": "Apple Watch", "ru": "Apple Watch"],
+            "iPrayer isn't on your Apple Watch yet. Install it from the Watch app, under Available Apps.": ["ar": "iPrayer غير مثبّت على ساعة آبل بعد. ثبّته من تطبيق Watch، ضمن التطبيقات المتاحة.", "ur": "iPrayer ابھی آپ کی ایپل واچ پر نہیں ہے۔ اسے Watch ایپ میں Available Apps سے انسٹال کریں۔", "fr": "iPrayer n'est pas encore sur votre Apple Watch. Installez-le depuis l'app Watch, dans Apps disponibles.", "zh-Hans": "iPrayer 尚未安装到您的 Apple Watch。请在 Watch 应用的“可用的 App”中安装。", "de": "iPrayer ist noch nicht auf deiner Apple Watch. Installiere es in der Watch-App unter Verfügbare Apps.", "hi": "iPrayer अभी आपकी Apple Watch पर नहीं है। इसे Watch ऐप में Available Apps से इंस्टॉल करें।", "tr": "iPrayer henüz Apple Watch'unuzda değil. Watch uygulamasında Kullanılabilir Uygulamalar'dan yükleyin.", "ru": "iPrayer ещё не установлен на Apple Watch. Установите его в приложении Watch в разделе «Доступные приложения»."],
+            "Open the Watch app": ["ar": "افتح تطبيق Watch", "ur": "Watch ایپ کھولیں", "fr": "Ouvrir l'app Watch", "zh-Hans": "打开 Watch 应用", "de": "Watch-App öffnen", "hi": "Watch ऐप खोलें", "tr": "Watch uygulamasını aç", "ru": "Открыть приложение Watch"],
+            "Then": ["ar": "ثم", "ur": "پھر", "fr": "Puis", "zh-Hans": "然后", "de": "Dann", "hi": "फिर", "tr": "Sonra", "ru": "Затем"],
+            "Compass unavailable": ["ar": "البوصلة غير متاحة", "ur": "کمپاس دستیاب نہیں", "fr": "Boussole indisponible", "zh-Hans": "指南针不可用", "de": "Kompass nicht verfügbar", "hi": "कम्पास उपलब्ध नहीं", "tr": "Pusula kullanılamıyor", "ru": "Компас недоступен"],
             "All": ["ar": "الكل", "ur": "سب", "fr": "Tout", "zh-Hans": "全部", "de": "Alle", "hi": "सभी", "tr": "Tümü", "ru": "Все"],
             "Search duas": ["ar": "ابحث في الأدعية", "ur": "دعائیں تلاش کریں", "fr": "Rechercher une doua", "zh-Hans": "搜索祈祷词", "de": "Duas suchen", "hi": "दुआ खोजें", "tr": "Dua ara", "ru": "Поиск дуа"],
             "Knowledge": ["ar": "العلم", "ur": "علم", "fr": "Savoir", "zh-Hans": "知识", "de": "Wissen", "hi": "ज्ञान", "tr": "İlim", "ru": "Знание"],

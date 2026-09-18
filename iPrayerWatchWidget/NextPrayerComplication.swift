@@ -17,6 +17,13 @@ struct ComplicationEntry: TimelineEntry {
     let timeString: String
     let header: String
     
+    /// Higher as the prayer gets closer, so the Smart Stack brings the complication forward
+    var relevance: TimelineEntryRelevance? {
+        let minutesLeft = max(0, time.timeIntervalSince(date) / 60)
+        let score: Float = minutesLeft <= 30 ? 100 : minutesLeft <= 90 ? 60 : 20
+        return TimelineEntryRelevance(score: score, duration: time.timeIntervalSince(date))
+    }
+    
     static let placeholder = ComplicationEntry(date: Date(), prayerKey: "Maghrib", prayerName: "Maghrib",
                                                time: Date().addingTimeInterval(3600), timeString: "5:29 PM", header: "Next Prayer")
     static let setup = ComplicationEntry(date: Date(), prayerName: "Open iPrayer", time: Date().addingTimeInterval(3600),

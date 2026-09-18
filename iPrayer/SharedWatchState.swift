@@ -63,19 +63,24 @@ nonisolated struct WatchSyncPayload: Codable, Sendable {
     func applyProgress(to defaults: UserDefaults = .standard) -> Bool {
         var touchedTracker = false
         
-        if let tracker = dailyPrayersCompleted, tracker.count == 5, let date = lastTrackerDate,
-           date >= (defaults.string(forKey: UDKey.lastTrackerDate.rawValue) ?? "") {
+        if var tracker = dailyPrayersCompleted, tracker.count == 5, let date = lastTrackerDate {
+            let localDate = defaults.string(forKey: UDKey.lastTrackerDate.rawValue) ?? ""
             let current = defaults.array(forKey: UDKey.dailyPrayersCompleted.rawValue) as? [Bool]
-            if current != tracker || defaults.string(forKey: UDKey.lastTrackerDate.rawValue) != date {
+            if date == localDate, let current, current.count == 5 {
+                // Same day on both sides: a prayer ticked on either stays ticked
+                tracker = zip(tracker, current).map { $0 || $1 }
+            }
+            if date >= localDate, current != tracker || localDate != date {
                 defaults.set(tracker, forKey: UDKey.dailyPrayersCompleted.rawValue)
                 defaults.set(date, forKey: UDKey.lastTrackerDate.rawValue)
                 touchedTracker = true
             }
         }
-        if let streak = currentStreak, let date = lastCompletedStreakDate,
-           date >= (defaults.string(forKey: UDKey.lastCompletedStreakDate.rawValue) ?? "") {
-            if defaults.integer(forKey: UDKey.currentStreak.rawValue) != streak
-                || defaults.string(forKey: UDKey.lastCompletedStreakDate.rawValue) != date {
+        if var streak = currentStreak, let date = lastCompletedStreakDate {
+            let localDate = defaults.string(forKey: UDKey.lastCompletedStreakDate.rawValue) ?? ""
+            let localStreak = defaults.integer(forKey: UDKey.currentStreak.rawValue)
+            if date == localDate { streak = max(streak, localStreak) }
+            if date >= localDate, localStreak != streak || localDate != date {
                 defaults.set(streak, forKey: UDKey.currentStreak.rawValue)
                 defaults.set(date, forKey: UDKey.lastCompletedStreakDate.rawValue)
                 touchedTracker = true

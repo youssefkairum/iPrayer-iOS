@@ -15,11 +15,13 @@ struct TasbihPage: View {
     @AppStorage(UDKey.tasbihCount.rawValue) private var count: Int = 0
     @AppStorage(UDKey.tasbihTarget.rawValue) private var target: Int = 33
     @State private var confirmReset = false
+    @State private var crown: Double = 0
+    @State private var crownBase: Double = 0
+    @State private var pulse = false
     
-    private var progress: Double {
-        target > 0 ? Double(count % target) / Double(target) : 0
-    }
-    private var cycles: Int { target > 0 ? count / target : 0 }
+    private var safeTarget: Int { max(target, 1) }
+    private var progress: Double { Double(count % safeTarget) / Double(safeTarget) }
+    private var cycles: Int { count / safeTarget }
     
     var body: some View {
         ZStack {
@@ -27,14 +29,16 @@ struct TasbihPage: View {
                 .stroke(Color.white.opacity(0.12), lineWidth: 8)
             Circle()
                 .trim(from: 0, to: progress)
-                .stroke(Color.teal, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                .stroke(pulse ? Color.yellow : Color.teal, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.easeOut(duration: 0.2), value: progress)
+                .animation(.easeOut(duration: 0.4), value: pulse)
             
             VStack(spacing: 2) {
-                Text("\(count % max(target, 1))")
+                Text("\(count % safeTarget == 0 && count > 0 ? safeTarget : count % safeTarget)")
                     .font(.system(size: 44, weight: .bold, design: .rounded))
                     .contentTransition(.numericText())
+                    .animation(.spring(response: 0.25, dampingFraction: 0.8), value: count)
                 Text("\(AppTranslations.translate("of", to: model.language)) \(target)")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -48,10 +52,23 @@ struct TasbihPage: View {
         .padding(14)
         .contentShape(Rectangle())
         .onTapGesture { increment() }
+        // The Digital Crown counts too: one bead per detent
+        .focusable()
+        .digitalCrownRotation($crown, from: 0, through: 100_000, by: 1, sensitivity: .medium,
+                              isContinuous: true, isHapticFeedbackEnabled: false)
+        .onChange(of: crown) { _, value in
+            let steps = Int((value - crownBase).rounded(.towardZero))
+            guard steps >= 1 else { return }
+            crownBase = value
+            for _ in 0..<min(steps, 5) { increment() }
+        }
         .navigationTitle(AppTranslations.translate("Tasbih", to: model.language))
+        .containerBackground(for: .tabView) { watchNightGradient }
         .toolbar {
             ToolbarItemGroup(placement: .bottomBar) {
                 Button { confirmReset = true } label: { Image(systemName: "arrow.counterclockwise") }
+                    .disabled(count == 0)
+                    .accessibilityLabel(AppTranslations.translate("Reset", to: model.language))
                 Spacer()
                 // No Menu on watchOS: the button cycles through the usual targets
                 Button {
@@ -66,19 +83,22 @@ struct TasbihPage: View {
                 }
             }
         }
-        .confirmationDialog(AppTranslations.translate("Reset", to: model.language), isPresented: $confirmReset) {
+        .confirmationDialog(AppTranslations.translate("Reset the count?", to: model.language), isPresented: $confirmReset) {
             Button(AppTranslations.translate("Reset", to: model.language), role: .destructive) {
                 count = 0
                 WKInterfaceDevice.current().play(.success)
                 touched()
             }
         }
+        .accessibilityLabel("\(AppTranslations.translate("Tasbih", to: model.language)) \(count)")
     }
     
     private func increment() {
         count += 1
-        if target > 0, count % target == 0 {
+        if count % safeTarget == 0 {
             WKInterfaceDevice.current().play(.success)
+            pulse = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { pulse = false }
         } else {
             WKInterfaceDevice.current().play(.click)
         }
@@ -97,9 +117,19 @@ struct TasbihPage: View {
 struct QiblaPage: View {
     @EnvironmentObject private var model: WatchModel
     
-    private var isFacingQibla: Bool {
-        let difference = abs(model.currentHeading - model.qiblaDirection)
-        return min(difference, 360 - difference) < 5
+    private var offset: Double {
+        var delta = (model.qiblaDirection - model.currentHeading).truncatingRemainder(dividingBy: 360)
+        if delta > 180 { delta -= 360 }
+        if delta < -180 { delta += 360 }
+        return delta
+    }
+    private var isFacingQibla: Bool { abs(offset) < 5 }
+    
+    private var distanceText: String {
+        let formatter = MeasurementFormatter()
+        formatter.unitOptions = .naturalScale
+        formatter.numberFormatter.maximumFractionDigits = 0
+        return formatter.string(from: Measurement(value: model.distanceToKaabaMetres, unit: UnitLength.meters))
     }
     
     var body: some View {
@@ -114,7 +144,7 @@ struct QiblaPage: View {
                 ForEach(0..<12, id: \.self) { i in
                     VStack {
                         Circle()
-                            .fill(i % 3 == 0 ? Color.white : Color.white.opacity(0.3))
+                            .fill(i == 0 ? Color.red : (i % 3 == 0 ? Color.white : Color.white.opacity(0.3)))
                             .frame(width: i % 3 == 0 ? 5 : 3, height: i % 3 == 0 ? 5 : 3)
                         Spacer()
                     }
@@ -133,24 +163,35 @@ struct QiblaPage: View {
                     Spacer()
                 }
                 .frame(height: size + 10)
-                .rotationEffect(.degrees(model.qiblaDirection - model.currentHeading))
+                .rotationEffect(.degrees(offset))
                 .animation(.spring(response: 0.5, dampingFraction: 0.6), value: model.currentHeading)
                 
                 VStack(spacing: 0) {
-                    Text("\(Int(model.qiblaDirection))°")
+                    Text("\(Int(model.qiblaDirection.rounded()))°")
                         .font(.system(.footnote, design: .rounded, weight: .semibold))
-                    Text(AppTranslations.translate(isFacingQibla ? "Facing Mecca" : "Qibla", to: model.language))
+                    Text(model.headingAvailable
+                         ? AppTranslations.translate(isFacingQibla ? "Facing Mecca" : "Qibla", to: model.language)
+                         : AppTranslations.translate("Compass unavailable", to: model.language))
                         .font(.caption2)
                         .foregroundStyle(isFacingQibla ? .yellow : .secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    if model.distanceToKaabaMetres > 0 {
+                        Text(distanceText)
+                            .font(.system(size: 9))
+                            .foregroundStyle(.white.opacity(0.5))
+                    }
                 }
-                .offset(y: size * 0.28)
+                .offset(y: size * 0.26)
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
+        .containerBackground(for: .tabView) { watchNightGradient }
         .onAppear { model.startCompass() }
         .onDisappear { model.stopCompass() }
         .onChange(of: isFacingQibla) { _, facing in
             if facing { WKInterfaceDevice.current().play(.success) }
         }
+        .accessibilityLabel("\(AppTranslations.translate("Qibla", to: model.language)) \(Int(model.qiblaDirection.rounded()))°")
     }
 }

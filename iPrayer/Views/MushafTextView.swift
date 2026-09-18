@@ -282,6 +282,7 @@ struct MushafTextView: UIViewRepresentable {
             } else if isFirstRender {
                 uiView.setContentOffset(.zero, animated: false)
             }
+            coordinator.fillViewportIfShort(uiView)
         }
         
         // Recitation moved on: make sure that verse's page is loaded before highlighting it
@@ -343,6 +344,19 @@ struct MushafTextView: UIViewRepresentable {
             }
         }
         
+        /// Small text on a big screen (iPad at the minimum size) can leave the first batch shorter than the
+        /// view. Nothing scrolls then, so the scroll-driven loading never fires: keep appending until the
+        /// text overflows, or every page is in.
+        func fillViewportIfShort(_ textView: UITextView) {
+            DispatchQueue.main.async { [weak self, weak textView] in
+                guard let self, let textView, textView.bounds.height > 0 else { return }
+                textView.layoutManager.ensureLayout(for: textView.textContainer)
+                if textView.contentSize.height < textView.bounds.height + 1500 {
+                    self.loadMore(into: textView)
+                }
+            }
+        }
+        
         func loadMore(into textView: UITextView) {
             guard !isLoadingMore, loadedPageCount < pages.count else { return }
             isLoadingMore = true
@@ -374,6 +388,8 @@ struct MushafTextView: UIViewRepresentable {
                     if self.parent.selectedVerse != nil || self.parent.focusVerse != nil || self.parent.playingVerse != nil {
                         self.updateHighlight(in: textView, selected: self.parent.selectedVerse, focus: self.parent.focusVerse, playing: self.parent.playingVerse)
                     }
+                    // Still shorter than the screen? Keep going.
+                    self.fillViewportIfShort(textView)
                 }
             }
         }

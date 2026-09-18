@@ -19,6 +19,8 @@ struct SettingsView: View {
     
     @AppStorage(UDKey.quranReciter.rawValue) private var reciterID: String = QuranReciter.default.id
     @ObservedObject private var downloads = QuranAudioDownloads.shared
+    @ObservedObject private var watchLink = PhoneWatchSync.shared
+    @Environment(\.openURL) private var openURL
     
     @StateObject private var accountManager = AccountManager.shared
     
@@ -210,6 +212,11 @@ struct SettingsView: View {
                         // Quran Audio Section
                         quranAudioCard
                         
+                        // Apple Watch: only when a watch is paired but the app isn't on it
+                        if watchLink.isPaired && !watchLink.isWatchAppInstalled {
+                            appleWatchCard
+                        }
+                        
                         // 3. General Section (language + about)
                         SettingsCard(title: "General", icon: "info.circle.fill") {
                             VStack(spacing: 6) {
@@ -378,6 +385,35 @@ struct SettingsView: View {
                         .foregroundColor(.white)
                 }
                 .tint(.teal)
+            }
+        }
+    }
+    
+    // MARK: - Apple Watch Card
+    
+    private var appleWatchCard: some View {
+        SettingsCard(title: "Apple Watch", icon: "applewatch") {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(AppTranslations.translate("iPrayer isn't on your Apple Watch yet. Install it from the Watch app, under Available Apps.", to: appLanguage))
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                Button {
+                    Haptics.tap()
+                    // Opens Apple's Watch app on the iPhone, where the app can be installed
+                    if let url = URL(string: "itms-watchs://") { openURL(url) }
+                } label: {
+                    HStack {
+                        Text(AppTranslations.translate("Open the Watch app", to: appLanguage))
+                            .font(.custom("AvenirNext-Medium", size: 15))
+                            .foregroundColor(.white)
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                }
             }
         }
     }

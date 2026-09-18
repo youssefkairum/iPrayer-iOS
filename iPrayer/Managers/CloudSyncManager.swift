@@ -131,7 +131,13 @@ class CloudSyncManager {
                 guard store.object(forKey: key) != nil else { continue }
                 defaults.set(Int(store.longLong(forKey: key)), forKey: key)
             } else if boolArrayKeys.contains(key) {
-                guard let cloudVal = store.array(forKey: key) as? [Bool] else { continue }
+                guard var cloudVal = store.array(forKey: key) as? [Bool] else { continue }
+                // Same day on both devices: a prayer ticked on either stays ticked
+                if key == UDKey.dailyPrayersCompleted.rawValue,
+                   store.string(forKey: UDKey.lastTrackerDate.rawValue) == defaults.string(forKey: UDKey.lastTrackerDate.rawValue),
+                   let local = defaults.array(forKey: key) as? [Bool], local.count == cloudVal.count {
+                    cloudVal = zip(cloudVal, local).map { $0 || $1 }
+                }
                 defaults.set(cloudVal, forKey: key)
             } else {
                 continue

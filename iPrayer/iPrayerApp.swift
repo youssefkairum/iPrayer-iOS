@@ -49,8 +49,10 @@ struct iPrayerApp: App {
     }()
     
     init() {
+        // Decide update-vs-fresh first: the language preselection below only applies to fresh installs
         // Evaluate at launch, before onboarding can grant location and blur the distinction
         _ = Self.isUpdateFromOlderVersion
+        AppTranslations.preselectLanguageFromDeviceIfNeeded()
     }
     
     /// Arabic and Urdu read right to left; the locale alone does not flip the layout.

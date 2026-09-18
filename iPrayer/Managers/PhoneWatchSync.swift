@@ -15,6 +15,12 @@ import Combine
 final class PhoneWatchSync: NSObject, ObservableObject, WCSessionDelegate {
     static let shared = PhoneWatchSync()
     
+    /// A watch is paired with this iPhone
+    @Published private(set) var isPaired = false
+    /// The iPrayer watch app is installed on it (iOS installs embedded watch apps automatically unless
+    /// the person switched that off in the Watch app)
+    @Published private(set) var isWatchAppInstalled = false
+    
     private var pushTask: Task<Void, Never>?
     
     private override init() {
@@ -72,7 +78,23 @@ final class PhoneWatchSync: NSObject, ObservableObject, WCSessionDelegate {
     
     nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
         guard activationState == .activated else { return }
-        Task { @MainActor in self.pushContext() }
+        let paired = session.isPaired
+        let installed = session.isWatchAppInstalled
+        Task { @MainActor in
+            self.isPaired = paired
+            self.isWatchAppInstalled = installed
+            self.pushContext()
+        }
+    }
+    
+    nonisolated func sessionWatchStateDidChange(_ session: WCSession) {
+        let paired = session.isPaired
+        let installed = session.isWatchAppInstalled
+        Task { @MainActor in
+            self.isPaired = paired
+            self.isWatchAppInstalled = installed
+            if installed { self.pushContext() }
+        }
     }
     
     nonisolated func sessionDidBecomeInactive(_ session: WCSession) {}

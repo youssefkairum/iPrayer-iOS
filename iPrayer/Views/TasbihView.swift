@@ -2,156 +2,82 @@
 //  TasbihView.swift
 //  iPrayer
 //
-//  Created by Youssef Keram on 11/24/25.
+//  A bead counter for dhikr. Pick the phrase and the cycle length, then tap the disc (or anywhere
+//  around it) to count. Cycles complete with a heavier tap and a pulse of the ring.
 //
 
 import SwiftUI
 
+/// The phrases people count most. Arabic is drawn with the Quran font; the meaning follows the app language.
+nonisolated struct Dhikr: Identifiable, Equatable {
+    let id: String
+    let arabic: String
+    let meaning: String
+    
+    static let all: [Dhikr] = [
+        Dhikr(id: "subhanallah", arabic: "سُبْحَانَ اللَّهِ", meaning: "Glory be to Allah"),
+        Dhikr(id: "alhamdulillah", arabic: "الْحَمْدُ لِلَّهِ", meaning: "Praise be to Allah"),
+        Dhikr(id: "allahuakbar", arabic: "اللَّهُ أَكْبَرُ", meaning: "Allah is the Greatest"),
+        Dhikr(id: "lailahaillallah", arabic: "لَا إِلَهَ إِلَّا اللَّهُ", meaning: "There is no deity but Allah"),
+        Dhikr(id: "astaghfirullah", arabic: "أَسْتَغْفِرُ اللَّهَ", meaning: "I seek Allah's forgiveness"),
+        Dhikr(id: "salawat", arabic: "اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ", meaning: "O Allah, send blessings upon Muhammad")
+    ]
+    
+    static func with(id: String) -> Dhikr { all.first { $0.id == id } ?? all[0] }
+}
+
 struct TasbihView: View {
     @AppStorage(UDKey.tasbihCount.rawValue) private var count: Int = 0
-    @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
     @AppStorage(UDKey.tasbihTarget.rawValue) private var cycleTarget: Int = 33
+    @AppStorage(UDKey.tasbihDhikr.rawValue) private var dhikrID: String = Dhikr.all[0].id
+    @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
+    
     @State private var ripples: [UUID] = []
     @State private var syncTask: Task<Void, Never>?
+    @State private var confirmReset = false
+    @State private var cyclePulse = false
     
-    var progress: CGFloat {
-        if cycleTarget == 0 { return 0 }
-        return CGFloat(count % cycleTarget) / CGFloat(cycleTarget)
-    }
+    private let ringSize: CGFloat = 230
+    private let discSize: CGFloat = 260
+    private let targets = [33, 99, 100]
     
-    var completedCycles: Int {
-        if cycleTarget == 0 { return 0 }
-        return count / cycleTarget
-    }
+    private var dhikr: Dhikr { Dhikr.with(id: dhikrID) }
+    private var target: Int { max(cycleTarget, 1) }
+    private var inCycle: Int { count % target }
+    private var completedCycles: Int { count / target }
     
-    // Dynamically calculate dash array to always perfectly match the target count
-    var dashArray: [CGFloat] {
-        let target = cycleTarget == 0 ? 1 : cycleTarget
-        let circumference = 220 * CGFloat.pi
+    /// One dash per bead, sized so the ring always holds exactly `target` beads
+    private var dashArray: [CGFloat] {
+        let circumference = ringSize * .pi
         let gap = (circumference / CGFloat(target)) - 1
         return [1, max(gap, 0.1)]
     }
     
-    // Trim strictly halfway through the gap to avoid lighting up the next bead
-    var progressTrim: CGFloat {
-        if cycleTarget == 0 || count == 0 { return 0 }
-        if count % cycleTarget == 0 { return 1.0 }
-        let currentCycleCount = count % cycleTarget
-        return (CGFloat(currentCycleCount) - 0.5) / CGFloat(cycleTarget)
+    /// Trim halfway into the gap after the current bead so the next one never lights up early
+    private var progressTrim: CGFloat {
+        if count == 0 { return 0 }
+        if inCycle == 0 { return 1 }
+        return (CGFloat(inCycle) - 0.5) / CGFloat(target)
     }
     
     var body: some View {
         ZStack {
-            // Background Gradient
             LinearGradient(gradient: Gradient(colors: [Color(hex: "0F2027"), Color(hex: "203A43"), Color(hex: "2C5364")]), startPoint: .top, endPoint: .bottom)
                 .edgesIgnoringSafeArea(.all)
             
-            VStack(spacing: 15) {
-                // Header
-                HStack {
-                    Text("Tasbih")
-                        .font(.custom("AvenirNext-Bold", size: 34))
-                        .foregroundColor(.white)
-                    Spacer()
-                    
-                    // Reset Button
-                    Button(action: resetCounter) {
-                        Image(systemName: "arrow.counterclockwise")
-                            .font(.title3)
-                            .foregroundColor(.white.opacity(0.8))
-                            .padding(10)
-                            .glassEffect(.regular.interactive(), in: .circle)
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.top, 20)
+            VStack(spacing: 14) {
+                header
+                dhikrChips
                 
-                // Target Picker
-                Picker("Target", selection: $cycleTarget) {
-                    Text("33").tag(33)
-                    Text("99").tag(99)
-                    Text("100").tag(100)
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .padding(.horizontal)
-                .colorScheme(.dark)
+                Spacer(minLength: 0)
                 
-                // Cycles Tracker
-                HStack {
-                    Text(AppTranslations.translate("Cycles Completed: ", to: appLanguage))
-                        .font(.custom("AvenirNext-Medium", size: 16))
-                        .foregroundColor(.white.opacity(0.7))
-                    Text("\(completedCycles)")
-                        .font(.custom("AvenirNext-Bold", size: 16))
-                        .foregroundColor(.teal)
-                }
-                .padding(.top, 5)
+                phrase
+                counter
                 
-                Spacer(minLength: 10)
+                Spacer(minLength: 0)
                 
-                // Main Interaction Button
-                Button(action: incrementCounter) {
-                    ZStack {
-                        // Ripples
-                        ForEach(ripples, id: \.self) { id in
-                            RippleEffect()
-                        }
-                        
-                        // Outer Glow
-                        Circle()
-                            .fill(Color.teal.opacity(0.1))
-                            .frame(width: 280, height: 280)
-                            .blur(radius: 20)
-                        
-                        // Background Circle
-                        // Interactive Liquid Glass: it shimmers and flexes under the finger on every count
-                        Circle()
-                            .fill(Color.clear)
-                            .frame(width: 250, height: 250)
-                            .glassEffect(.regular.interactive(), in: .circle)
-                        
-                        // Background Dashed Ring (Beads)
-                        Circle()
-                            .stroke(Color.white.opacity(0.1), style: StrokeStyle(lineWidth: 12, lineCap: .round, dash: dashArray))
-                            .rotationEffect(.degrees(-90))
-                            .frame(width: 220, height: 220)
-                        
-                        // Active Progress Ring (Teal Beads)
-                        Circle()
-                            .trim(from: 0.0, to: progressTrim)
-                            .stroke(
-                                AngularGradient(gradient: Gradient(colors: [.teal.opacity(0.6), .teal]), center: .center),
-                                style: StrokeStyle(lineWidth: 12, lineCap: .round, dash: dashArray)
-                            )
-                            .rotationEffect(.degrees(-90))
-                            .frame(width: 220, height: 220)
-                            .animation(.spring(response: 0.4, dampingFraction: 0.6), value: count)
-                        
-                        // Counter Text
-                        VStack(spacing: 0) {
-                            Text("\(count)")
-                                .font(.system(size: 65, weight: .bold, design: .rounded))
-                                .foregroundColor(.white)
-                                .contentTransition(.numericText(countsDown: false))
-                            
-                            HStack(spacing: 4) {
-                                Text("OUT OF")
-                                Text("\(cycleTarget)")
-                            }
-                                .font(.custom("AvenirNext-Medium", size: 12))
-                                .foregroundColor(.teal)
-                                .padding(.top, 5)
-                        }
-                    }
-                }
-                .buttonStyle(ScaleButtonStyle())
-                
-                Spacer(minLength: 10)
-                
-                Text("Tap anywhere on the circle to count")
-                    .font(.custom("AvenirNext-Medium", size: 14))
-                    .foregroundColor(.white.opacity(0.5))
-                    .padding(.bottom, 130) // Increased padding to clear tab bar
+                targetChips
+                    .padding(.bottom, 108) // clear the floating tab bar
             }
         }
         .onChange(of: count) { _, newValue in
@@ -160,17 +86,162 @@ struct TasbihView: View {
             syncTask = Task {
                 try? await Task.sleep(for: .seconds(2))
                 guard !Task.isCancelled else { return }
-                CloudSyncManager.shared.sync(key: "tasbihCount", value: newValue)
+                CloudSyncManager.shared.sync(key: UDKey.tasbihCount.rawValue, value: newValue)
             }
-        }
-        .onChange(of: cycleTarget) { _, newValue in
-            CloudSyncManager.shared.sync(key: "tasbihTarget", value: newValue)
             markTouched()
         }
-        .onChange(of: count) { _, _ in markTouched() }
+        .onChange(of: cycleTarget) { _, newValue in
+            CloudSyncManager.shared.sync(key: UDKey.tasbihTarget.rawValue, value: newValue)
+            markTouched()
+        }
         .onAppear {
-            if cycleTarget == 0 {
-                cycleTarget = 33
+            if cycleTarget == 0 { cycleTarget = 33 }
+        }
+        .confirmationDialog(AppTranslations.translate("Reset the count?", to: appLanguage), isPresented: $confirmReset, titleVisibility: .visible) {
+            Button(AppTranslations.translate("Reset", to: appLanguage), role: .destructive) { resetCounter() }
+            Button(AppTranslations.translate("Cancel", to: appLanguage), role: .cancel) {}
+        }
+    }
+    
+    // MARK: - Pieces
+    
+    private var header: some View {
+        HStack {
+            Text(AppTranslations.translate("Tasbih", to: appLanguage))
+                .font(.custom("AvenirNext-Bold", size: 34))
+                .foregroundColor(.white)
+            Spacer()
+            Button {
+                guard count > 0 else { return }
+                Haptics.tap()
+                confirmReset = true
+            } label: {
+                Image(systemName: "arrow.counterclockwise")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.white.opacity(count > 0 ? 0.9 : 0.35))
+                    .frame(width: 44, height: 44)
+                    .glassEffect(.regular.interactive(), in: .circle)
+            }
+        }
+        .padding(.horizontal)
+        .padding(.top, 20)
+    }
+    
+    /// Which phrase is being counted. Changing it keeps the count: many people run one count across phrases.
+    private var dhikrChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            GlassEffectContainer(spacing: 8) {
+                HStack(spacing: 8) {
+                    ForEach(Dhikr.all) { item in
+                        let selected = item.id == dhikrID
+                        Button {
+                            Haptics.selection()
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { dhikrID = item.id }
+                        } label: {
+                            Text(item.arabic)
+                                .font(.custom("KFGQPC Uthmanic Script HAFS", size: 15))
+                                .foregroundColor(selected ? .black : .white)
+                                .lineLimit(1)
+                                .fixedSize()
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .glassEffect(selected ? .regular.tint(.teal).interactive() : .regular.interactive(), in: .capsule)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 4)
+            }
+        }
+    }
+    
+    private var phrase: some View {
+        VStack(spacing: 4) {
+            Text(dhikr.arabic)
+                .font(.custom("KFGQPC Uthmanic Script HAFS", size: 30))
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            Text(AppTranslations.translate(dhikr.meaning, to: appLanguage))
+                .font(.custom("AvenirNext-Medium", size: 14))
+                .foregroundColor(.white.opacity(0.6))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .padding(.horizontal, 24)
+        .id(dhikrID)
+        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+        .animation(.easeInOut(duration: 0.25), value: dhikrID)
+    }
+    
+    private var counter: some View {
+        ZStack {
+            ForEach(ripples, id: \.self) { _ in RippleEffect() }
+            
+            Circle()
+                .fill(Color.teal.opacity(cyclePulse ? 0.35 : 0.12))
+                .frame(width: discSize + 30, height: discSize + 30)
+                .blur(radius: 24)
+                .animation(.easeOut(duration: 0.5), value: cyclePulse)
+            
+            // Interactive Liquid Glass: it shimmers and flexes under the finger on every count
+            Circle()
+                .fill(Color.clear)
+                .frame(width: discSize, height: discSize)
+                .glassEffect(.regular.interactive(), in: .circle)
+            
+            // Beads: the faint full ring and the lit ones so far this cycle
+            Circle()
+                .stroke(Color.white.opacity(0.12), style: StrokeStyle(lineWidth: 12, lineCap: .round, dash: dashArray))
+                .rotationEffect(.degrees(-90))
+                .frame(width: ringSize, height: ringSize)
+            Circle()
+                .trim(from: 0, to: progressTrim)
+                .stroke(AngularGradient(gradient: Gradient(colors: [.teal.opacity(0.55), .teal]), center: .center),
+                        style: StrokeStyle(lineWidth: 12, lineCap: .round, dash: dashArray))
+                .rotationEffect(.degrees(-90))
+                .frame(width: ringSize, height: ringSize)
+                .animation(.spring(response: 0.4, dampingFraction: 0.7), value: count)
+            
+            VStack(spacing: 2) {
+                Text("\(inCycle == 0 && count > 0 ? target : inCycle)")
+                    .font(.system(size: 68, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .contentTransition(.numericText(countsDown: false))
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: count)
+                Text("\(AppTranslations.translate("of", to: appLanguage)) \(target)")
+                    .font(.custom("AvenirNext-DemiBold", size: 13))
+                    .foregroundColor(.teal)
+                if completedCycles > 0 {
+                    Text("\(completedCycles) \(AppTranslations.translate("cycles", to: appLanguage)) · \(count)")
+                        .font(.custom("AvenirNext-Medium", size: 12))
+                        .foregroundColor(.white.opacity(0.55))
+                        .padding(.top, 4)
+                        .contentTransition(.numericText())
+                }
+            }
+        }
+        // The whole band around the disc counts, not just the disc: thumbs miss
+        .frame(maxWidth: .infinity)
+        .frame(height: discSize + 60)
+        .contentShape(Rectangle())
+        .onTapGesture { incrementCounter() }
+    }
+    
+    private var targetChips: some View {
+        HStack(spacing: 10) {
+            ForEach(targets, id: \.self) { value in
+                let selected = value == cycleTarget
+                Button {
+                    Haptics.selection()
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { cycleTarget = value }
+                } label: {
+                    Text("\(value)")
+                        .font(.custom("AvenirNext-DemiBold", size: 15))
+                        .foregroundColor(selected ? .black : .white)
+                        .frame(width: 64, height: 36)
+                        .glassEffect(selected ? .regular.tint(.teal).interactive() : .regular.interactive(), in: .capsule)
+                }
             }
         }
     }
@@ -184,49 +255,39 @@ struct TasbihView: View {
     }
     
     private func incrementCounter() {
-        let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.prepare()
-        generator.impactOccurred()
-        
-        // Add ripple
-        let newRipple = UUID()
-        ripples.append(newRipple)
-        
-        // Remove ripple after animation
+        let ripple = UUID()
+        ripples.append(ripple)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            ripples.removeAll { $0 == newRipple }
+            ripples.removeAll { $0 == ripple }
         }
         
-        withAnimation {
-            count += 1
-        }
+        count += 1
         
-        // Special feedback when cycle completes
-        if cycleTarget > 0 && count % cycleTarget == 0 && count != 0 {
-            let heavy = UIImpactFeedbackGenerator(style: .heavy)
-            heavy.impactOccurred()
+        if count % target == 0 {
+            // Cycle complete: heavier tap and a pulse of the ring
+            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+            cyclePulse = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { cyclePulse = false }
+        } else {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         }
     }
     
     private func resetCounter() {
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
-        
-        withAnimation {
-            count = 0
-        }
+        Haptics.success()
+        withAnimation { count = 0 }
     }
 }
 
 // Ripple Animation View
 struct RippleEffect: View {
     @State private var scale: CGFloat = 0.5
-    @State private var opacity: Double = 0.5
+    @State private var opacity: Double = 0.6
     
     var body: some View {
         Circle()
             .stroke(Color.teal.opacity(opacity), lineWidth: 4)
-            .frame(width: 250, height: 250)
+            .frame(width: 260, height: 260)
             .scaleEffect(scale)
             .onAppear {
                 withAnimation(.easeOut(duration: 0.6)) {
