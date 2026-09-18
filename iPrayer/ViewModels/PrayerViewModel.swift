@@ -38,7 +38,16 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var followingDayPrayerTimes: [PrayerItem] = []
     @Published var locationName: String = "Locating..."
     @Published var qiblaDirection: Double = 0.0
+    /// Continuous (unwrapped) heading in degrees: successive readings add the shortest signed change, so a
+    /// dial rotated by it turns the short way through north instead of spinning 358°. Use modulo 360 to read it.
     @Published var currentHeading: Double = 0.0
+    /// CoreLocation's estimate of the heading error in degrees; nil until the first reading, negative when invalid.
+    @Published var headingAccuracy: Double?
+    /// Above this (or invalid), the compass asks for a figure-8 calibration.
+    static let poorHeadingAccuracy = 15.0
+    /// Whether the Qibla screen is showing; iOS's calibration screen is allowed only then.
+    nonisolated(unsafe) private var compassActive = false
+    private var orientationObserver: NSObjectProtocol?
     @Published var nextPrayerTime: String = "--:--"
     @Published var nextPrayerName: String = ""
     /// Translation key shown on the home screen when location access is unavailable.
@@ -79,13 +88,38 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         locationManager.requestWhenInUseAuthorization()
     }
     
-    // MARK: - Compass Battery Management
+    // MARK: - Compass
     func startCompass() {
+        compassActive = true
+        applyHeadingOrientation()
+        UIDevice.current.beginGeneratingDeviceOrientationNotifications()
+        orientationObserver = NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.applyHeadingOrientation()
+        }
         locationManager.startUpdatingHeading()
     }
     
     func stopCompass() {
+        compassActive = false
+        if let orientationObserver { NotificationCenter.default.removeObserver(orientationObserver) }
+        orientationObserver = nil
+        UIDevice.current.endGeneratingDeviceOrientationNotifications()
         locationManager.stopUpdatingHeading()
+    }
+    
+    /// Headings are relative to the top edge in portrait unless CoreLocation is told the orientation; an iPad
+    /// held sideways would otherwise put north 90° off. Face-up/down and unknown keep the last value.
+    private func applyHeadingOrientation() {
+        let usable: [CLDeviceOrientation] = [.portrait, .portraitUpsideDown, .landscapeLeft, .landscapeRight]
+        guard let orientation = CLDeviceOrientation(rawValue: Int32(UIDevice.current.orientation.rawValue)),
+              usable.contains(orientation) else { return }
+        locationManager.headingOrientation = orientation
+    }
+    
+    /// Lets iOS put up its figure-8 calibration screen when the magnetometer needs it, but only while the
+    /// compass is on screen; the prompt would be baffling over the prayer list.
+    nonisolated func locationManagerShouldDisplayHeadingCalibration(_ manager: CLLocationManager) -> Bool {
+        compassActive
     }
     
     // MARK: - Location Delegate
@@ -122,10 +156,15 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
         // CoreLocation reports an invalid true heading as a negative value; exactly 0 is a valid true north.
         let heading = newHeading.trueHeading >= 0 ? newHeading.trueHeading : newHeading.magneticHeading
+        let accuracy = newHeading.headingAccuracy
         
-        // Update UI on Main Thread
         Task { @MainActor in
-            self.currentHeading = heading
+            // Add the shortest signed change so the dial never takes the long way round through north
+            var delta = (heading - self.currentHeading).truncatingRemainder(dividingBy: 360)
+            if delta > 180 { delta -= 360 }
+            if delta < -180 { delta += 360 }
+            self.currentHeading += delta
+            self.headingAccuracy = accuracy
         }
     }
     
