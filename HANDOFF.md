@@ -13,8 +13,6 @@ and what is still open. The README describes the product; this describes the wor
 - **Repo:** `youssefkairum/iPrayer-iOS` on GitHub (renamed from `iPrayer`; the local remote points at the
   new name). `gh` is logged in as `youssefkairum` (a second account, `brentwelldigital`, is also present).
   `gh` lives in `~/.local/bin`, which `~/.zshrc` now adds to PATH.
-- **Merged:** PR #1 (reorganisation + first bug pass — merged by the author after its first two commits),
-  PR #2 (everything up to the Quran reader rebuild + README), PR #3 (project file ordering).
 - **Merged:** PR #1 (reorganisation + first bug pass), PR #2 (up to the Quran reader rebuild + README),
   PR #3 (project file ordering), PR #4 (Home card shows the following day), PR #5 (the whole 1.1.0 feature
   branch: recitation + downloads + storage manager, Verse of the Day + widgets, Dua library, What's New,
@@ -29,6 +27,7 @@ and what is still open. The README describes the product; this describes the wor
   and the "We never share your data" onboarding copy, both in section 6. (3) Native read of the Urdu/
   Hindi/Russian/Chinese strings, now including 39 dua translations. (4) Store screenshots and the What's
   New notes (drafted in the last session's chat; the in-app WhatsNewView still lists the earlier bullets).
+
 ## 2. Map of the code
 
 ```
