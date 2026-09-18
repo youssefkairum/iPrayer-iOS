@@ -177,6 +177,8 @@ nonisolated struct AppTranslations {
             "Reset": ["ar": "إعادة ضبط", "ur": "ری سیٹ", "fr": "Réinitialiser", "zh-Hans": "重置", "de": "Zurücksetzen", "hi": "रीसेट", "tr": "Sıfırla", "ru": "Сбросить"],
             "Facing Mecca": ["ar": "باتجاه مكة", "ur": "مکہ کی سمت", "fr": "Face à La Mecque", "zh-Hans": "朝向麦加", "de": "Richtung Mekka", "hi": "मक्का की ओर", "tr": "Mekke'ye dönük", "ru": "Лицом к Мекке"],
             "Qibla": ["ar": "القبلة", "ur": "قبلہ", "fr": "Qibla", "zh-Hans": "朝向", "de": "Qibla", "hi": "क़िबला", "tr": "Kıble", "ru": "Кибла"],
+            "Turn left": ["ar": "استدر يساراً", "ur": "بائیں مڑیں", "fr": "Tournez à gauche", "zh-Hans": "向左转", "de": "Nach links drehen", "hi": "बाएँ मुड़ें", "tr": "Sola dön", "ru": "Повернитесь влево"],
+            "Turn right": ["ar": "استدر يميناً", "ur": "دائیں مڑیں", "fr": "Tournez à droite", "zh-Hans": "向右转", "de": "Nach rechts drehen", "hi": "दाएँ मुड़ें", "tr": "Sağa dön", "ru": "Повернитесь вправо"],
             "All": ["ar": "الكل", "ur": "سب", "fr": "Tout", "zh-Hans": "全部", "de": "Alle", "hi": "सभी", "tr": "Tümü", "ru": "Все"],
             "Search duas": ["ar": "ابحث في الأدعية", "ur": "دعائیں تلاش کریں", "fr": "Rechercher une doua", "zh-Hans": "搜索祈祷词", "de": "Duas suchen", "hi": "दुआ खोजें", "tr": "Dua ara", "ru": "Поиск дуа"],
             "Knowledge": ["ar": "العلم", "ur": "علم", "fr": "Savoir", "zh-Hans": "知识", "de": "Wissen", "hi": "ज्ञान", "tr": "İlim", "ru": "Знание"],
