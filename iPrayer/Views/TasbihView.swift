@@ -60,9 +60,7 @@ struct TasbihView: View {
                             .font(.title3)
                             .foregroundColor(.white.opacity(0.8))
                             .padding(10)
-                            .background(Material.ultraThinMaterial)
-                            .clipShape(Circle())
-                            .overlay(Circle().stroke(Color.white.opacity(0.2), lineWidth: 1))
+                            .glassEffect(.regular.interactive(), in: .circle)
                     }
                 }
                 .padding(.horizontal)
@@ -106,10 +104,11 @@ struct TasbihView: View {
                             .blur(radius: 20)
                         
                         // Background Circle
+                        // Interactive Liquid Glass: it shimmers and flexes under the finger on every count
                         Circle()
-                            .fill(Material.ultraThinMaterial)
+                            .fill(Color.clear)
                             .frame(width: 250, height: 250)
-                            .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+                            .glassEffect(.regular.interactive(), in: .circle)
                         
                         // Background Dashed Ring (Beads)
                         Circle()

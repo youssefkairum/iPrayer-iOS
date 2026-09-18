@@ -22,6 +22,8 @@ nonisolated public struct PrayerAttributes: ActivityAttributes {
         /// Shown instead of the countdown once the prayer time has arrived.
         public var nowString: String?
         public var openHintString: String?
+        /// English prayer name ("Fajr", "Dhuhr"...), used to pick the colors. `prayerName` is translated.
+        public var prayerKey: String?
     }
     
     // Static data that doesn't change

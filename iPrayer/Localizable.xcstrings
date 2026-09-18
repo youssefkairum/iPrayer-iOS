@@ -4,9 +4,6 @@
     "" : {
 
     },
-    "," : {
-
-    },
     "%@ %@" : {
       "localizations" : {
         "en" : {
@@ -23,6 +20,16 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ %2$lld"
+          }
+        }
+      }
+    },
+    "%@ %lld%%" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$lld%%"
           }
         }
       }
@@ -47,10 +54,26 @@
         }
       }
     },
+    "%@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
     "%lld" : {
 
     },
-    "© 2026 Youssef Keram. All rights reserved." : {
+    "%lld%%" : {
+
+    },
+    "© %@ Youssef Keram. All rights reserved." : {
+
+    },
+    "×%lld" : {
 
     },
     "🇨🇳 中文 (Chinese)" : {
@@ -680,9 +703,6 @@
         }
       }
     },
-    "Copyright %@ Youssef Keram all rights reserved" : {
-
-    },
     "Cycles Completed: %lld" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1062,6 +1082,59 @@
     },
     "Français (French)" : {
 
+    },
+    "General" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عام"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allgemein"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Général"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सामान्य"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Общие"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Genel"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عمومی"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通用"
+          }
+        }
+      }
     },
     "Get precise prayer times based on your location and calculation method." : {
       "extractionState" : "manual",
@@ -3137,6 +3210,7 @@
       }
     },
     "Sign in to automatically sync your Tasbih counts and bookmarks across all your Apple devices." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3658,6 +3732,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "苏拉"
+          }
+        }
+      }
+    },
+    "Syncs your Tasbih counts and bookmarks across your devices." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يزامن عدد التسبيح والعلامات المرجعية عبر أجهزتك."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronisiert Tasbih-Zählungen und Lesezeichen auf Ihren Geräten."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronise vos comptages de Tasbih et vos signets entre vos appareils."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आपके तस्बीह काउंट और बुकमार्क को आपके डिवाइस पर सिंक करता है।"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Синхронизирует счётчики тасбих и закладки между вашими устройствами."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tasbih sayımlarınızı ve yer işaretlerinizi aygıtlarınız arasında eşzamanlar."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آپ کے تسبیح کے شمار اور بُک مارکس آپ کے آلات پر مطابقت پذیر کرتا ہے۔"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在您的设备间同步泰斯比计数和书签。"
           }
         }
       }

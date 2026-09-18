@@ -7,7 +7,7 @@ import WidgetKit
 import SwiftUI
 
 struct Provider: TimelineProvider {
-    private static let placeholderEntry = SimpleEntry(date: Date(), prayerName: "Maghrib", timeString: "5:29 PM", icon: "sunset.fill", headerString: "Next Prayer")
+    private static let placeholderEntry = SimpleEntry(date: Date(), prayerKey: "Maghrib", prayerName: "Maghrib", timeString: "5:29 PM", icon: "sunset.fill", headerString: "Next Prayer")
     private static let setupEntry = SimpleEntry(date: Date(), prayerName: "Open App", timeString: "--:--", icon: "location.fill", headerString: "Setup Required")
     
     /// Builds a week of entries from the location and settings the app shared through the App Group.
@@ -29,6 +29,7 @@ struct Provider: TimelineProvider {
             guard upcoming.time > now else { continue }
             entries.append(SimpleEntry(
                 date: max(prayers[index - 1].time, now),
+                prayerKey: upcoming.name,
                 prayerName: config.prayerNames[upcoming.name] ?? upcoming.name,
                 timeString: formatter.string(from: upcoming.time),
                 icon: upcoming.icon,
@@ -62,6 +63,8 @@ struct Provider: TimelineProvider {
 
 struct SimpleEntry: TimelineEntry {
     let date: Date
+    /// English prayer name, used to pick the colors. Empty for the placeholder states.
+    var prayerKey: String = ""
     let prayerName: String
     let timeString: String
     let icon: String
@@ -115,15 +118,16 @@ struct iPrayerWidgetEntryView : View {
         default:
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 4) {
+                    // White content on the prayer's gradient, like the hero card in the app
                     Image(systemName: entry.icon)
-                        .foregroundColor(.teal)
+                        .foregroundColor(.white)
                         .font(.title2)
-                        .shadow(color: .teal.opacity(0.5), radius: 5, x: 0, y: 0)
+                        .shadow(color: .black.opacity(0.25), radius: 4, x: 0, y: 1)
                     
                     Text(entry.headerString)
                         .font(.caption)
                         .fontWeight(.semibold)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.white.opacity(0.8))
                         .textCase(.uppercase)
                         .lineLimit(2)
                         .minimumScaleFactor(0.4)
@@ -141,7 +145,7 @@ struct iPrayerWidgetEntryView : View {
                 
                 Text(entry.timeString)
                     .font(.system(size: 28, weight: .light, design: .monospaced))
-                    .foregroundColor(.teal)
+                    .foregroundColor(.white.opacity(0.9))
                     .lineLimit(1)
                     .minimumScaleFactor(0.4)
             }
@@ -158,11 +162,8 @@ struct iPrayerWidget: Widget {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             iPrayerWidgetEntryView(entry: entry)
                 .containerBackground(for: .widget) {
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color(red: 15/255, green: 32/255, blue: 39/255), Color(red: 32/255, green: 58/255, blue: 67/255)]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+                    // Follows the upcoming prayer, and changes with each timeline entry
+                    PrayerPalette.palette(for: entry.prayerKey).gradient
                 }
         }
         .configurationDisplayName("Next Prayer")
@@ -174,5 +175,5 @@ struct iPrayerWidget: Widget {
 #Preview(as: .systemSmall) {
     iPrayerWidget()
 } timeline: {
-    SimpleEntry(date: .now, prayerName: "Maghrib", timeString: "5:29 PM", icon: "sunset.fill", headerString: "Next Prayer")
+    SimpleEntry(date: .now, prayerKey: "Maghrib", prayerName: "Maghrib", timeString: "5:29 PM", icon: "sunset.fill", headerString: "Next Prayer")
 }
