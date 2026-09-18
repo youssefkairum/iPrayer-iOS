@@ -15,6 +15,9 @@ import Combine
 final class AppEntrance: ObservableObject {
     static let shared = AppEntrance()
     @Published var contentRevealed = false
+    /// True once the splash screen has started fading. Onboarding waits for this before its first slide
+    /// plays its entrance, so the entrance is seen rather than spent under the splash.
+    @Published var splashDismissed = false
     private init() {}
 }
 

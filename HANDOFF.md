@@ -176,6 +176,12 @@ must follow the *in-app* language (notifications, some labels) goes through
   registered "en" default makes `string(forKey:)` look chosen on a brand-new install.
 - **Onboarding controls have a fixed height (104 pt) and crossfade**; slides animate in once and never out.
   Anything else made the features -> location page change feel rough.
+- **Onboarding entrance timing (branch `onboarding-entrance`).** The onboarding sits under the splash from launch, so
+  its welcome slide used to play its entrance unseen and then "pop" when the splash faded. Now `AppEntrance.splashDismissed`
+  is set when the splash starts fading, the welcome slide waits for it, and the onboarding settles in from 0.94 scale
+  like the main app. Each slide also gates its entrance on an `appeared` state set one run-loop turn after its first
+  render (`slideEntrance`): the paged TabView sometimes built the next page only at the moment of a fast Continue tap,
+  with `shown` already true, so nothing changed and nothing animated.
 - **"Sign in with Apple" text follows the device language** (Apple's button, no API). Not replaced with a custom
   button: review risk for little gain.
 - **Copyright line** is built by `AppTranslations.copyrightLine`: RTL languages lead with the phrase, the
@@ -226,6 +232,10 @@ watchOS runtime in Xcode > Settings > Components, pair a watch simulator with th
 - `simctl spawn <sim> defaults write <bundle>` writes a domain the app *reads* but its own writes go to the
   container plist (`get_app_container … data`/Library/Preferences). Read state from the container plist.
 - `simctl pbcopy` needs `LC_ALL=en_US.UTF-8` for Arabic.
+- **Fresh-install tests: run `simctl spawn <sim> defaults delete <bundle>` first.** That simulator-level domain
+  (written by an earlier `defaults write`) survives `simctl uninstall` and the app reads it; a stale
+  `hasSeenOnboarding = 1` there sent every "fresh" install to Home + What's New and launch-argument overrides were
+  dropped on top. After deleting it, uninstall + `privacy reset all` + install shows onboarding with no arguments.
 - Store captures on a freshly booted simulator: the first launches take 20 to 30 s to show anything, so wait 30 s
   per screen (12 s gave blank captures). `simctl privacy <sim> grant location <bundle>` works; `grant notifications`
   is refused, so tap Allow once through the Simulator tool. The iPad Pro 13-inch simulator ignored `-hasSeenOnboarding`
