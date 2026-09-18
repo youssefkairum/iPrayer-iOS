@@ -34,6 +34,7 @@ enum UDKey: String, CaseIterable {
     // Tasbih
     case tasbihCount = "tasbihCount"
     case tasbihTarget = "tasbihTarget"
+    case tasbihUpdatedAt = "tasbihUpdatedAt"       // when a person last changed it (phone vs watch)
     
     // Notifications
     case adhanSoundEnabled = "adhanSoundEnabled"
