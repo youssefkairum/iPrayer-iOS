@@ -24,89 +24,73 @@ enum Haptics {
     static func selection() { UISelectionFeedbackGenerator().selectionChanged() }
     static func success() { UINotificationFeedbackGenerator().notificationOccurred(.success) }
     static func warning() { UINotificationFeedbackGenerator().notificationOccurred(.warning) }
+
+    /// Both compass sensations back to back, for the Settings test button: the "facing Mecca" chime, then
+    /// a single detent click 600 ms later. This is the only thing the owner can do without a debugger.
+    /// Feeling neither means the phone is silencing them (Low Power Mode, or Sounds & Haptics), not us.
+    static func testCompassPair() {
+        success()
+        let generator = UISelectionFeedbackGenerator()
+        generator.prepare()
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(600))
+            generator.selectionChanged()
+        }
+    }
 }
 
 extension Haptics {
-    /// `Ratchet` is the compass's detent: a run of `selection`-weight clicks, one per notch of the dial, so
-    /// turning the phone feels like turning a bezel instead of watching a needle slide.
+    /// `Ratchet` is the compass's detent: one `selection`-weight click per notch of the dial, so turning
+    /// the phone feels like turning a bezel instead of watching a needle slide.
     ///
-    /// It is the only sensation in this file that is *streamed*, and that is why it is a class rather than
-    /// another static. The one-shots above build a generator per call and throw it away, which is right for
-    /// a press — the finger is already down, so the 50-100 ms cold ramp is masked. A stream cannot do that:
-    /// every click would start cold and land behind the wrist. So one generator is held for the life of the
-    /// screen and re-`prepare()`d after every click, which is the picker-wheel pattern. While someone is
-    /// turning, clicks are ~110 ms apart so the engine never idles; when they stop, the re-prepares stop with
-    /// them and it idles out on its own in a second or two. No timer drives any of this — `headingFilter = 1`
-    /// means a still phone sends nothing, so idle cost is exactly zero.
+    /// It is the only *streamed* sensation in this file, which is why it is a class rather than another
+    /// static. The one-shots above build a generator per call and throw it away — right for a press, where
+    /// the finger is already down and the 50-100 ms cold ramp is masked. A stream cannot do that, so one
+    /// generator is held for the life of the screen and re-`prepare()`d after every click.
+    ///
+    /// Deliberately stupid. There are exactly two ways this can stay quiet: the dial has not crossed a
+    /// notch, or the last click was under `minimumGap` ago. Speed tiers, a stream-gap timer, a warm-up
+    /// count, a mute window, a reversal dead zone and a sensor-accuracy gate are all gone. Between them
+    /// they could swallow a click eleven different ways, and not one of them was worth a compass that
+    /// feels dead in the hand.
     ///
     /// Owned one per screen: `begin(at:)` when the compass starts, `end()` when it stops or backgrounds.
     @MainActor
     final class Ratchet {
-        /// Notch sizes, finest first. Each divides 360 and the next one up, and the lattice is anchored on
-        /// the Qibla, so the target is a notch in all three and changing tier can never double a click.
-        private static let spacings: [Double] = [5, 15, 45]
-        /// Widen a tier above this many degrees per second; narrow below the matching figure underneath.
-        /// The gap between the two is the hysteresis that stops a turn hovering on the line from flapping.
-        /// A tier is left at ~9 clicks a second, the fastest the Taptic Engine renders as separate taps.
-        private static let widenAbove: [Double] = [45, 135]
-        private static let narrowBelow: [Double] = [35, 105]
-        /// Longer than this between readings and the stream counts as new. `headingFilter = 1` means a
-        /// resting phone sends nothing, so a lone reading after a silence is sensor noise or a return from
-        /// the background — never a turn.
-        private static let streamGap: CFTimeInterval = 0.25
-        /// Readings swallowed after any re-anchor, so a settling magnetometer cannot click on its own.
-        private static let warmupReadings = 2
-        /// Nothing may follow a click sooner than this, whatever the arithmetic says. A backstop only: the
-        /// tiers already hold the natural cadence at ~110 ms.
-        private static let minimumGap: CFTimeInterval = 0.06
-        /// A single reading's rate is capped before it enters the average; one 1° step across a 5 ms frame
-        /// would otherwise read as 200°/s and jump a tier.
-        private static let rateCeiling: Double = 720
-
-        /// Where the arithmetic runs at all. In DEBUG it runs without a Taptic Engine too, so
-        /// `-debugSpinCompass 1` can log the click pattern on the Simulator, where nothing can be felt.
-        private static var canRun: Bool {
-            #if DEBUG
-            return true
-            #else
-            return Haptics.supportsHaptics
-            #endif
-        }
+        /// One notch, at every speed. 5 degrees divides 360 and lands exactly on the 72 ticks the rose
+        /// already draws, so a click always coincides with a mark going past the pointer.
+        private static let spacing: Double = 5
+        /// How far past the current notch centre the dial must sit before the next notch counts, as a
+        /// fraction of a notch. Anything over 0.5 is hysteresis. 0.6 is 3 degrees here: wider than the
+        /// 1 degree the heading is quantised to, so a hand shaking on a notch line clicks once and stops,
+        /// and narrow enough that the worst it can ever do is delay a click by half a degree.
+        private static let crossing: Double = 0.6
+        /// Nothing may follow a click sooner than this: ~11 a second, the fastest the Taptic Engine still
+        /// renders as separate taps. A violent whip of the phone is capped here rather than humming.
+        private static let minimumGap: CFTimeInterval = 0.09
 
         private var generator: UISelectionFeedbackGenerator?
-        private var running = false
         private var notch = 0
-        private var spacingIndex = 0
-        private var lastAngle: Double = 0
-        private var lastReading: CFTimeInterval = 0
         private var lastClick: CFTimeInterval = 0
-        private var lastDirection = 0
-        private var rate: Double = 0
-        private var warmup = 0
-        private var mutedUntil: CFTimeInterval = 0
 
-        private var spacing: Double { Self.spacings[spacingIndex] }
+        /// Clicks emitted over this screen's lifetime. Read only by the compass's diagnostics line.
+        private(set) var clicks = 0
 
         /// Warms the engine and silently takes the dial's current angle as the starting notch, so opening
-        /// the screen never clicks off the first reading.
+        /// the screen never clicks off the first reading. Safe to call again; it will not double up.
         func begin(at angle: Double) {
-            guard Self.canRun, !running else { return }
-            running = true
-            if Haptics.supportsHaptics {
+            if generator == nil {
                 let generator = UISelectionFeedbackGenerator()
                 generator.prepare()
                 self.generator = generator
             }
-            spacingIndex = 0
             lastClick = 0
-            mutedUntil = 0
             reseed(at: angle)
         }
 
         /// Drops the generator so the Taptic Engine is not held warm behind another screen or in the
         /// background. Safe to call when it was never started.
         func end() {
-            running = false
             generator = nil
         }
 
@@ -114,86 +98,29 @@ extension Haptics {
         /// not the phone turning: a new Qibla bearing (it moves on every location fix), a return from the
         /// background, the screen appearing.
         func reseed(at angle: Double) {
-            notch = Int((angle / spacing).rounded())
-            lastAngle = angle
-            lastReading = CACurrentMediaTime()
-            lastDirection = 0
-            rate = 0
-            warmup = Self.warmupReadings
-        }
-
-        /// Keeps the ratchet quiet for `seconds`. Used while `success()` plays its half-second pattern; a
-        /// click landing inside that window turns the two sensations into one stutter.
-        func mute(for seconds: CFTimeInterval) {
-            mutedUntil = CACurrentMediaTime() + seconds
+            notch = Int((angle / Self.spacing).rounded())
         }
 
         /// One reading of the dial. `angle` is the continuous, never-rewrapped angle from the phone to the
         /// Qibla, so zero is the Qibla itself and passing north is not a discontinuity.
         ///
         /// At most one click per call, however many notches the reading skipped: SwiftUI can coalesce
-        /// several headings into one change, and paying that back as a burst is the buzz this design exists
-        /// to avoid. Nothing is ever queued — the skipped notches are simply gone.
-        func update(angle: Double, trustworthy: Bool) {
-            guard running else { return }
+        /// several headings into one change, and paying that back as a burst is the buzz this exists to
+        /// avoid. Nothing is queued — the skipped notches are simply gone.
+        func update(angle: Double) {
+            let position = angle / Self.spacing
+            guard abs(position - Double(notch)) >= Self.crossing else { return }
+            notch = Int(position.rounded())
             let now = CACurrentMediaTime()
-            let gap = now - lastReading
-            lastReading = now
-
-            // An untrustworthy heading, a gap in the stream, or the lock notification still playing:
-            // re-anchor and say nothing. Re-anchoring is what stops the silence being paid back afterwards.
-            guard trustworthy, gap > 0, gap < Self.streamGap, now >= mutedUntil else {
-                reseed(at: angle)
-                return
-            }
-
-            let travelled = angle - lastAngle
-            lastAngle = angle
-            let instant = min(abs(travelled) / gap, Self.rateCeiling)
-            rate = rate <= 0 ? instant : rate * 0.6 + instant * 0.4
-
-            let tier = tierIndex(for: rate)
-            if tier != spacingIndex {
-                spacingIndex = tier
-                notch = Int((angle / spacing).rounded())
-                return
-            }
-
-            if warmup > 0 {
-                warmup -= 1
-                notch = Int((angle / spacing).rounded())
-                return
-            }
-
-            let target = Int((angle / spacing).rounded())
-            guard target != notch else { return }
-            let direction = target > notch ? 1 : -1
-
-            // A heading wobbling either side of one notch line would otherwise click forever. Turning back
-            // has to travel four tenths of a notch past the line before it counts — 2° at the fine setting,
-            // well under the dial's own 0.25 s spring lag and invisible against a real turn.
-            if lastDirection != 0, direction != lastDirection,
-               abs(angle - Double(notch) * spacing) < spacing * 1.4 {
-                return
-            }
-
-            notch = target
             guard now - lastClick >= Self.minimumGap else { return }  // swallow, never queue
             lastClick = now
-            lastDirection = direction
-            generator?.selectionChanged()
-            generator?.prepare()   // the next notch is ~110 ms away; keep the engine out of its cold ramp
+            clicks += 1
             #if DEBUG
-            // NSLog, not print: this is read back with `log show` and print never reaches the unified log
-            NSLog("[QiblaRatchet] notch %d · %d° · %d°/s", notch, Int(spacing), Int(rate))
+            // NSLog, not print: this is read back with `log show`, which print never reaches
+            NSLog("[QiblaRatchet] notch %d · click %d", notch, clicks)
             #endif
-        }
-
-        private func tierIndex(for rate: Double) -> Int {
-            var index = spacingIndex
-            while index < Self.spacings.count - 1, rate > Self.widenAbove[index] { index += 1 }
-            while index > 0, rate < Self.narrowBelow[index - 1] { index -= 1 }
-            return index
+            generator?.selectionChanged()
+            generator?.prepare()   // the next notch is close behind; keep the engine out of its cold ramp
         }
     }
 }
