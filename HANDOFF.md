@@ -203,6 +203,20 @@ must follow the *in-app* language (notifications, some labels) goes through
   with `shown` already true, so nothing changed and nothing animated.
 - **"Sign in with Apple" text follows the device language** (Apple's button, no API). Not replaced with a custom
   button: review risk for little gain.
+- **The compass dial is ONE object and must move on ONE curve.** The rose turns by `-currentHeading` and the
+  needle by `qiblaDirection - currentHeading`; those differ by a constant, so the Kaaba tip sits exactly over the
+  Qibla mark on the rose only while both use the same animation. They used to use two (an `easeInOut(0.2)` and a
+  `spring(0.55, 0.65)`), so mid-turn the tip visibly detached from its own mark, which is what read as "sluggish".
+  Both now use one critically damped `spring(response: 0.25, dampingFraction: 1)`: a spring is retargeted in
+  flight and carries velocity into the next reading, where a timing curve restarts from a standstill 20 to 50
+  times a second and never leaves its slow-in shoulder. The needle also takes the CONTINUOUS angle, never the
+  wrapped `offset` (which is for the turn text only) — re-wrapping made it swing the long way round whenever the
+  phone swept past the bearing opposite the Qibla.
+- **`BackgroundPatternView` is expensive and is on six screens.** Its few hundred stroked shapes were re-stroked
+  every frame for as long as the screen was open, because it rotates forever: measured at ~12% CPU sustained on
+  the Qibla tab against 0% on tabs without it. `.drawingGroup()` rasterises it once and halves that, with no
+  visible change. Anything else long-lived and animated on those screens pays the same tax, so measure before
+  adding one. Note the radar sweep was measured and is NOT the cost.
 - **Qibla heading accuracy (branch `qibla-accuracy`).** The bearing is a great-circle computation (Adhan `Qibla`), exact
   for any location fix; all error is in the heading. True heading is preferred (declination-corrected; needs a location
   fix, which the app has), magnetic is the fallback. `headingOrientation` follows the device orientation while the
@@ -234,7 +248,8 @@ xcrun simctl io <sim> screenshot --type=png out.png       # captures no status b
 
 **Debug-only launch arguments** (compiled out of Release):
 `-debugInitialTab quran|tasbih|qibla|settings` · `-debugOpenSurah N` · `-debugOpenVerse N` ·
-`-debugOnboardingSlide N` · `-debugShowWhatsNew 1` · `-debugAudioBaseURL https://unreachable.invalid`
+`-debugOnboardingSlide N` · `-debugShowWhatsNew 1` · `-debugSpinCompass 1` (turns the compass at 30 Hz, since
+the simulator has no magnetometer; the only way to exercise the dial without a device) · `-debugAudioBaseURL https://unreachable.invalid`
 (fails every verse, to test offline handling). Any UserDefaults key can also be overridden for one run,
 e.g. `-lastSeenWhatsNewVersion 1.0.0`, `-hasSeenOnboarding YES`, `-appLanguage ar`, `-userName "Youssef Keram"`
 (the last one shows the signed-in greeting without signing in).

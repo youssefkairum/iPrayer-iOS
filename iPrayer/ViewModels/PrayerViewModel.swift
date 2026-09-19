@@ -48,6 +48,9 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     /// Whether the Qibla screen is showing; iOS's calibration screen is allowed only then.
     nonisolated(unsafe) private var compassActive = false
     private var orientationObserver: NSObjectProtocol?
+    #if DEBUG
+    private var fakeHeadingTimer: Timer?
+    #endif
     @Published var nextPrayerTime: String = "--:--"
     @Published var nextPrayerName: String = ""
     /// Translation key shown on the home screen when location access is unavailable.
@@ -90,6 +93,19 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     // MARK: - Compass
     func startCompass() {
+        #if DEBUG
+        // -debugSpinCompass 1 fakes a phone being turned, so the compass path can be measured
+        // on the simulator, which has no magnetometer.
+        if UserDefaults.standard.integer(forKey: "debugSpinCompass") > 0, fakeHeadingTimer == nil {
+            fakeHeadingTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.currentHeading += 1
+                    self.headingAccuracy = 5
+                }
+            }
+        }
+        #endif
         compassActive = true
         applyHeadingOrientation()
         UIDevice.current.beginGeneratingDeviceOrientationNotifications()
@@ -101,6 +117,9 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     func stopCompass() {
+        #if DEBUG
+        fakeHeadingTimer?.invalidate(); fakeHeadingTimer = nil
+        #endif
         compassActive = false
         if let orientationObserver { NotificationCenter.default.removeObserver(orientationObserver) }
         orientationObserver = nil
