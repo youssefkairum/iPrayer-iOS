@@ -230,6 +230,21 @@ must follow the *in-app* language (notifications, some labels) goes through
   with `shown` already true, so nothing changed and nothing animated.
 - **"Sign in with Apple" text follows the device language** (Apple's button, no API). Not replaced with a custom
   button: review risk for little gain.
+- **NEVER gate a haptic on sensor quality, and never trust a haptic tested only on the Simulator.** Shipping a
+  `headingAccuracy <= 15` gate silenced BOTH the new detent and the `success()` chime that had worked for
+  months: `CLHeading.headingAccuracy` sits at 20-35° indoors on a real iPhone, which is exactly where a Qibla
+  compass is used. Two rounds of Simulator testing missed it because `-debugSpinCompass` hardcoded
+  `headingAccuracy = 5` and a perfect 30 Hz metronome — the two inputs that keep every gate open. The harness
+  now reports a deliberately poor 25° for that reason. A gate on a haptic has exactly one failure mode,
+  silence, so gates fail OPEN or do not exist. The ratchet went from eleven ways to swallow a click to two.
+  Second structural trap in the same code: a 0.25 s "stream gap" plus `headingFilter = 1` made it incapable of
+  clicking below ~4°/s, which is slower than every final aim. `headingFilter` is now
+  `kCLHeadingFilterNone`, which is also what lets a short spring track the wrist.
+- **When a bug lives only on the owner's device, ship them a readout.** Settings > General has a Test Haptic
+  button and a `taptic engine / low power mode` line; the compass has an opt-in `acc · reads · clicks · taptic`
+  readout. Reads climbing with clicks at zero is our bug; both climbing with nothing felt is the phone (Low
+  Power Mode alone silences every UIFeedbackGenerator AND caps ProMotion at 60 Hz, which reads as
+  "sluggish and no haptics" from outside the app).
 - **The compass ratchet (`Haptics.Ratchet`) is the app's only STREAMED haptic, and that is why it is a class.**
   The other sensations build a generator per call and throw it away, which is right for a press because the
   finger is already down and the engine's 50-100 ms cold ramp is masked. A stream cannot do that, so one
@@ -287,8 +302,9 @@ xcrun simctl io <sim> screenshot --type=png out.png       # captures no status b
 
 **Debug-only launch arguments** (compiled out of Release):
 `-debugInitialTab quran|tasbih|qibla|settings` · `-debugOpenSurah N` · `-debugOpenVerse N` ·
-`-debugOnboardingSlide N` · `-debugShowWhatsNew 1` · `-debugSpinCompass 1` (turns the compass at 30 Hz, since
-the simulator has no magnetometer; the only way to exercise the dial without a device) · `-debugAudioBaseURL https://unreachable.invalid`
+`-debugOnboardingSlide N` · `-debugShowWhatsNew 1` · `-debugSpinCompass 1` (turns the compass at 30 Hz and
+reports a deliberately POOR 25° accuracy, since the simulator has no magnetometer; change the timer interval
+to rehearse a slow aim, which is the case that used to be silent) · `-debugAudioBaseURL https://unreachable.invalid`
 (fails every verse, to test offline handling). Any UserDefaults key can also be overridden for one run,
 e.g. `-lastSeenWhatsNewVersion 1.0.0`, `-hasSeenOnboarding YES`, `-appLanguage ar`, `-userName "Youssef Keram"`
 (the last one shows the signed-in greeting without signing in).

@@ -58,10 +58,30 @@ nonisolated struct AppTranslations {
     /// `String(localized:)` and `NSLocalizedString` always follow the device, which mixed languages
     /// in notifications and a few labels whenever the two differed.
     static func catalogString(_ key: String, language: String, _ arguments: CVarArg...) -> String {
-        let bundle = Bundle.main.path(forResource: language, ofType: "lproj").flatMap { Bundle(path: $0) } ?? .main
-        let format = bundle.localizedString(forKey: key, value: key, table: nil)
+        let format = bundleCache.bundle(for: language).localizedString(forKey: key, value: key, table: nil)
         guard !arguments.isEmpty else { return format }
         return String(format: format, locale: Locale(identifier: language), arguments: arguments)
+    }
+
+    /// `Bundle.main.path(forResource:ofType:)` is a filesystem-backed resource lookup, and views call
+    /// `catalogString` from inside `body`. On the Qibla screen that body re-runs on every heading reading,
+    /// so this ran tens of times a second on the main thread to produce a string that only changes when
+    /// the language does. Resolved once per language and kept.
+    private static let bundleCache = LocalizedBundleCache()
+
+    private final class LocalizedBundleCache: @unchecked Sendable {
+        private let lock = NSLock()
+        private var bundles: [String: Bundle] = [:]
+
+        func bundle(for language: String) -> Bundle {
+            lock.lock()
+            defer { lock.unlock() }
+            if let cached = bundles[language] { return cached }
+            let resolved = Bundle.main.path(forResource: language, ofType: "lproj")
+                .flatMap(Bundle.init(path:)) ?? .main
+            bundles[language] = resolved
+            return resolved
+        }
     }
     
     /// Translated format string for text that contains a minute count.
@@ -256,6 +276,8 @@ nonisolated struct AppTranslations {
             "Removes your name, email, bookmarks, reading position, Tasbih and prayer tracker from iCloud and signs you out. What is on this device stays until you delete the app. To stop using your Apple Account with iPrayer, see Settings > Apple Account > Sign in with Apple.": ["ar": "يزيل اسمك وبريدك الإلكتروني وإشاراتك المرجعية وموضع القراءة والتسبيح ومتتبع الصلاة من iCloud ويسجّل خروجك. ما هو موجود على هذا الجهاز يبقى حتى تحذف التطبيق. لإيقاف استخدام حساب Apple مع iPrayer، انظر الإعدادات > حساب Apple > تسجيل الدخول باستخدام Apple.", "ur": "آپ کا نام، ای میل، بک مارکس، پڑھنے کی جگہ، تسبیح اور نماز ٹریکر iCloud سے ہٹا دیتا ہے اور آپ کو سائن آؤٹ کر دیتا ہے۔ اس ڈیوائس پر موجود ڈیٹا ایپ حذف کرنے تک باقی رہتا ہے۔ iPrayer کے ساتھ اپنا Apple اکاؤنٹ استعمال بند کرنے کے لیے، Settings > Apple Account > Sign in with Apple دیکھیں۔", "fr": "Supprime votre nom, votre e-mail, vos signets, votre position de lecture, le Tasbih et le suivi des prières d'iCloud, puis vous déconnecte. Ce qui se trouve sur cet appareil reste jusqu'à la suppression de l'app. Pour ne plus utiliser votre compte Apple avec iPrayer, voir Réglages > Compte Apple > Connexion avec Apple.", "zh-Hans": "从 iCloud 移除您的姓名、邮箱、书签、阅读位置、念珠和礼拜记录，并退出登录。本设备上的数据会保留到您删除应用为止。若要停止在 iPrayer 中使用您的 Apple 账户，请前往“设置”>“Apple 账户”>“通过 Apple 登录”。", "de": "Entfernt deinen Namen, deine E-Mail, Lesezeichen, Leseposition, Tasbih und Gebetstracker aus iCloud und meldet dich ab. Was auf diesem Gerät ist, bleibt, bis du die App löschst. Um deinen Apple Account nicht mehr mit iPrayer zu verwenden, siehe Einstellungen > Apple Account > Mit Apple anmelden.", "hi": "आपका नाम, ईमेल, बुकमार्क, पढ़ने की स्थिति, तस्बीह और नमाज़ ट्रैकर iCloud से हटाता है और आपको साइन आउट करता है। इस डिवाइस पर मौजूद डेटा ऐप हटाने तक बना रहता है। iPrayer के साथ अपना Apple खाता उपयोग करना बंद करने के लिए, Settings > Apple Account > Sign in with Apple देखें।", "tr": "Adınızı, e-postanızı, yer imlerinizi, okuma konumunuzu, Tesbih ve namaz takibinizi iCloud'dan kaldırır ve oturumunuzu kapatır. Bu cihazdaki veriler uygulamayı silene kadar kalır. Apple Hesabınızı iPrayer ile kullanmayı bırakmak için Ayarlar > Apple Hesabı > Apple ile Giriş Yap bölümüne bakın.", "ru": "Удаляет из iCloud ваше имя, e-mail, закладки, позицию чтения, тасбих и трекер намазов и выполняет выход. Данные на этом устройстве остаются до удаления приложения. Чтобы перестать использовать Apple Account с iPrayer, см. Настройки > Apple Account > Вход с Apple."],
             "Move your device in a figure 8 to calibrate the compass": ["ar": "حرّك جهازك على شكل الرقم 8 لمعايرة البوصلة", "ur": "کمپاس کیلیبریٹ کرنے کے لیے اپنے آلے کو 8 کی شکل میں گھمائیں", "fr": "Faites un 8 avec votre appareil pour étalonner la boussole", "zh-Hans": "将设备按 8 字形移动以校准指南针", "de": "Bewege dein Gerät in einer Acht, um den Kompass zu kalibrieren", "hi": "कम्पास कैलिब्रेट करने के लिए अपने डिवाइस को 8 के आकार में घुमाएं", "tr": "Pusulayı ayarlamak için cihazınızı 8 çizecek şekilde hareket ettirin", "ru": "Опишите устройством восьмёрку, чтобы откалибровать компас"],
 "Compass Haptics": ["ar": "اهتزاز البوصلة", "ur": "کمپاس ہیپٹکس", "fr": "Retour haptique de la boussole", "zh-Hans": "指南针触感反馈", "de": "Kompass-Haptik", "hi": "कम्पास हैप्टिक्स", "tr": "Pusula Titreşimi", "ru": "Отклик компаса"],
+            "Test Haptic": ["ar": "اختبار الاهتزاز", "ur": "ہیپٹک ٹیسٹ", "fr": "Tester le retour haptique", "zh-Hans": "测试触感反馈", "de": "Haptik testen", "hi": "हैप्टिक जांचें", "tr": "Titreşimi Dene", "ru": "Проверить отклик"],
+            "Compass Diagnostics": ["ar": "تشخيص البوصلة", "ur": "کمپاس تشخیص", "fr": "Diagnostic de la boussole", "zh-Hans": "指南针诊断", "de": "Kompass-Diagnose", "hi": "कम्पास डायग्नोस्टिक्स", "tr": "Pusula Tanılama", "ru": "Диагностика компаса"],
             "All": ["ar": "الكل", "ur": "سب", "fr": "Tout", "zh-Hans": "全部", "de": "Alle", "hi": "सभी", "tr": "Tümü", "ru": "Все"],
             "Search duas": ["ar": "ابحث في الأدعية", "ur": "دعائیں تلاش کریں", "fr": "Rechercher une doua", "zh-Hans": "搜索祈祷词", "de": "Duas suchen", "hi": "दुआ खोजें", "tr": "Dua ara", "ru": "Поиск дуа"],
             "Knowledge": ["ar": "العلم", "ur": "علم", "fr": "Savoir", "zh-Hans": "知识", "de": "Wissen", "hi": "ज्ञान", "tr": "İlim", "ru": "Знание"],

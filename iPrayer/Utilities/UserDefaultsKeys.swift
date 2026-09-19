@@ -44,6 +44,7 @@ enum UDKey: String, CaseIterable {
     
     // Qibla
     case compassHapticsEnabled = "compassHapticsEnabled"   // the compass's detent clicks; default on
+    case compassDiagnostics = "compassDiagnostics"         // the on-screen compass readout; default off
     
     // Home tracker & streak
     case currentStreak = "currentStreak"

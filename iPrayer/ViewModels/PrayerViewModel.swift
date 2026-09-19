@@ -82,8 +82,13 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         locationManager.delegate = self
         // Hundred-metre accuracy is plenty for prayer times and gets a fix faster on less battery.
         locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
-        // Only publish heading changes of at least one degree so sensor noise doesn't re-render the UI.
-        locationManager.headingFilter = 1
+        // Every reading CoreLocation produces, not one per degree of movement. A 1-degree filter caps the
+        // dial's smoothness at 1-degree steps however short the animation is, and starves the detent: a
+        // slow final aim moves under 4 degrees a second, which is fewer than 4 readings a second. Sub-
+        // degree readings at the sensor's own rate are what make a short spring and a detent both work.
+        // Costs main-thread work — every reading re-evaluates QiblaCompassView.body — which is why the
+        // per-frame Bundle lookup in AppTranslations.catalogString is cached in the same change.
+        locationManager.headingFilter = kCLHeadingFilterNone
         locationAuthorization = locationManager.authorizationStatus
         // Permission is requested from onboarding or the Home card, next to an explanation, not at launch.
         // If access was already granted, locationManagerDidChangeAuthorization (which CoreLocation
@@ -105,7 +110,10 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                 Task { @MainActor in
                     guard let self else { return }
                     self.currentHeading += 1
-                    self.headingAccuracy = 5
+                    // A realistically POOR accuracy on purpose. The previous harness hardcoded 5, which
+                    // is the one value that kept the old accuracy gate open, and that is precisely why two
+                    // rounds of simulator testing missed a compass that was silent on a real phone.
+                    self.headingAccuracy = 25
                 }
             }
         }

@@ -14,6 +14,7 @@ struct QiblaCompassView: View {
     @EnvironmentObject var viewModel: PrayerViewModel
     @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
     @AppStorage(UDKey.compassHapticsEnabled.rawValue) private var compassHapticsEnabled: Bool = true
+    @AppStorage(UDKey.compassDiagnostics.rawValue) private var compassDiagnostics: Bool = false
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     
@@ -25,6 +26,9 @@ struct QiblaCompassView: View {
     /// a bare 5° line used to re-enter this state over and over, re-firing `success()` every time and
     /// re-lighting the whole dial with it.
     @State private var isFacingQibla = false
+    /// Heading readings seen since the screen opened. Counted only while diagnostics are on, so it costs
+    /// nothing in the normal case; the body is already re-evaluating on this exact change.
+    @State private var headingReadings = 0
     
     private static let kaaba = CLLocation(latitude: 21.422487, longitude: 39.826206)
     private static let facingTolerance = 5.0
@@ -44,11 +48,16 @@ struct QiblaCompassView: View {
     /// instant — and can no longer swing the long way round when the phone sweeps past the opposite bearing.
     private var qiblaRotation: Double { viewModel.qiblaDirection - viewModel.currentHeading }
     
-    /// One curve for everything the heading moves. A spring is retargeted in flight and carries its velocity
-    /// into the next reading, where a timing curve restarts from a standstill 20 to 50 times a second and
-    /// never leaves its slow-in shoulder. Critically damped, so the dial settles without the wobble the old
-    /// 0.65-damped needle left after every turn.
-    private static let dialMotion: Animation = .spring(response: 0.25, dampingFraction: 1)
+    /// One curve for everything the heading moves. A spring is retargeted in flight and carries its
+    /// velocity into the next reading, where a timing curve restarts from a standstill on every one and
+    /// never leaves its slow-in shoulder. Critically damped, so the dial settles without wobble.
+    ///
+    /// A critically damped spring following a turning phone sits a fixed 2*response/(2*pi) behind it —
+    /// 80 ms at the 0.25 this used to be, about 7 degrees of visible trail at a normal hand sweep, which
+    /// is a rose tick and a half. 0.12 cuts that to 38 ms and roughly 3 degrees. It is only usable
+    /// alongside `headingFilter = kCLHeadingFilterNone`: at a 1-degree filter a shorter spring just makes
+    /// the 1-degree steps visible as steps instead of hiding them.
+    private static let dialMotion: Animation = .spring(response: 0.12, dampingFraction: 1)
     
     private var hasLocation: Bool {
         viewModel.locationError == nil && viewModel.locationAuthorization != .notDetermined && viewModel.qiblaDirection != 0
@@ -139,34 +148,43 @@ struct QiblaCompassView: View {
     
     // MARK: - Haptics
     
-    /// The magnetometer's own verdict on the reading: nil until the first one, negative when CoreLocation
-    /// says it is invalid, and past `poorHeadingAccuracy` when it wants a figure-8. All three mean stay
-    /// quiet. The dial already shows the calibration banner in that state, and clicking — or congratulating
-    /// someone for facing Mecca — on a heading the sensor itself calls wrong is worse than silence.
-    private var headingIsTrustworthy: Bool {
-        guard let accuracy = viewModel.headingAccuracy else { return false }
-        return accuracy >= 0 && accuracy <= PrayerViewModel.poorHeadingAccuracy
-    }
-    
     /// One heading reading: move the lock latch, then hand the raw angle to the ratchet.
     ///
-    /// Both run off `viewModel.currentHeading`, not the animated presentation value, so a click can lead the
-    /// pixels by up to the dial spring's 0.25 s. That is the right way round: hand-to-click is ~60-120 ms
-    /// (CoreLocation's pipeline plus a prepared engine), inside the window where motion and sensation still
-    /// read as one event. Chasing the animation instead would push it past that.
+    /// Nothing here is conditional on the magnetometer's own error estimate any more. It was, and that gate
+    /// had exactly one failure mode — silence — on the one screen where silence is the whole complaint.
+    /// `CLHeading.headingAccuracy` sits well above 15 degrees indoors on a real iPhone, which is precisely
+    /// where this screen gets used; the status card below already asks for a figure-8 in that state, so the
+    /// person is told. A click on a rough heading is worth more than a compass that feels broken.
+    ///
+    /// Both the latch and the ratchet run off `viewModel.currentHeading`, not the animated presentation
+    /// value, so a click leads the pixels by the dial spring's settle time. That is the right way round:
+    /// hand-to-click stays inside the window where motion and sensation read as one event.
+/// A line the owner can photograph and send when the compass still feels wrong, since they cannot run
+    /// a debugger for us. `acc` is the magnetometer's own error estimate — the value that used to gate
+    /// every haptic on this screen. `reads` against `clicks` says whether headings are arriving at all and
+    /// whether the detent is firing on them: reads climbing with clicks stuck at 0 is our bug, both
+    /// climbing while nothing is felt is the phone's. Off by default; Settings › General › Compass
+    /// Diagnostics.
+    private var diagnosticsLine: String {
+        let accuracy = viewModel.headingAccuracy.map { String(format: "%.0f°", $0) } ?? "—"
+        let lowPower = ProcessInfo.processInfo.isLowPowerModeEnabled ? " · LOW POWER" : ""
+        let taptic = Haptics.supportsHaptics ? "y" : "n"
+        return "acc \(accuracy) · \(headingReadings) reads · \(ratchet.clicks) clicks · taptic \(taptic)\(lowPower)"
+    }
+    
     private func headingChanged() {
-        let trustworthy = headingIsTrustworthy
+        if compassDiagnostics { headingReadings += 1 }
         let aligned = abs(offset) < (isFacingQibla ? Self.releaseTolerance : Self.facingTolerance)
         if aligned != isFacingQibla {
             isFacingQibla = aligned
-            if aligned, trustworthy {
-                Haptics.success()
-                // .success is a multi-part pattern about half a second long. A click inside it does not
-                // layer, it stutters.
-                ratchet.mute(for: 0.5)
-            }
+            // Fires on any real reading, however rough — the 15° gate that silenced the compass indoors is
+            // gone for good. The one exception is a NEGATIVE accuracy, which is CoreLocation declaring the
+            // heading invalid rather than merely uncertain. The chime is felt without looking, so it is the
+            // most trusted claim this screen makes, and it should not be made about a heading that does not
+            // exist. The detent below stays completely ungated.
+            if aligned, (viewModel.headingAccuracy ?? -1) >= 0 { Haptics.success() }
         }
-        ratchet.update(angle: qiblaRotation, trustworthy: trustworthy)
+        ratchet.update(angle: qiblaRotation)
     }
     
     // MARK: - Pieces
@@ -300,6 +318,13 @@ struct QiblaCompassView: View {
                 Label(AppTranslations.translate("Move your device in a figure 8 to calibrate the compass", to: appLanguage), systemImage: "exclamationmark.triangle.fill")
                     .font(.custom("AvenirNext-DemiBold", size: 12))
                     .foregroundColor(.orange)
+                    .multilineTextAlignment(.center)
+            }
+            
+            if compassDiagnostics {
+                Text(diagnosticsLine)
+                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.55))
                     .multilineTextAlignment(.center)
             }
             
