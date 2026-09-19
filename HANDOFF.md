@@ -8,7 +8,7 @@ and what is still open. The README describes the product; this describes the wor
 
 ## 1. Where things stand
 
-- **Version:** 1.1.0, build 5 (App Store has 1.0). Deployment target iOS 26.0, Xcode 27, Swift 6.2 mode with
+- **Version:** 1.1.0, build 6 (App Store has 1.0). Deployment target iOS 26.0, Xcode 27, Swift 6.2 mode with
   `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and approachable concurrency on the app target.
 - **Repo:** `youssefkairum/iPrayer-iOS` on GitHub (renamed from `iPrayer`; the local remote points at the
   new name). `gh` is logged in as `youssefkairum` (a second account, `brentwelldigital`, is also present).
@@ -37,6 +37,10 @@ and what is still open. The README describes the product; this describes the wor
   reserved; the MIT claim and the missing LICENSE file are gone), `docs/AppStoreRelease.md` (submission checklist,
   release notes, review notes, privacy answers, a draft rights email to EveryAyah) and `docs/screenshots/` (iPhone
   6.9" and iPad 13", five screens each, simulator captures). Release configuration builds clean.
+- **20 September 2026, bug round:** three bugs the owner hit on device were fixed on branch
+  `bugfix-tracker-reader-liveactivity`: the tracker carrying yesterday's ticks into a new day, Continue Reading
+  resuming one verse early, and a stale Live Activity for the previous prayer staying on the Lock Screen. Build
+  bumped to 6, so the filed 1.1.0 (5) archive is STALE and must not be uploaded. See the three bullets in §3.
 - **20 September 2026:** the owner's post-release notes were fixed and merged: #17 splash → onboarding hand-off and
   reliable slide entrances, #18 Qibla heading accuracy, #19 reader (TextKit 2, line spacing, green resume mark,
   Arabic references). Build bumped to 5 and a fresh archive filed as `iPrayer 1.1.0 (5).xcarchive` in the same
@@ -186,6 +190,27 @@ must follow the *in-app* language (notifications, some labels) goes through
   KVS when signed in, and the KVS id is per bundle id, so WatchConnectivity is the one reliable channel).
 - **Wrist changes win by date.** Tracker/streak use the same "newer yyyy-MM-dd wins" rule as CloudSyncManager;
   the Tasbih uses `tasbihUpdatedAt` (set wherever a person changes it) so the last touch wins on either side.
+- **Tracker ordering rules (bug round, 20 Sep 2026). Order matters on BOTH sync paths and this is the whole bug.**
+  `checkAndResetTracker` must read `todaysTrackerFromCloud` BEFORE assigning `lastTrackerDateStr`: that setter
+  publishes the new date to the App Group KVS and the watch synchronously, so the shared store would satisfy its
+  own freshness guard while its array was still yesterday's, and yesterday's ticks came straight back as "today's
+  progress from another device". `applyCloudValues` must likewise capture the local `lastTrackerDate` BEFORE its
+  write loop, because `accepted` is walked in the caller's key order and the same-day OR-merge would otherwise be
+  decided against a date it had just imported. `todaysTrackerFromCloud` also returns nil unless
+  `CloudSyncManager.isSyncing`, since a signed-out device still holds whatever the last session left in the store.
+  Signed out, none of this fires, which is why the simulator never caught it.
+- **Reading position has three sources, not one.** The verse at the top of the screen (`verseAtTop`, probed INSIDE
+  the first visible line, not in the 30 pt container inset, or it returns the line above), the verse the reader
+  taps, and the verse being recited. Selection and recitation both record directly from SurahDetailView; the
+  follow-the-recitation scroll reports the verse it moved to (`revealingVerse`) rather than measuring the top,
+  because `reveal` deliberately parks that verse 90 pt down. A programmatic restore scroll sets
+  `isRestoringPosition` and reports nothing at all: its own scroll events used to overwrite the saved bookmark
+  with verse 1 while the view was still at the top.
+- **One Live Activity, always.** ActivityKit ends an activity itself once it passes the active-duration cap (an
+  Isha-to-Fajr gap does this nightly) and the system keeps DRAWING it for hours afterwards, frozen on that prayer.
+  Such an activity is not `.active` or `.stale`, so it must be ended explicitly with `.immediate` before a new one
+  is requested, or the previous prayer sits beside the current one. `pendingActivity` covers `Activity.activities`
+  lagging behind a successful `request`.
 - **Tracker day rules (PR #7).** A saved tracker is adopted only if saved today; a new day starts from today's
   iCloud tracker when another device has one (never blanks over it); same-day ticks merge with OR and the
   streak keeps the larger count, on both the iCloud and the watch paths; the model observes the day change and

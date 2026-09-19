@@ -101,6 +101,9 @@ class HomeWidgetsData: ObservableObject {
     /// from blanks, stops a device that wakes up late from wiping progress already made today.
     private static func todaysTrackerFromCloud(_ today: String) -> [Bool]? {
         #if os(iOS)
+        // Only trust the shared store while sync is actually on. Signed out, it still holds whatever the last
+        // signed-in session left there, and nothing refreshes it.
+        guard CloudSyncManager.shared.isSyncing else { return nil }
         let store = NSUbiquitousKeyValueStore.default
         guard store.string(forKey: UDKey.lastTrackerDate.rawValue) == today,
               let tracker = store.array(forKey: UDKey.dailyPrayersCompleted.rawValue) as? [Bool],
@@ -140,10 +143,16 @@ class HomeWidgetsData: ObservableObject {
         let formatter = Self.dayFormatter
         let todayStr = formatter.string(from: Date())
         
-        // New day: start from today's progress on another device if iCloud has it, otherwise blank
+        // New day: start from today's progress on another device if iCloud has it, otherwise blank.
+        //
+        // Read the shared copy BEFORE stamping today. Assigning lastTrackerDateStr publishes the new date to
+        // iCloud and the watch immediately, so the shared store would then claim to hold TODAY's tracker while
+        // its array is still YESTERDAY's — and that array came straight back as "today's progress from another
+        // device". That is how yesterday's ticks reappeared on a new day.
         if lastTrackerDateStr != todayStr {
+            let sharedToday = Self.todaysTrackerFromCloud(todayStr)
+            dailyPrayersCompleted = sharedToday ?? [false, false, false, false, false]
             lastTrackerDateStr = todayStr
-            dailyPrayersCompleted = Self.todaysTrackerFromCloud(todayStr) ?? [false, false, false, false, false]
         }
         
         // Break streak if missed yesterday

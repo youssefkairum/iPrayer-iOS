@@ -171,8 +171,20 @@ struct SurahDetailView: View {
             // The mark has done its job once the user starts interacting with verses
             if let newValue {
                 focusVerse = nil
+                // The verse the reader picked is the best resume point there is; without this, Continue
+                // Reading only ever remembered the verse at the top of the screen, which is the one before.
+                visibleVerse = newValue
+                recordLastRead(verse: newValue)
                 // A selected verse is a likely "play from here"
                 audio.prefetch(surah: currentSurah, from: newValue, reciter: reciter)
+            }
+        }
+        .onChange(of: playingVerse) { _, newValue in
+            // While the recitation runs it IS the reading position, including on the verses that are
+            // already comfortably on screen, where the reader never scrolls and so never reports.
+            if let newValue {
+                visibleVerse = newValue
+                recordLastRead(verse: newValue)
             }
         }
         .onChange(of: reciterID) { _, _ in

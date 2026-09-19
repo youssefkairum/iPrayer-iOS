@@ -111,6 +111,11 @@ class CloudSyncManager {
         // Decide per pair BEFORE writing anything, otherwise accepting the date first
         // would change the outcome for the value that belongs to it.
         let accepted = keys.filter { shouldAcceptCloudValue(for: $0) }
+        // Same reason: the same-day OR-merge below must test the tracker date as it stood BEFORE this pass.
+        // `accepted` is walked in the caller's key order, so lastTrackerDate may already have been written
+        // from the cloud by the time the array is reached, and the merge would then fold yesterday's local
+        // ticks into today's cloud tracker.
+        let localTrackerDateBefore = defaults.string(forKey: UDKey.lastTrackerDate.rawValue)
         var touchedTracker = false
         
         for key in accepted {
@@ -144,7 +149,7 @@ class CloudSyncManager {
                 guard var cloudVal = store.array(forKey: key) as? [Bool] else { continue }
                 // Same day on both devices: a prayer ticked on either stays ticked
                 if key == UDKey.dailyPrayersCompleted.rawValue,
-                   store.string(forKey: UDKey.lastTrackerDate.rawValue) == defaults.string(forKey: UDKey.lastTrackerDate.rawValue),
+                   store.string(forKey: UDKey.lastTrackerDate.rawValue) == localTrackerDateBefore,
                    let local = defaults.array(forKey: key) as? [Bool], local.count == cloudVal.count {
                     cloudVal = zip(cloudVal, local).map { $0 || $1 }
                 }
