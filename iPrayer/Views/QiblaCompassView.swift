@@ -13,14 +13,25 @@ import CoreLocation
 struct QiblaCompassView: View {
     @EnvironmentObject var viewModel: PrayerViewModel
     @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
+    @AppStorage(UDKey.compassHapticsEnabled.rawValue) private var compassHapticsEnabled: Bool = true
     @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
     
     @State private var radarRotation: Double = 0
+    @State private var distanceText: String?
+    /// The detent engine for this screen: one prepared generator, alive only while the compass is.
+    @State private var ratchet = Haptics.Ratchet()
+    /// Latched rather than computed: the lock is taken at 5° and only given up at 8°. A heading sitting on
+    /// a bare 5° line used to re-enter this state over and over, re-firing `success()` every time and
+    /// re-lighting the whole dial with it.
+    @State private var isFacingQibla = false
     
     private static let kaaba = CLLocation(latitude: 21.422487, longitude: 39.826206)
     private static let facingTolerance = 5.0
+    private static let releaseTolerance = 8.0
     
-    /// Signed difference from the phone's heading to the Qibla, in -180...180 (positive = turn right)
+    /// Signed difference from the phone's heading to the Qibla, in -180...180 (positive = turn right).
+    /// This is the GUIDANCE value: it drives the turn text and the facing state, never a rotation.
     private var offset: Double {
         var delta = (viewModel.qiblaDirection - viewModel.currentHeading).truncatingRemainder(dividingBy: 360)
         if delta > 180 { delta -= 360 }
@@ -28,23 +39,39 @@ struct QiblaCompassView: View {
         return delta
     }
     
-    private var isFacingQibla: Bool { abs(offset) < Self.facingTolerance }
+    /// The needle's angle, taken from the same continuous heading the rose turns on and never re-wrapped.
+    /// The needle stays rigid with the rose — the Kaaba tip sits exactly over the Qibla mark at every
+    /// instant — and can no longer swing the long way round when the phone sweeps past the opposite bearing.
+    private var qiblaRotation: Double { viewModel.qiblaDirection - viewModel.currentHeading }
+    
+    /// One curve for everything the heading moves. A spring is retargeted in flight and carries its velocity
+    /// into the next reading, where a timing curve restarts from a standstill 20 to 50 times a second and
+    /// never leaves its slow-in shoulder. Critically damped, so the dial settles without the wobble the old
+    /// 0.65-damped needle left after every turn.
+    private static let dialMotion: Animation = .spring(response: 0.25, dampingFraction: 1)
     
     private var hasLocation: Bool {
         viewModel.locationError == nil && viewModel.locationAuthorization != .notDetermined && viewModel.qiblaDirection != 0
     }
     
-    /// Distance from the last known position to the Kaaba, in the user's units
-    private var distanceText: String? {
-        guard let config = SharedPrayerConfig.load() else { return nil }
-        let here = CLLocation(latitude: config.latitude, longitude: config.longitude)
-        let metres = here.distance(from: Self.kaaba)
+    /// Units follow the device region (km or miles), not the app language. Built once: allocating a
+    /// MeasurementFormatter is expensive and this used to happen on every heading reading.
+    private static let distanceFormatter: MeasurementFormatter = {
         let formatter = MeasurementFormatter()
-        // Units follow the device region (km or miles), not the app language
         formatter.locale = Locale.current
         formatter.unitOptions = .naturalScale
         formatter.numberFormatter.maximumFractionDigits = 0
-        return formatter.string(from: Measurement(value: metres, unit: UnitLength.meters))
+        return formatter
+    }()
+    
+    /// Distance from the last known position to the Kaaba, in the user's units. Read once when the screen
+    /// appears rather than recomputed per heading reading: it is a property of the location, and working it
+    /// out meant an App Group read and a JSON decode 20 to 50 times a second while the phone turned.
+    private static func distanceToKaaba() -> String? {
+        guard let config = SharedPrayerConfig.load() else { return nil }
+        let here = CLLocation(latitude: config.latitude, longitude: config.longitude)
+        let metres = here.distance(from: kaaba)
+        return distanceFormatter.string(from: Measurement(value: metres, unit: UnitLength.meters))
     }
     
     var body: some View {
@@ -80,11 +107,66 @@ struct QiblaCompassView: View {
                 .padding(.bottom, 108) // clear the floating tab bar
             }
         }
-        .onAppear { viewModel.startCompass() }
-        .onDisappear { viewModel.stopCompass() }
-        .onChange(of: isFacingQibla) { _, facing in
-            if facing { Haptics.success() }
+        .onAppear {
+            viewModel.startCompass()
+            distanceText = Self.distanceToKaaba()
+            if compassHapticsEnabled { ratchet.begin(at: qiblaRotation) }
         }
+        .onChange(of: viewModel.qiblaDirection) { _, _ in
+            distanceText = Self.distanceToKaaba()
+            // The detent lattice is anchored on the Qibla, and the Qibla just moved. Re-anchor in silence.
+            ratchet.reseed(at: qiblaRotation)
+        }
+        .onDisappear {
+            viewModel.stopCompass()
+            ratchet.end()
+        }
+        .onChange(of: viewModel.currentHeading) { _, _ in headingChanged() }
+        .onChange(of: compassHapticsEnabled) { _, enabled in
+            if enabled { ratchet.begin(at: qiblaRotation) } else { ratchet.end() }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // onDisappear does not fire when the app is backgrounded from this screen, and the engine must
+            // not be left warm there. Coming back, the heading may have jumped tens of degrees in one
+            // delta, so begin() re-anchors rather than paying that out as clicks.
+            if phase == .active {
+                if compassHapticsEnabled { ratchet.begin(at: qiblaRotation) }
+            } else {
+                ratchet.end()
+            }
+        }
+    }
+    
+    // MARK: - Haptics
+    
+    /// The magnetometer's own verdict on the reading: nil until the first one, negative when CoreLocation
+    /// says it is invalid, and past `poorHeadingAccuracy` when it wants a figure-8. All three mean stay
+    /// quiet. The dial already shows the calibration banner in that state, and clicking — or congratulating
+    /// someone for facing Mecca — on a heading the sensor itself calls wrong is worse than silence.
+    private var headingIsTrustworthy: Bool {
+        guard let accuracy = viewModel.headingAccuracy else { return false }
+        return accuracy >= 0 && accuracy <= PrayerViewModel.poorHeadingAccuracy
+    }
+    
+    /// One heading reading: move the lock latch, then hand the raw angle to the ratchet.
+    ///
+    /// Both run off `viewModel.currentHeading`, not the animated presentation value, so a click can lead the
+    /// pixels by up to the dial spring's 0.25 s. That is the right way round: hand-to-click is ~60-120 ms
+    /// (CoreLocation's pipeline plus a prepared engine), inside the window where motion and sensation still
+    /// read as one event. Chasing the animation instead would push it past that.
+    private func headingChanged() {
+        let trustworthy = headingIsTrustworthy
+        let aligned = abs(offset) < (isFacingQibla ? Self.releaseTolerance : Self.facingTolerance)
+        if aligned != isFacingQibla {
+            isFacingQibla = aligned
+            if aligned, trustworthy {
+                Haptics.success()
+                // .success is a multi-part pattern about half a second long. A click inside it does not
+                // layer, it stutters.
+                ratchet.mute(for: 0.5)
+            }
+        }
+        ratchet.update(angle: qiblaRotation, trustworthy: trustworthy)
     }
     
     // MARK: - Pieces
@@ -157,7 +239,7 @@ struct QiblaCompassView: View {
                 }
             }
             .rotationEffect(.degrees(-viewModel.currentHeading))
-            .animation(.easeInOut(duration: 0.2), value: viewModel.currentHeading)
+            .animation(Self.dialMotion, value: viewModel.currentHeading)
             
             // The Kaaba pointer: a needle from the centre with the Kaaba at its tip
             VStack(spacing: 0) {
@@ -174,8 +256,8 @@ struct QiblaCompassView: View {
                 Spacer(minLength: 0)
             }
             .frame(height: size)
-            .rotationEffect(.degrees(offset))
-            .animation(.spring(response: 0.55, dampingFraction: 0.65), value: offset)
+            .rotationEffect(.degrees(qiblaRotation))
+            .animation(Self.dialMotion, value: qiblaRotation)
             
             // Where the phone points: fixed at the top
             Image(systemName: "arrowtriangle.down.fill")

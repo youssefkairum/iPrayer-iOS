@@ -228,6 +228,32 @@ must follow the *in-app* language (notifications, some labels) goes through
   with `shown` already true, so nothing changed and nothing animated.
 - **"Sign in with Apple" text follows the device language** (Apple's button, no API). Not replaced with a custom
   button: review risk for little gain.
+- **The compass ratchet (`Haptics.Ratchet`) is the app's only STREAMED haptic, and that is why it is a class.**
+  The other sensations build a generator per call and throw it away, which is right for a press because the
+  finger is already down and the engine's 50-100 ms cold ramp is masked. A stream cannot do that, so one
+  generator is held for the life of the screen and re-`prepare()`d after each click. The notch size follows the
+  turn rate (5° / 15° / 45°, widening above 45 and 135 °/s) to hold the click rate in the 3 to 9 per second band
+  where the Taptic Engine renders separate taps rather than a hum; all three spacings divide 360 and each other
+  and the lattice is anchored on the Qibla, so no tier change can double a click. A resting phone is silent
+  three ways over: `headingFilter = 1` means it sends nothing, a gap over 250 ms re-anchors in silence, and a
+  direction latch makes a reversal travel 1.4 notches before it counts. `success()` at the lock now has
+  hysteresis (enter 5°, release 8°) and mutes the ratchet for 500 ms so the two never stutter together.
+  Measured on the Simulator with `-debugSpinCompass`: 30°/s gives 5° notches at 5.7 clicks/s, 90°/s gives 15°,
+  180°/s gives 45° at 3 clicks/s. Nothing about the FEEL can be judged without a real iPhone.
+- **The compass dial is ONE object and must move on ONE curve.** The rose turns by `-currentHeading` and the
+  needle by `qiblaDirection - currentHeading`; those differ by a constant, so the Kaaba tip sits exactly over the
+  Qibla mark on the rose only while both use the same animation. They used to use two (an `easeInOut(0.2)` and a
+  `spring(0.55, 0.65)`), so mid-turn the tip visibly detached from its own mark, which is what read as "sluggish".
+  Both now use one critically damped `spring(response: 0.25, dampingFraction: 1)`: a spring is retargeted in
+  flight and carries velocity into the next reading, where a timing curve restarts from a standstill 20 to 50
+  times a second and never leaves its slow-in shoulder. The needle also takes the CONTINUOUS angle, never the
+  wrapped `offset` (which is for the turn text only) — re-wrapping made it swing the long way round whenever the
+  phone swept past the bearing opposite the Qibla.
+- **`BackgroundPatternView` is expensive and is on six screens.** Its few hundred stroked shapes were re-stroked
+  every frame for as long as the screen was open, because it rotates forever: measured at ~12% CPU sustained on
+  the Qibla tab against 0% on tabs without it. `.drawingGroup()` rasterises it once and halves that, with no
+  visible change. Anything else long-lived and animated on those screens pays the same tax, so measure before
+  adding one. Note the radar sweep was measured and is NOT the cost.
 - **Qibla heading accuracy (branch `qibla-accuracy`).** The bearing is a great-circle computation (Adhan `Qibla`), exact
   for any location fix; all error is in the heading. True heading is preferred (declination-corrected; needs a location
   fix, which the app has), magnetic is the fallback. `headingOrientation` follows the device orientation while the
@@ -259,7 +285,8 @@ xcrun simctl io <sim> screenshot --type=png out.png       # captures no status b
 
 **Debug-only launch arguments** (compiled out of Release):
 `-debugInitialTab quran|tasbih|qibla|settings` · `-debugOpenSurah N` · `-debugOpenVerse N` ·
-`-debugOnboardingSlide N` · `-debugShowWhatsNew 1` · `-debugAudioBaseURL https://unreachable.invalid`
+`-debugOnboardingSlide N` · `-debugShowWhatsNew 1` · `-debugSpinCompass 1` (turns the compass at 30 Hz, since
+the simulator has no magnetometer; the only way to exercise the dial without a device) · `-debugAudioBaseURL https://unreachable.invalid`
 (fails every verse, to test offline handling). Any UserDefaults key can also be overridden for one run,
 e.g. `-lastSeenWhatsNewVersion 1.0.0`, `-hasSeenOnboarding YES`, `-appLanguage ar`, `-userName "Youssef Keram"`
 (the last one shows the signed-in greeting without signing in).
