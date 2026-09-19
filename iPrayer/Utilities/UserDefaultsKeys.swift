@@ -42,6 +42,9 @@ enum UDKey: String, CaseIterable {
     case quranRemindersEnabled = "quranRemindersEnabled"
     case prePrayerReminderMinutes = "prePrayerReminderMinutes" // 0 = off
     
+    // Qibla
+    case compassHapticsEnabled = "compassHapticsEnabled"   // the compass's detent clicks; default on
+    
     // Home tracker & streak
     case currentStreak = "currentStreak"
     case dailyPrayersCompleted = "dailyPrayersCompleted"

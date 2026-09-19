@@ -16,6 +16,7 @@ struct SettingsView: View {
     @AppStorage(UDKey.adhanSoundEnabled.rawValue) private var adhanSoundEnabled: Bool = true
     @AppStorage(UDKey.quranRemindersEnabled.rawValue) private var quranRemindersEnabled: Bool = true
     @AppStorage(UDKey.prePrayerReminderMinutes.rawValue) private var prePrayerReminderMinutes: Int = 0
+    @AppStorage(UDKey.compassHapticsEnabled.rawValue) private var compassHapticsEnabled: Bool = true
     
     @AppStorage(UDKey.quranReciter.rawValue) private var reciterID: String = QuranReciter.default.id
     @ObservedObject private var downloads = QuranAudioDownloads.shared
@@ -241,6 +242,18 @@ struct SettingsView: View {
                         // 3. General Section (language + about)
                         SettingsCard(title: "General", icon: "info.circle.fill") {
                             VStack(spacing: 6) {
+                                // Hidden where it would switch something that can never happen: no iPad has
+                                // a Taptic Engine, and the generator calls there are silent no-ops.
+                                if Haptics.supportsHaptics {
+                                    Toggle(isOn: $compassHapticsEnabled) {
+                                        Text(AppTranslations.translate("Compass Haptics", to: appLanguage))
+                                            .font(.custom("AvenirNext-Medium", size: 15))
+                                            .foregroundColor(.white)
+                                    }
+                                    .tint(.teal)
+                                    
+                                    Divider().background(Color.white.opacity(0.2))
+                                }
                             HStack {
                                 Text("App Language")
                                     .font(.custom("AvenirNext-Medium", size: 15))

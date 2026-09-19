@@ -203,6 +203,18 @@ must follow the *in-app* language (notifications, some labels) goes through
   with `shown` already true, so nothing changed and nothing animated.
 - **"Sign in with Apple" text follows the device language** (Apple's button, no API). Not replaced with a custom
   button: review risk for little gain.
+- **The compass ratchet (`Haptics.Ratchet`) is the app's only STREAMED haptic, and that is why it is a class.**
+  The other sensations build a generator per call and throw it away, which is right for a press because the
+  finger is already down and the engine's 50-100 ms cold ramp is masked. A stream cannot do that, so one
+  generator is held for the life of the screen and re-`prepare()`d after each click. The notch size follows the
+  turn rate (5° / 15° / 45°, widening above 45 and 135 °/s) to hold the click rate in the 3 to 9 per second band
+  where the Taptic Engine renders separate taps rather than a hum; all three spacings divide 360 and each other
+  and the lattice is anchored on the Qibla, so no tier change can double a click. A resting phone is silent
+  three ways over: `headingFilter = 1` means it sends nothing, a gap over 250 ms re-anchors in silence, and a
+  direction latch makes a reversal travel 1.4 notches before it counts. `success()` at the lock now has
+  hysteresis (enter 5°, release 8°) and mutes the ratchet for 500 ms so the two never stutter together.
+  Measured on the Simulator with `-debugSpinCompass`: 30°/s gives 5° notches at 5.7 clicks/s, 90°/s gives 15°,
+  180°/s gives 45° at 3 clicks/s. Nothing about the FEEL can be judged without a real iPhone.
 - **The compass dial is ONE object and must move on ONE curve.** The rose turns by `-currentHeading` and the
   needle by `qiblaDirection - currentHeading`; those differ by a constant, so the Kaaba tip sits exactly over the
   Qibla mark on the rose only while both use the same animation. They used to use two (an `easeInOut(0.2)` and a
