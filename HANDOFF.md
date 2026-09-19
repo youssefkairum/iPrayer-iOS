@@ -191,8 +191,23 @@ must follow the *in-app* language (notifications, some labels) goes through
   registered "en" default makes `string(forKey:)` look chosen on a brand-new install.
 - **Onboarding controls have a fixed height (104 pt) and crossfade**; slides animate in once and never out.
   Anything else made the features -> location page change feel rough.
+- **Onboarding entrance timing (branch `onboarding-entrance`).** The onboarding sits under the splash from launch, so
+  its welcome slide used to play its entrance unseen and then "pop" when the splash faded. Now `AppEntrance.splashDismissed`
+  is set when the splash starts fading, the welcome slide waits for it, and the onboarding settles in from 0.94 scale
+  like the main app. Each slide also gates its entrance on an `appeared` state set one run-loop turn after its first
+  render (`slideEntrance`): the paged TabView sometimes built the next page only at the moment of a fast Continue tap,
+  with `shown` already true, so nothing changed and nothing animated.
 - **"Sign in with Apple" text follows the device language** (Apple's button, no API). Not replaced with a custom
   button: review risk for little gain.
+- **Qibla heading accuracy (branch `qibla-accuracy`).** The bearing is a great-circle computation (Adhan `Qibla`), exact
+  for any location fix; all error is in the heading. True heading is preferred (declination-corrected; needs a location
+  fix, which the app has), magnetic is the fallback. `headingOrientation` follows the device orientation while the
+  compass is on (portrait-only headings put north 90° off on a sideways iPad). The delegate now allows iOS's figure-8
+  calibration screen, only while the Qibla tab is showing. `headingAccuracy` is published; past 15° (or invalid) the
+  status card asks for the figure 8. `currentHeading` is unwrapped (shortest signed change added each reading) so the
+  dial never spins the long way through north; read it modulo 360. No magnetometer (Simulator) shows "Compass
+  unavailable" with the bearing and distance kept. Only the fallback is simulator-verifiable; heading, calibration
+  prompt and orientation need a device.
 - **Copyright line** is built by `AppTranslations.copyrightLine`: RTL languages lead with the phrase, the
   Latin name+year sit in a first-strong isolate.
 - **Tasbih changing the dhikr keeps the count** (people run one count across phrases).
@@ -243,6 +258,10 @@ watchOS runtime in Xcode > Settings > Components, pair a watch simulator with th
 - `simctl pbcopy` needs `LC_ALL=en_US.UTF-8` for Arabic.
 - `simctl launch` needs `--terminate-running-process` and the argument string split by the shell (zsh: `${=A}`),
   otherwise the arguments are passed as one word and silently ignored. Give a fresh launch 30 s before a capture.
+- **Fresh-install tests: run `simctl spawn <sim> defaults delete <bundle>` first.** That simulator-level domain
+  (written by an earlier `defaults write`) survives `simctl uninstall` and the app reads it; a stale
+  `hasSeenOnboarding = 1` there sent every "fresh" install to Home + What's New and launch-argument overrides were
+  dropped on top. After deleting it, uninstall + `privacy reset all` + install shows onboarding with no arguments.
 - Store captures on a freshly booted simulator: the first launches take 20 to 30 s to show anything, so wait 30 s
   per screen (12 s gave blank captures). `simctl privacy <sim> grant location <bundle>` works; `grant notifications`
   is refused, so tap Allow once through the Simulator tool. The iPad Pro 13-inch simulator ignored `-hasSeenOnboarding`

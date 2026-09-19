@@ -102,6 +102,11 @@ struct iPrayerApp: App {
                         .environment(\.locale, Locale(identifier: appLanguage))
                         .environment(\.layoutDirection, layoutDirection)
                         .preferredColorScheme(.dark)
+                        // Settles into place from slightly smaller while the splash fades over it, the
+                        // same hand-off the main app gets; otherwise the shared background makes the
+                        // crossfade invisible and the welcome text simply pops in
+                        .scaleEffect(isSplashScreenVisible ? 0.94 : 1)
+                        .animation(.spring(response: 0.65, dampingFraction: 0.85), value: isSplashScreenVisible)
                         .transition(.opacity.combined(with: .scale(scale: 1.06)))
                         .zIndex(0.5)
                 }
@@ -137,6 +142,7 @@ struct iPrayerApp: App {
                     withAnimation(.easeInOut(duration: 0.6)) {
                         isSplashScreenVisible = false
                     }
+                    AppEntrance.shared.splashDismissed = true
                     Haptics.soft()
                     presentWhatsNewIfNeeded()
                 }

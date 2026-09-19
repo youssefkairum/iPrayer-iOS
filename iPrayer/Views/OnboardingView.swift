@@ -16,7 +16,7 @@ struct OnboardingView: View {
     @EnvironmentObject var viewModel: PrayerViewModel
     @StateObject private var accountManager = AccountManager.shared
     @State private var currentTab = OnboardingView.initialSlide
-    @State private var revealed = false
+    @ObservedObject private var entrance = AppEntrance.shared
     
     private static let stepCount = 4
     
@@ -42,9 +42,10 @@ struct OnboardingView: View {
                 topBar
                 
                 // Each slide plays its entrance once, when first reached, and stays put afterwards: fading a
-                // page out while the next slides in made the change feel rough.
+                // page out while the next slides in made the change feel rough. The first slide waits for the
+                // splash screen to go, so its entrance is not spent underneath it.
                 TabView(selection: $currentTab) {
-                    WelcomeSlide(shown: revealed).tag(0)
+                    WelcomeSlide(shown: entrance.splashDismissed).tag(0)
                     FeaturesSlide(shown: currentTab >= 1).tag(1)
                     LocationSlide(shown: currentTab >= 2).tag(2)
                     SyncSlide(shown: currentTab >= 3).tag(3)
@@ -65,7 +66,6 @@ struct OnboardingView: View {
                 .padding(.bottom, 20)
             }
         }
-        .onAppear { revealed = true }
     }
     
     // MARK: - Top: progress and language
@@ -219,8 +219,28 @@ struct OnboardingView: View {
 
 // MARK: - Slides
 
+/// Entrance state for a slide: true only once the slide has been reached AND has rendered once, so the
+/// change from hidden to shown always happens on screen and the `.animation(value:)` modifiers see it.
+private struct SlideEntrance: ViewModifier {
+    @Binding var appeared: Bool
+    func body(content: Content) -> some View {
+        content.onAppear {
+            // Next run loop turn: a state change inside onAppear itself can be folded into the first render
+            DispatchQueue.main.async { appeared = true }
+        }
+    }
+}
+
+private extension View {
+    func slideEntrance(appeared: Binding<Bool>) -> some View {
+        modifier(SlideEntrance(appeared: appeared))
+    }
+}
+
 private struct WelcomeSlide: View {
     let shown: Bool
+    @State private var appeared = false
+    private var visible: Bool { shown && appeared }
     @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
     
     var body: some View {
@@ -244,8 +264,8 @@ private struct WelcomeSlide: View {
                 }
             }
             .shadow(color: .teal.opacity(0.45), radius: 28, x: 0, y: 10)
-            .scaleEffect(shown ? 1 : 0.8)
-            .opacity(shown ? 1 : 0)
+            .scaleEffect(visible ? 1 : 0.8)
+            .opacity(visible ? 1 : 0)
             .animation(.spring(response: 0.7, dampingFraction: 0.7), value: shown)
             
             VStack(spacing: 12) {
@@ -260,7 +280,7 @@ private struct WelcomeSlide: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 36)
             }
-            .entrance(1, shown: shown)
+            .entrance(1, shown: visible)
             
             // A day of prayers, in the colours the app uses for them
             HStack(spacing: 10) {
@@ -273,17 +293,20 @@ private struct WelcomeSlide: View {
                         .clipShape(Circle())
                 }
             }
-            .entrance(2, shown: shown)
+            .entrance(2, shown: visible)
             
             Spacer()
             Spacer()
         }
         .padding(.horizontal, 24)
+        .slideEntrance(appeared: $appeared)
     }
 }
 
 private struct FeaturesSlide: View {
     let shown: Bool
+    @State private var appeared = false
+    private var visible: Bool { shown && appeared }
     @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
     
     private var features: [(icon: String, prayer: String, title: String, description: String)] {
@@ -324,12 +347,13 @@ private struct FeaturesSlide: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
-                    .entrance(index, shown: shown)
+                    .entrance(index, shown: visible)
                 }
             }
             .padding(.horizontal, 28)
             Spacer(minLength: 8)
         }
+        .slideEntrance(appeared: $appeared)
     }
 }
 
@@ -375,6 +399,8 @@ private struct SyncSlide: View {
 /// Icon in a glass disc, a title, one explaining sentence, and a short list of what it covers
 private struct PermissionSlide: View {
     let shown: Bool
+    @State private var appeared = false
+    private var visible: Bool { shown && appeared }
     let icon: String
     let tint: Color
     let title: String
@@ -391,8 +417,8 @@ private struct PermissionSlide: View {
                 .frame(width: 112, height: 112)
                 .glassEffect(.regular, in: .circle)
                 .shadow(color: tint.opacity(0.4), radius: 24, x: 0, y: 8)
-                .scaleEffect(shown ? 1 : 0.8)
-                .opacity(shown ? 1 : 0)
+                .scaleEffect(visible ? 1 : 0.8)
+                .opacity(visible ? 1 : 0)
                 .animation(.spring(response: 0.7, dampingFraction: 0.7), value: shown)
             
             VStack(spacing: 12) {
@@ -406,7 +432,7 @@ private struct PermissionSlide: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 30)
             }
-            .entrance(1, shown: shown)
+            .entrance(1, shown: visible)
             
             HStack(spacing: 8) {
                 ForEach(Array(points.enumerated()), id: \.offset) { _, point in
@@ -419,11 +445,12 @@ private struct PermissionSlide: View {
                         .glassEffect(.regular, in: .capsule)
                 }
             }
-            .entrance(2, shown: shown)
+            .entrance(2, shown: visible)
             
             Spacer()
             Spacer()
         }
         .padding(.horizontal, 24)
+        .slideEntrance(appeared: $appeared)
     }
 }
