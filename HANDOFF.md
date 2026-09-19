@@ -37,10 +37,12 @@ and what is still open. The README describes the product; this describes the wor
   reserved; the MIT claim and the missing LICENSE file are gone), `docs/AppStoreRelease.md` (submission checklist,
   release notes, review notes, privacy answers, a draft rights email to EveryAyah) and `docs/screenshots/` (iPhone
   6.9" and iPad 13", five screens each, simulator captures). Release configuration builds clean.
-- **20 September 2026, bug round:** three bugs the owner hit on device were fixed on branch
-  `bugfix-tracker-reader-liveactivity`: the tracker carrying yesterday's ticks into a new day, Continue Reading
-  resuming one verse early, and a stale Live Activity for the previous prayer staying on the Lock Screen. Build
-  bumped to 6, so the filed 1.1.0 (5) archive is STALE and must not be uploaded. See the three bullets in §3.
+- **20 September 2026, bug and polish round — ALL MERGED to `main`.** PR #20: the tracker carrying yesterday's
+  ticks into a new day, Continue Reading resuming one verse early, a stale Live Activity for the previous prayer
+  staying on the Lock Screen. PR #21: the Qibla dial made rigid (one curve for rose and needle), detent haptics
+  as the phone turns, and the animated background pattern rasterised (~12% CPU to ~5%). Build 6, archived as
+  `iPrayer 1.1.0 (6).xcarchive`; the stale 4 and 5 archives were deleted. No branch or PR is open.
+  The three §3 bullets on tracker ordering, the one-curve dial and the ratchet must not be undone.
 - **20 September 2026:** the owner's post-release notes were fixed and merged: #17 splash → onboarding hand-off and
   reliable slide entrances, #18 Qibla heading accuracy, #19 reader (TextKit 2, line spacing, green resume mark,
   Arabic references). Build bumped to 5 and a fresh archive filed as `iPrayer 1.1.0 (5).xcarchive` in the same
@@ -48,8 +50,8 @@ and what is still open. The README describes the product; this describes the wor
   A Release archive of `main` (1.1.0 build 4, widget + watch app + complication embedded, development-signed; Xcode
   re-signs for distribution on upload) was built with `xcodebuild archive` and filed in
   `~/Library/Developer/Xcode/Archives/2026-09-19/iPrayer 1.1.0 (4).xcarchive`, so Organizer can upload it directly.
-  **Next (owner only): Organizer > Distribute App (or re-archive), paste `docs/AppStoreRelease.md` into App Store
-  Connect with `docs/screenshots/`, submit; device pass in section 6; the EveryAyah email.**
+  **Next (owner only): Organizer > Distribute App on the 1.1.0 (6) archive, paste `docs/AppStoreRelease.md`
+  into App Store Connect with `docs/screenshots/`, submit; device pass in section 6; the EveryAyah email.**
 
 ## 2. Map of the code
 
