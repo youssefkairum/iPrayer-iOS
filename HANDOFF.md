@@ -8,7 +8,7 @@ and what is still open. The README describes the product; this describes the wor
 
 ## 1. Where things stand
 
-- **Version:** 1.1.0, build 3 (App Store has 1.0). Deployment target iOS 26.0, Xcode 27, Swift 6.2 mode with
+- **Version:** 1.1.0, build 5 (App Store has 1.0). Deployment target iOS 26.0, Xcode 27, Swift 6.2 mode with
   `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and approachable concurrency on the app target.
 - **Repo:** `youssefkairum/iPrayer-iOS` on GitHub (renamed from `iPrayer`; the local remote points at the
   new name). `gh` is logged in as `youssefkairum` (a second account, `brentwelldigital`, is also present).
@@ -37,6 +37,10 @@ and what is still open. The README describes the product; this describes the wor
   reserved; the MIT claim and the missing LICENSE file are gone), `docs/AppStoreRelease.md` (submission checklist,
   release notes, review notes, privacy answers, a draft rights email to EveryAyah) and `docs/screenshots/` (iPhone
   6.9" and iPad 13", five screens each, simulator captures). Release configuration builds clean.
+- **20 September 2026:** the owner's post-release notes were fixed and merged: #17 splash → onboarding hand-off and
+  reliable slide entrances, #18 Qibla heading accuracy, #19 reader (TextKit 2, line spacing, green resume mark,
+  Arabic references). Build bumped to 5 and a fresh archive filed as `iPrayer 1.1.0 (5).xcarchive` in the same
+  Archives folder; that is the one to upload. `main` is again the complete state with no open PR or branch.
   A Release archive of `main` (1.1.0 build 4, widget + watch app + complication embedded, development-signed; Xcode
   re-signs for distribution on upload) was built with `xcodebuild archive` and filed in
   `~/Library/Developer/Xcode/Archives/2026-09-19/iPrayer 1.1.0 (4).xcarchive`, so Organizer can upload it directly.

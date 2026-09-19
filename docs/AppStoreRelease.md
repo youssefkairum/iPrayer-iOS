@@ -1,10 +1,10 @@
-# App Store release notes for 1.1.0 (build 4)
+# App Store release notes for 1.1.0 (build 5)
 
 Everything App Store Connect asks for, ready to paste. Written 19 September 2026.
 
 ## Submission checklist
 
-1. Merge the release PR, open the project in Xcode, confirm version 1.1.0 build 4 on every target.
+1. Merge the release PR, open the project in Xcode, confirm version 1.1.0 build 5 on every target.
 2. Product > Archive with the iPrayer scheme (the watch app and both widget extensions archive with it).
 3. Upload, then in App Store Connect: attach the build, paste the texts below, upload the screenshots from
    `docs/screenshots/`, answer the privacy questions as listed, and submit.
