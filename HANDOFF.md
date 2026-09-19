@@ -8,7 +8,7 @@ and what is still open. The README describes the product; this describes the wor
 
 ## 1. Where things stand
 
-- **Version:** 1.1.0, build 6 (App Store has 1.0). Deployment target iOS 26.0, Xcode 27, Swift 6.2 mode with
+- **Version:** 1.1.0, build 7 (App Store has 1.0). Deployment target iOS 26.0, Xcode 27, Swift 6.2 mode with
   `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and approachable concurrency on the app target.
 - **Repo:** `youssefkairum/iPrayer-iOS` on GitHub (renamed from `iPrayer`; the local remote points at the
   new name). `gh` is logged in as `youssefkairum` (a second account, `brentwelldigital`, is also present).
@@ -37,6 +37,9 @@ and what is still open. The README describes the product; this describes the wor
   reserved; the MIT claim and the missing LICENSE file are gone), `docs/AppStoreRelease.md` (submission checklist,
   release notes, review notes, privacy answers, a draft rights email to EveryAyah) and `docs/screenshots/` (iPhone
   6.9" and iPad 13", five screens each, simulator captures). Release configuration builds clean.
+- **20 September 2026, compass device round — MERGED (#22).** The first compass fix was verified only on the
+  Simulator and failed on the owner's phone: silent haptics and still-laggy tracking. Causes and the rules that
+  came out of it are the two §3 bullets on gating haptics and on shipping a readout. Build 7.
 - **20 September 2026, bug and polish round — ALL MERGED to `main`.** PR #20: the tracker carrying yesterday's
   ticks into a new day, Continue Reading resuming one verse early, a stale Live Activity for the previous prayer
   staying on the Lock Screen. PR #21: the Qibla dial made rigid (one curve for rose and needle), detent haptics
