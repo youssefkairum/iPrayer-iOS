@@ -10,6 +10,7 @@ import SwiftUI
 struct SurahDetailView: View {
     /// Verse to open at: the resume position, a bookmark, or a search result
     private let initialVerse: Int?
+    private let focusStyle: VerseMark
     
     @StateObject private var detailVM = SurahDetailViewModel()
     @ObservedObject private var bookmarks = QuranBookmarks.shared
@@ -31,14 +32,14 @@ struct SurahDetailView: View {
     @AppStorage(UDKey.quranReaderTheme.rawValue) private var themeRaw: String = ReaderTheme.paper.rawValue
     @AppStorage(UDKey.quranReciter.rawValue) private var reciterID: String = QuranReciter.default.id
     
-    /// - Parameter marksInitialVerse: highlight `initialVerse` on arrival. Used for bookmarks and search results,
-    ///   where the user picked that exact verse. Continue Reading passes false: its verse is only where the
-    ///   screen happened to be.
-    init(surah: SurahMetadata, initialVerse: Int? = nil, marksInitialVerse: Bool = false) {
+    /// - Parameter mark: how to highlight `initialVerse` on arrival: `.destination` (gold) for a bookmark, search
+    ///   result or link the person picked, `.resume` (green) for Continue Reading, nil for no mark.
+    init(surah: SurahMetadata, initialVerse: Int? = nil, mark: VerseMark? = nil) {
         self.initialVerse = initialVerse
+        self.focusStyle = mark ?? .destination
         _currentSurah = State(initialValue: surah)
         _openAtVerse = State(initialValue: initialVerse)
-        _focusVerse = State(initialValue: marksInitialVerse ? initialVerse : nil)
+        _focusVerse = State(initialValue: mark != nil ? initialVerse : nil)
         _visibleVerse = State(initialValue: initialVerse ?? 1)
     }
     
@@ -78,6 +79,7 @@ struct SurahDetailView: View {
                     style: style,
                     initialVerse: openAtVerse,
                     focusVerse: focusVerse,
+                    focusStyle: focusStyle,
                     playingVerse: playingVerse,
                     selectedVerse: $selectedVerse,
                     onVisibleVerseChange: { verse in

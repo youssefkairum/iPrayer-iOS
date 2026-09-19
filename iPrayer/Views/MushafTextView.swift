@@ -47,6 +47,10 @@ nonisolated enum ReaderTheme: String, CaseIterable {
         }
     }
     /// "You are here": marks the verse the reader was opened at from a bookmark or a search result.
+    /// Where reading stopped last time (Continue Reading): the same green as recitation, so it reads as
+    /// "you were here" rather than a destination.
+    var resumeHighlight: UIColor { playingHighlight }
+    
     /// Warm, so it can't be mistaken for the blue selection highlight.
     var focusHighlight: UIColor {
         switch self {
@@ -54,6 +58,14 @@ nonisolated enum ReaderTheme: String, CaseIterable {
         case .dark: return UIColor(red: 84/255, green: 68/255, blue: 26/255, alpha: 1)
         }
     }
+}
+
+/// How the verse the reader opened at is marked.
+nonisolated enum VerseMark {
+    /// A verse the person picked: bookmark, search result, deep link (gold)
+    case destination
+    /// Where they stopped reading last time (green)
+    case resume
 }
 
 nonisolated struct ReaderStyle: Equatable {
@@ -131,7 +143,9 @@ nonisolated struct MushafTextBuilder {
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .justified
         paragraph.baseWritingDirection = .rightToLeft
-        paragraph.lineSpacing = style.fontSize * 0.5
+        // Stacked marks (the pause signs the encoder attaches above the previous word) reach 1.15 em above the
+        // baseline while the line above descends 0.5 em; half an em of spacing left them touching at large sizes
+        paragraph.lineSpacing = style.fontSize * 0.7
         
         let font = quranFont
         for ayah in verses {
@@ -211,8 +225,10 @@ struct MushafTextView: UIViewRepresentable {
     let style: ReaderStyle
     /// Verse to open at (resume reading, a bookmark, or a search result)
     let initialVerse: Int?
-    /// Verse to mark as the destination (bookmark or search result). Cleared by the screen once the user taps a verse.
+    /// Verse to mark on arrival (bookmark, search result, or the resume position). Cleared by the screen once
+    /// the user taps a verse.
     let focusVerse: Int?
+    let focusStyle: VerseMark
     /// Verse being recited, highlighted and kept in view
     let playingVerse: Int?
     @Binding var selectedVerse: Int?
@@ -551,7 +567,7 @@ struct MushafTextView: UIViewRepresentable {
         func updateHighlight(in textView: UITextView, selected: Int?, focus: Int?, playing: Int?) {
             let theme = parent.style.theme
             var wanted: [Int: UIColor] = [:]
-            if let focus { wanted[focus] = theme.focusHighlight }
+            if let focus { wanted[focus] = parent.focusStyle == .resume ? theme.resumeHighlight : theme.focusHighlight }
             if let playing { wanted[playing] = theme.playingHighlight }
             if let selected { wanted[selected] = theme.highlight }
             
