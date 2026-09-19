@@ -107,8 +107,10 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         // on the simulator, which has no magnetometer.
         if UserDefaults.standard.integer(forKey: "debugSpinCompass") > 0, fakeHeadingTimer == nil {
             fakeHeadingTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
+                // Bind before the Task: `[weak self]` is a mutable capture, and Swift 6 forbids a
+                // concurrently-executing closure referencing one.
+                guard let self else { return }
                 Task { @MainActor in
-                    guard let self else { return }
                     self.currentHeading += 1
                     // A realistically POOR accuracy on purpose. The previous harness hardcoded 5, which
                     // is the one value that kept the old accuracy gate open, and that is precisely why two

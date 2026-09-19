@@ -391,9 +391,10 @@ final class QuranAudioPlayer: ObservableObject {
         func handle(_ command: MPRemoteCommand, _ action: @escaping @MainActor (QuranAudioPlayer) -> Void) {
             command.isEnabled = true
             command.addTarget { [weak self] _ in
-                Task { @MainActor in
-                    if let self { action(self) }
-                }
+                // Bind before the Task: `[weak self]` is a mutable capture, and Swift 6 forbids a
+                // concurrently-executing closure referencing one.
+                guard let self else { return .success }
+                Task { @MainActor in action(self) }
                 return .success
             }
         }
