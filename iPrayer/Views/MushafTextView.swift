@@ -341,6 +341,16 @@ struct MushafTextView: UIViewRepresentable {
         /// Verses that currently carry a background color, so only they are touched on the next change
         private var highlightedVerses: Set<Int> = []
         var topVisibleVerse: Int?
+        /// True while a programmatic scroll is in flight (opening at a bookmark, a search result or the resume
+        /// position). The scroll events it generates must never be reported as the reader moving: they arrive
+        /// while the view is still at the top, so they overwrote the saved position with verse 1 and lost the
+        /// place the reader was restoring to.
+        var isRestoringPosition = false
+        /// The verse a follow-the-recitation scroll is moving to. `reveal` parks that verse 90 pt below the
+        /// top of the view while the probe below sits about 48 pt down, so measuring the top when the
+        /// animation ends lands on the line ABOVE and reports the verse BEFORE the one being recited — which
+        /// is the verse Continue Reading then remembered. The scroll already knows its verse; report that.
+        private var revealingVerse: Int?
         
         init(_ parent: MushafTextView) {
             self.parent = parent
@@ -462,14 +472,31 @@ struct MushafTextView: UIViewRepresentable {
             
             let maxOffset = max(0, textView.contentSize.height - textView.bounds.height)
             let target = min(max(0, rect.minY - 90), maxOffset)
+            revealingVerse = verse
             textView.setContentOffset(CGPoint(x: 0, y: target), animated: true)
         }
         
         // MARK: Reading position
         
-        /// Programmatic scrolls (following the recitation) also move the reading position
+        /// Programmatic scrolls (following the recitation) also move the reading position. A follow scroll
+        /// reports the verse it moved to rather than measuring the top of the view, which would return the
+        /// line above it, that is, the verse before the one being recited.
         func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+            if let verse = revealingVerse {
+                revealingVerse = nil
+                guard !isRestoringPosition else { return }
+                if verse != topVisibleVerse {
+                    topVisibleVerse = verse
+                    parent.onVisibleVerseChange(verse)
+                }
+                return
+            }
             reportVisibleVerse(scrollView)
+        }
+        
+        /// A finger on the text cancels any follow-the-recitation scroll still in flight
+        func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+            revealingVerse = nil
         }
         
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
@@ -481,6 +508,7 @@ struct MushafTextView: UIViewRepresentable {
         }
         
         private func reportVisibleVerse(_ scrollView: UIScrollView) {
+            guard !isRestoringPosition else { return }
             guard let textView = scrollView as? UITextView, let verse = verseAtTop(of: textView) else { return }
             if verse != topVisibleVerse {
                 topVisibleVerse = verse
@@ -490,8 +518,11 @@ struct MushafTextView: UIViewRepresentable {
         
         /// The verse whose text sits at the top of the visible area.
         private func verseAtTop(of textView: UITextView) -> Int? {
-            // closestPosition works in the text view's own coordinates, which include the scroll offset
-            let probe = CGPoint(x: textView.bounds.midX, y: textView.contentOffset.y + 28)
+            // closestPosition works in the text view's own coordinates, which include the scroll offset.
+            // Probe INSIDE the first visible line, past the container inset: a point in the inset resolves to
+            // the tail of the line above, so the verse reported was the one BEFORE the one being read.
+            let firstLine = textView.contentOffset.y + textView.textContainerInset.top + parent.style.fontSize * 0.6
+            let probe = CGPoint(x: textView.bounds.midX, y: firstLine)
             guard let position = textView.closestPosition(to: probe) else { return nil }
             
             let storage = textView.textStorage
@@ -530,10 +561,12 @@ struct MushafTextView: UIViewRepresentable {
         /// shifts as the estimated heights above the verse settle. So: keep trying until a position can be
         /// measured, then re-apply it a couple more times.
         func scroll(_ textView: UITextView, toVerse verse: Int, attempt: Int = 0, applied: Int = 0) {
-            guard attempt < 15 else { return }
+            if attempt == 0 { isRestoringPosition = true }
+            guard attempt < 15 else { isRestoringPosition = false; return }
             
             DispatchQueue.main.asyncAfter(deadline: .now() + (attempt == 0 ? 0 : 0.12)) { [weak self, weak textView] in
-                guard let self, let textView else { return }
+                guard let self else { return }
+                guard let textView else { self.isRestoringPosition = false; return }
                 
                 var didApply = false
                 if textView.bounds.width > 0, let range = self.range(ofVerse: verse, in: textView.textStorage) {
@@ -555,6 +588,8 @@ struct MushafTextView: UIViewRepresentable {
                 let appliedCount = applied + (didApply ? 1 : 0)
                 if appliedCount < 3 {
                     self.scroll(textView, toVerse: verse, attempt: attempt + 1, applied: appliedCount)
+                } else {
+                    self.isRestoringPosition = false
                 }
             }
         }

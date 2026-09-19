@@ -66,6 +66,10 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     /// Launch and foreground events fire several recalculations in a row; this avoids repeating that work.
     private var lastScheduleSignature: String?
     
+    /// The activity this app last requested. `Activity.activities` can lag a moment behind a successful
+    /// `request`, so without this a second recalculation would see an empty list and start its own card.
+    private var pendingActivity: Activity<PrayerAttributes>?
+    
     override init() {
         super.init()
         setupLocationManager()
@@ -461,11 +465,22 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     // MARK: - Live Activities
     
+    /// True while the end-old-then-request-new work below is in flight. Without it, two recalculations in
+    /// quick succession both see no live activity and both request one.
+    private var isStartingLiveActivity = false
+    
     private func startOrUpdateLiveActivity(for prayer: PrayerItem, language appLang: String) {
-        let allActivities = Activity<PrayerAttributes>.activities
+        // Everything this app owns, whatever its state. Activities iOS ended by itself (the active-duration
+        // cap, which an Isha-to-Fajr gap exceeds every night) are still drawn on the Lock Screen, frozen on
+        // the prayer they last showed, so they have to stay in scope here.
+        var allActivities = Activity<PrayerAttributes>.activities
+        if let pending = pendingActivity, !allActivities.contains(where: { $0.id == pending.id }) {
+            allActivities.append(pending)
+        }
         
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
             // The user switched Live Activities off: don't leave an old countdown behind.
+            pendingActivity = nil
             Task {
                 for activity in allActivities {
                     await activity.end(nil, dismissalPolicy: .immediate)
@@ -499,22 +514,35 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         let liveActivities = allActivities.filter { $0.activityState == .active || $0.activityState == .stale }
         
         if let current = liveActivities.first {
+            pendingActivity = current
             Task {
-                // Replace the previous prayer with the next one, and end any duplicates
+                // Replace the previous prayer with the next one, and clear everything else ActivityKit still
+                // knows about — including already-ended ones, which stay on the Lock Screen by default.
                 await current.update(content)
-                for extra in liveActivities.dropFirst() {
+                for extra in allActivities where extra.id != current.id {
                     await extra.end(nil, dismissalPolicy: .immediate)
                 }
             }
-        } else {
-            do {
-                let _ = try Activity.request(
-                    attributes: PrayerAttributes(),
-                    content: content,
-                    pushType: nil
-                )
-            } catch {
-                print("Error starting Live Activity: \(error.localizedDescription)")
+        } else if !isStartingLiveActivity {
+            // Nothing live to reuse. An activity that has ENDED is not in `liveActivities`, yet the system
+            // keeps showing it for up to four hours under the default dismissal policy: requesting a new one
+            // without dismissing it first is what left the previous prayer sitting beside the current one.
+            // The flag keeps two triggers arriving together from each requesting their own countdown.
+            isStartingLiveActivity = true
+            Task {
+                for old in allActivities {
+                    await old.end(nil, dismissalPolicy: .immediate)
+                }
+                do {
+                    self.pendingActivity = try Activity.request(
+                        attributes: PrayerAttributes(),
+                        content: content,
+                        pushType: nil
+                    )
+                } catch {
+                    print("Error starting Live Activity: \(error.localizedDescription)")
+                }
+                isStartingLiveActivity = false
             }
         }
         
