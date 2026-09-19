@@ -184,6 +184,15 @@ must follow the *in-app* language (notifications, some labels) goes through
   with `shown` already true, so nothing changed and nothing animated.
 - **"Sign in with Apple" text follows the device language** (Apple's button, no API). Not replaced with a custom
   button: review risk for little gain.
+- **Qibla heading accuracy (branch `qibla-accuracy`).** The bearing is a great-circle computation (Adhan `Qibla`), exact
+  for any location fix; all error is in the heading. True heading is preferred (declination-corrected; needs a location
+  fix, which the app has), magnetic is the fallback. `headingOrientation` follows the device orientation while the
+  compass is on (portrait-only headings put north 90° off on a sideways iPad). The delegate now allows iOS's figure-8
+  calibration screen, only while the Qibla tab is showing. `headingAccuracy` is published; past 15° (or invalid) the
+  status card asks for the figure 8. `currentHeading` is unwrapped (shortest signed change added each reading) so the
+  dial never spins the long way through north; read it modulo 360. No magnetometer (Simulator) shows "Compass
+  unavailable" with the bearing and distance kept. Only the fallback is simulator-verifiable; heading, calibration
+  prompt and orientation need a device.
 - **Copyright line** is built by `AppTranslations.copyrightLine`: RTL languages lead with the phrase, the
   Latin name+year sit in a first-strong isolate.
 - **Tasbih changing the dhikr keeps the count** (people run one count across phrases).

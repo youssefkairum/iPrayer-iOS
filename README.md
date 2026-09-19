@@ -55,6 +55,7 @@ Prayer times, the Quran text, Duas and the Tasbih all work offline. The network 
 ### 🧭 Qibla Compass
 - **Real-Time Tracking:** Uses the device heading and your coordinates to point towards the Kaaba.
 - **Visual & Haptic Feedback:** The dial glows and the phone taps when you are within 5 degrees of the Qibla.
+- **Accuracy:** True-north heading corrected for the device's orientation, iOS's figure-8 calibration prompt when the magnetometer needs it, and an in-app hint while the heading error is above 15°. Devices without a compass still get the bearing and distance.
 
 ### 📿 Digital Tasbih
 - **Interactive Counter:** A circular bead ring tracking cycles of 33, 99 or 100.

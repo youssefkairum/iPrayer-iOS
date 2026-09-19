@@ -198,13 +198,27 @@ struct QiblaCompassView: View {
                 .foregroundColor(isFacingQibla ? .yellow : .white)
                 .animation(.easeInOut, value: isFacingQibla)
             
-            if !isFacingQibla {
+            if !CLLocationManager.headingAvailable() {
+                // No magnetometer (or the Simulator): the bearing below is still usable with a physical compass
+                Text(AppTranslations.translate("Compass unavailable", to: appLanguage))
+                    .font(.custom("AvenirNext-DemiBold", size: 15))
+                    .foregroundColor(.white.opacity(0.6))
+            } else if !isFacingQibla {
                 let degrees = Int(abs(offset).rounded())
                 Label("\(AppTranslations.translate(offset > 0 ? "Turn right" : "Turn left", to: appLanguage)) · \(degrees)°",
                       systemImage: offset > 0 ? "arrow.turn.up.right" : "arrow.turn.up.left")
                     .font(.custom("AvenirNext-DemiBold", size: 15))
                     .foregroundColor(.teal)
                     .contentTransition(.numericText())
+            }
+            
+            // The magnetometer's own error estimate: past the threshold, ask for the figure-8 (iOS shows its
+            // calibration screen at the same time, now that the delegate allows it)
+            if let accuracy = viewModel.headingAccuracy, accuracy < 0 || accuracy > PrayerViewModel.poorHeadingAccuracy {
+                Label(AppTranslations.translate("Move your device in a figure 8 to calibrate the compass", to: appLanguage), systemImage: "exclamationmark.triangle.fill")
+                    .font(.custom("AvenirNext-DemiBold", size: 12))
+                    .foregroundColor(.orange)
+                    .multilineTextAlignment(.center)
             }
             
             HStack(spacing: 6) {
