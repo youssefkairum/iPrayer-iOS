@@ -366,7 +366,9 @@ struct MushafTextView: UIViewRepresentable {
         func fillViewportIfShort(_ textView: UITextView) {
             DispatchQueue.main.async { [weak self, weak textView] in
                 guard let self, let textView, textView.bounds.height > 0 else { return }
-                textView.layoutManager.ensureLayout(for: textView.textContainer)
+                // Never touch `layoutManager` here: reading it drops the view to TextKit 1, whose justification
+                // puts the marks of each line's last word on top of the letter instead of above it
+                self.ensureFullLayout(textView)
                 if textView.contentSize.height < textView.bounds.height + 1500 {
                     self.loadMore(into: textView)
                 }
@@ -434,11 +436,18 @@ struct MushafTextView: UIViewRepresentable {
             needsHighlightRefresh = true
         }
         
+        /// TextKit 2 lays text out lazily and answers geometry questions about unlaid text with estimates
+        /// (a verse 2,700 pt down was reported at 15,000 pt). Lay everything loaded out before measuring.
+        func ensureFullLayout(_ textView: UITextView) {
+            if let layout = textView.textLayoutManager { layout.ensureLayout(for: layout.documentRange) }
+            textView.layoutIfNeeded()
+        }
+        
         /// Scrolls the recited verse into view, unless the user is scrolling or it is already comfortably visible.
         func reveal(_ verse: Int, in textView: UITextView) {
             guard !textView.isDragging, !textView.isDecelerating, textView.bounds.width > 0,
                   let range = range(ofVerse: verse, in: textView.textStorage) else { return }
-            textView.layoutIfNeeded()
+            ensureFullLayout(textView)
             
             guard let start = textView.position(from: textView.beginningOfDocument, offset: range.location),
                   let end = textView.position(from: start, offset: min(2, range.length)),
@@ -528,7 +537,7 @@ struct MushafTextView: UIViewRepresentable {
                 
                 var didApply = false
                 if textView.bounds.width > 0, let range = self.range(ofVerse: verse, in: textView.textStorage) {
-                    textView.layoutIfNeeded()
+                    self.ensureFullLayout(textView)
                     if let start = textView.position(from: textView.beginningOfDocument, offset: range.location),
                        let end = textView.position(from: start, offset: min(2, range.length)),
                        let textRange = textView.textRange(from: start, to: end) {

@@ -131,6 +131,14 @@ must follow the *in-app* language (notifications, some labels) goes through
   with an extra shadda — verse 1 drops its first four words instead of prefix-matching.
 - **Verse markers** are Arabic-Indic digits drawn by the font as ornaments (no bitmaps).
 - **Reader layout** is one justified paragraph per Madani mushaf page (data has `page`), with page/juz footer.
+- **The reader runs on TextKit 2, and must stay there.** Reading `textView.layoutManager` anywhere silently drops a
+  UITextView to TextKit 1, and TextKit 1's RTL justification draws the marks of each line's last word on top of the
+  letter instead of above it (the "tashkeel overlap on the last word at the left" the owner saw on his phone). One
+  `layoutManager.ensureLayout` call had been doing exactly that. TextKit 2 answers geometry questions about text it
+  has not laid out yet with estimates (a verse 2,700 pt down was reported at 15,000 pt, and the reader scrolled into
+  nothing), so `Coordinator.ensureFullLayout` lays the loaded text out before any `firstRect` measurement. Side
+  effects of TextKit 2: justification spreads space between words instead of stretching letters, and the verse
+  highlight is drawn per line fragment. Bold Text was investigated and ruled out: glyph positions are identical.
 - **Reader line spacing is 0.7 em** (was 0.5). Measured with CoreText: the stacked pause marks the encoder attaches
   above a word reach 1.15 em above the baseline and the line above descends 0.5 em, so at large sizes they touched.
 - **Two arrival marks in the reader** (`VerseMark`): `.destination` (gold) for a bookmark, search result or deep link,
@@ -233,6 +241,8 @@ watchOS runtime in Xcode > Settings > Components, pair a watch simulator with th
 - `simctl spawn <sim> defaults write <bundle>` writes a domain the app *reads* but its own writes go to the
   container plist (`get_app_container … data`/Library/Preferences). Read state from the container plist.
 - `simctl pbcopy` needs `LC_ALL=en_US.UTF-8` for Arabic.
+- `simctl launch` needs `--terminate-running-process` and the argument string split by the shell (zsh: `${=A}`),
+  otherwise the arguments are passed as one word and silently ignored. Give a fresh launch 30 s before a capture.
 - Store captures on a freshly booted simulator: the first launches take 20 to 30 s to show anything, so wait 30 s
   per screen (12 s gave blank captures). `simctl privacy <sim> grant location <bundle>` works; `grant notifications`
   is refused, so tap Allow once through the Simulator tool. The iPad Pro 13-inch simulator ignored `-hasSeenOnboarding`
