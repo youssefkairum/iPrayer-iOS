@@ -177,7 +177,12 @@ struct QiblaCompassView: View {
         let aligned = abs(offset) < (isFacingQibla ? Self.releaseTolerance : Self.facingTolerance)
         if aligned != isFacingQibla {
             isFacingQibla = aligned
-            if aligned { Haptics.success() }
+            // Fires on any real reading, however rough — the 15° gate that silenced the compass indoors is
+            // gone for good. The one exception is a NEGATIVE accuracy, which is CoreLocation declaring the
+            // heading invalid rather than merely uncertain. The chime is felt without looking, so it is the
+            // most trusted claim this screen makes, and it should not be made about a heading that does not
+            // exist. The detent below stays completely ungated.
+            if aligned, (viewModel.headingAccuracy ?? -1) >= 0 { Haptics.success() }
         }
         ratchet.update(angle: qiblaRotation)
     }

@@ -60,11 +60,11 @@ extension Haptics {
         /// One notch, at every speed. 5 degrees divides 360 and lands exactly on the 72 ticks the rose
         /// already draws, so a click always coincides with a mark going past the pointer.
         private static let spacing: Double = 5
-        /// How far past the current notch centre the dial must sit before the next notch counts, as a
-        /// fraction of a notch. Anything over 0.5 is hysteresis. 0.6 is 3 degrees here: wider than the
-        /// 1 degree the heading is quantised to, so a hand shaking on a notch line clicks once and stops,
-        /// and narrow enough that the worst it can ever do is delay a click by half a degree.
-        private static let crossing: Double = 0.6
+        /// A notch is entered only by travelling a WHOLE notch from the last one, in either direction.
+        /// Rounding to the nearest notch instead would re-centre on each click and leave the dial sitting a
+        /// fraction from the next boundary, so a hand tremor could rattle back and forth across it — and now
+        /// that readings arrive unfiltered, that tremor is visible to us. A full notch of reversal, 5°, is
+        /// wider than any hand shake, and forward travel still clicks exactly every 5°.
         /// Nothing may follow a click sooner than this: ~11 a second, the fastest the Taptic Engine still
         /// renders as separate taps. A violent whip of the phone is capped here rather than humming.
         private static let minimumGap: CFTimeInterval = 0.09
@@ -108,9 +108,15 @@ extension Haptics {
         /// several headings into one change, and paying that back as a burst is the buzz this exists to
         /// avoid. Nothing is queued — the skipped notches are simply gone.
         func update(angle: Double) {
+            guard generator != nil else { return }   // not on screen, or haptics switched off
             let position = angle / Self.spacing
-            guard abs(position - Double(notch)) >= Self.crossing else { return }
-            notch = Int(position.rounded())
+            if position >= Double(notch) + 1 {
+                notch += 1
+            } else if position <= Double(notch) - 1 {
+                notch -= 1
+            } else {
+                return
+            }
             let now = CACurrentMediaTime()
             guard now - lastClick >= Self.minimumGap else { return }  // swallow, never queue
             lastClick = now
