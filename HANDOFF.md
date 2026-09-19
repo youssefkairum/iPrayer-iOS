@@ -37,6 +37,12 @@ and what is still open. The README describes the product; this describes the wor
   reserved; the MIT claim and the missing LICENSE file are gone), `docs/AppStoreRelease.md` (submission checklist,
   release notes, review notes, privacy answers, a draft rights email to EveryAyah) and `docs/screenshots/` (iPhone
   6.9" and iPad 13", five screens each, simulator captures). Release configuration builds clean.
+- **Swift 6 capture rule, now swept (#23).** A `[weak self]` capture is a MUTABLE variable, so a concurrently
+  executing closure may not reference it: bind with `guard let self` BEFORE starting the `Task`, never inside.
+  This bit three times in one round (the orientation observer, the debug compass timer, the remote-command
+  handlers). All four targets are swept and a build with `SWIFT_STRICT_CONCURRENCY=complete` reports no
+  captured-var diagnostics. It is a warning under the project's current settings and an error once the Swift 6
+  language mode is on, so it does not break archives today.
 - **20 September 2026, compass device round — MERGED (#22).** The first compass fix was verified only on the
   Simulator and failed on the owner's phone: silent haptics and still-laggy tracking. Causes and the rules that
   came out of it are the two §3 bullets on gating haptics and on shipping a readout. Build 7.
