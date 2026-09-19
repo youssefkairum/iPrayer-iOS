@@ -131,6 +131,21 @@ must follow the *in-app* language (notifications, some labels) goes through
   with an extra shadda — verse 1 drops its first four words instead of prefix-matching.
 - **Verse markers** are Arabic-Indic digits drawn by the font as ornaments (no bitmaps).
 - **Reader layout** is one justified paragraph per Madani mushaf page (data has `page`), with page/juz footer.
+- **The reader runs on TextKit 2, and must stay there.** Reading `textView.layoutManager` anywhere silently drops a
+  UITextView to TextKit 1, and TextKit 1's RTL justification draws the marks of each line's last word on top of the
+  letter instead of above it (the "tashkeel overlap on the last word at the left" the owner saw on his phone). One
+  `layoutManager.ensureLayout` call had been doing exactly that. TextKit 2 answers geometry questions about text it
+  has not laid out yet with estimates (a verse 2,700 pt down was reported at 15,000 pt, and the reader scrolled into
+  nothing), so `Coordinator.ensureFullLayout` lays the loaded text out before any `firstRect` measurement. Side
+  effects of TextKit 2: justification spreads space between words instead of stretching letters, and the verse
+  highlight is drawn per line fragment. Bold Text was investigated and ruled out: glyph positions are identical.
+- **Reader line spacing is 0.7 em** (was 0.5). Measured with CoreText: the stacked pause marks the encoder attaches
+  above a word reach 1.15 em above the baseline and the line above descends 0.5 em, so at large sizes they touched.
+- **Two arrival marks in the reader** (`VerseMark`): `.destination` (gold) for a bookmark, search result or deep link,
+  `.resume` (green, the recitation colour) for Continue Reading. Either clears when a verse is tapped.
+- **References follow the app language everywhere**: bookmark and search rows use the reader's own rule (Arabic name
+  and Arabic-Indic digits in Arabic, transliteration otherwise) and the Continue Reading headline leads with the
+  Arabic name in Arabic.
 - **Audio source:** EveryAyah (`https://everyayah.com/data/<reciter>/SSSAAA.mp3`; per-surah ZIPs at
   `<reciter>/zips/SSS.zip`, stored not deflated, containing `SSS000.mp3` = basmala). The live site has no
   terms; the archived 2013 About page states CC BY-NC 2.5 Canada and asks for **max two connections** per
@@ -241,6 +256,8 @@ watchOS runtime in Xcode > Settings > Components, pair a watch simulator with th
 - `simctl spawn <sim> defaults write <bundle>` writes a domain the app *reads* but its own writes go to the
   container plist (`get_app_container … data`/Library/Preferences). Read state from the container plist.
 - `simctl pbcopy` needs `LC_ALL=en_US.UTF-8` for Arabic.
+- `simctl launch` needs `--terminate-running-process` and the argument string split by the shell (zsh: `${=A}`),
+  otherwise the arguments are passed as one word and silently ignored. Give a fresh launch 30 s before a capture.
 - **Fresh-install tests: run `simctl spawn <sim> defaults delete <bundle>` first.** That simulator-level domain
   (written by an earlier `defaults write`) survives `simctl uninstall` and the app reads it; a stale
   `hasSeenOnboarding = 1` there sent every "fresh" install to Home + What's New and launch-argument overrides were

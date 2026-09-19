@@ -75,7 +75,7 @@ struct QuranView: View {
             quranVM.updateSearch(newValue)
         }
         .navigationDestination(item: $linkedSurah) { surah in
-            SurahDetailView(surah: surah, initialVerse: linkedVerse, marksInitialVerse: linkedVerse != nil)
+            SurahDetailView(surah: surah, initialVerse: linkedVerse, mark: linkedVerse != nil ? .destination : nil)
         }
         .onChange(of: quranVM.surahs.count) { _, _ in openLinkedVerseIfPossible() }
         .onChange(of: router.pendingVerse) { _, _ in openLinkedVerseIfPossible() }
@@ -147,7 +147,7 @@ struct QuranView: View {
         VStack(spacing: 20) {
             // Continue Reading Card
             if lastReadNumber != 0, let target = quranVM.surah(number: lastReadNumber) {
-                NavigationLink(destination: SurahDetailView(surah: target, initialVerse: lastReadVerse > 1 ? lastReadVerse : nil)) {
+                NavigationLink(destination: SurahDetailView(surah: target, initialVerse: lastReadVerse > 1 ? lastReadVerse : nil, mark: lastReadVerse > 1 ? .resume : nil)) {
                     ContinueReadingCard(
                         surahName: lastReadName,
                         surahEnglish: lastReadEnglish,
@@ -165,10 +165,12 @@ struct QuranView: View {
                 LazyVStack(spacing: 10) {
                     ForEach(bookmarks.items) { bookmark in
                         if let surah = quranVM.surah(number: bookmark.surah) {
-                            NavigationLink(destination: SurahDetailView(surah: surah, initialVerse: bookmark.verse, marksInitialVerse: true)) {
+                            NavigationLink(destination: SurahDetailView(surah: surah, initialVerse: bookmark.verse, mark: .destination)) {
                                 VerseRow(
                                     arabicText: bookmark.snippet,
-                                    reference: "\(bookmark.surahEnglishName) \(bookmark.surah):\(bookmark.verse)",
+                                    reference: appLanguage == "ar"
+                                        ? "\(surah.name) \(QuranTextEncoder.arabicDigits(bookmark.surah)):\(QuranTextEncoder.arabicDigits(bookmark.verse))"
+                                        : "\(bookmark.surahEnglishName) \(bookmark.surah):\(bookmark.verse)",
                                     icon: "bookmark.fill"
                                 )
                             }
@@ -220,10 +222,12 @@ struct QuranView: View {
                 LazyVStack(spacing: 10) {
                     ForEach(quranVM.matchingVerses) { result in
                         if let surah = quranVM.surah(number: result.surahNumber) {
-                            NavigationLink(destination: SurahDetailView(surah: surah, initialVerse: result.ayah.numberInSurah, marksInitialVerse: true)) {
+                            NavigationLink(destination: SurahDetailView(surah: surah, initialVerse: result.ayah.numberInSurah, mark: .destination)) {
                                 VerseRow(
                                     arabicText: result.ayah.text,
-                                    reference: "\(surah.englishName) \(surah.number):\(result.ayah.numberInSurah)",
+                                    reference: appLanguage == "ar"
+                                        ? "\(surah.name) \(QuranTextEncoder.arabicDigits(surah.number)):\(QuranTextEncoder.arabicDigits(result.ayah.numberInSurah))"
+                                        : "\(surah.englishName) \(surah.number):\(result.ayah.numberInSurah)",
                                     icon: "text.quote"
                                 )
                             }
@@ -290,13 +294,15 @@ struct ContinueReadingCard: View {
                         .foregroundColor(.teal)
                 }
                 
-                Text(surahEnglish)
-                    .font(.custom("AvenirNext-Bold", size: 24))
+                // The headline follows the app language: the Arabic name leads in Arabic, the transliteration elsewhere
+                let arabicLeads = appLanguage == "ar"
+                Text(arabicLeads ? surahName : surahEnglish)
+                    .font(arabicLeads ? .system(size: 26, weight: .bold, design: .serif) : .custom("AvenirNext-Bold", size: 24))
                     .foregroundColor(.white)
                 
                 HStack(spacing: 10) {
-                    Text(surahName)
-                        .font(.system(size: 20, weight: .bold, design: .serif))
+                    Text(arabicLeads ? surahEnglish : surahName)
+                        .font(arabicLeads ? .custom("AvenirNext-DemiBold", size: 16) : .system(size: 20, weight: .bold, design: .serif))
                         .foregroundColor(.white.opacity(0.8))
                     
                     if verse > 1 {

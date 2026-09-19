@@ -141,7 +141,7 @@ struct AyahWidgetView: View {
     
     var body: some View {
         if let result = model.verse, let surah = model.surah {
-            NavigationLink(destination: SurahDetailView(surah: surah, initialVerse: result.ayah.numberInSurah, marksInitialVerse: true)) {
+            NavigationLink(destination: SurahDetailView(surah: surah, initialVerse: result.ayah.numberInSurah, mark: .destination)) {
                 card(for: result.ayah, in: surah)
             }
             .buttonStyle(CardPressStyle())
