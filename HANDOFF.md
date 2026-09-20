@@ -261,7 +261,7 @@ must follow the *in-app* language (notifications, some labels) goes through
   isolates are placed as separate RTL units, so `⁨Liquid⁩ ⁨Glass⁩` renders "Glass Liquid".
   Check it by taking each `ar`/`ur` value's first strong character (skipping isolate runs) and flagging any
   that is `L`; ignore values that are entirely English, which are a missing translation, not a direction bug.
-- **The onboarding's Apple Watch step ADDS and REMOVES itself asymmetrically.** It appears only when a
+- **The onboarding's Apple Watch step ADDS and REMOVES itself asymmetrically (PR #25).** It appears only when a
   watch is paired and iPrayer is not on it — the same condition as the Settings card — which makes the
   step count 5 instead of 4 and pushes sign-in from tag 3 to tag 4. `WCSession` activates at launch and
   answers ASYNCHRONOUSLY, so the answer lands while onboarding is already on screen, and the two
