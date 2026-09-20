@@ -1,14 +1,14 @@
-# App Store release notes for 1.1.0 (build 11)
+# App Store release notes for 1.1.0 (build 12)
 
 Everything App Store Connect asks for, ready to paste. Written 19 September 2026, updated 20 September 2026
-for build 11.
+for build 12.
 
 ## Submission checklist
 
-1. DONE — everything is merged to `main` and 1.1.0 (11) is already archived at
-   `~/Library/Developer/Xcode/Archives/2026-09-20/iPrayer 1.1.0 (11).xcarchive`. Only redo steps 1 and 2 if
+1. DONE — everything is merged to `main` and 1.1.0 (12) is already archived at
+   `~/Library/Developer/Xcode/Archives/2026-09-20/iPrayer 1.1.0 (12).xcarchive`. Only redo steps 1 and 2 if
    the code changes; otherwise start at step 3.
-2. DONE for build 11 — Product > Archive with the iPrayer scheme (the watch app and both widget extensions archive with it).
+2. DONE for build 12 — Product > Archive with the iPrayer scheme (the watch app and both widget extensions archive with it).
 3. Upload, then in App Store Connect: attach the build, paste the texts below, upload the screenshots from
    `docs/screenshots/`, answer the privacy questions as listed, and submit.
 4. Export compliance is already answered in the Info.plist (`ITSAppUsesNonExemptEncryption` = NO).

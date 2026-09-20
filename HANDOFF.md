@@ -9,7 +9,7 @@ and what is still open. The README describes the product; this describes the wor
 
 ## 1. Where things stand
 
-- **Version:** 1.1.0, build 11 (App Store has 1.0). Deployment target iOS 26.0 (watchOS 10.0 on the watch
+- **Version:** 1.1.0, build 12 (App Store has 1.0). Deployment target iOS 26.0 (watchOS 10.0 on the watch
   targets), Xcode 27. The Swift 6.2 *toolchain*, but still the Swift 5 *language mode*
   (`SWIFT_VERSION = 5.0` in all eight configurations) — which is why the capture rule below is a warning
   and not yet an error. `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and approachable concurrency are on for
@@ -93,12 +93,16 @@ and what is still open. The README describes the product; this describes the wor
   `dial(size:)` to `.leftToRight` (§3) and added 32 screenshots. #28 replaced the Home tracker's hardcoded
   `F D A M I` with each prayer's icon, and fixed chip rows that opened at the LTR end in Arabic. #29 gave
   the watch the same compass harness the phone has. Build 10, archived.
+- **20 September 2026, the last Arabic pass — MERGED (#31).** The Home greeting was built from an ENGLISH
+  format string, so a Latin comma shipped in all eight languages; Arabic and Urdu want ، (U+060C) and
+  Chinese ，(U+FF0C). The name is now isolated too. The ORDER was never wrong — the owner asked, and the
+  answer is that a right-to-left line ENDS on the left, which is why the name sits there. Build 12.
 - **Archives.** Release archives are built with `xcodebuild archive` (widget + watch app + complication
   embedded, development-signed; Xcode re-signs for distribution on upload). Keep exactly ONE current: each
-  new build's archive supersedes the last, and 4 through 10 were deleted in turn. The only 1.1.0 archive
-  on disk is `~/Library/Developer/Xcode/Archives/2026-09-20/iPrayer 1.1.0 (11).xcarchive`. (A pre-1.1.0
+  new build's archive supersedes the last, and 4 through 11 were deleted in turn. The only 1.1.0 archive
+  on disk is `~/Library/Developer/Xcode/Archives/2026-09-20/iPrayer 1.1.0 (12).xcarchive`. (A pre-1.1.0
   archive from 18 September is also on disk and is not part of this release.)
-  **Next (owner only): Organizer > Distribute App on that 1.1.0 (11) archive, paste `docs/AppStoreRelease.md`
+  **Next (owner only): Organizer > Distribute App on that 1.1.0 (12) archive, paste `docs/AppStoreRelease.md`
   into App Store Connect with `docs/screenshots/`, and submit. The device pass is DONE (§5, 20 September).
   The only other loose end is the EveryAyah rights email, drafted in `docs/AppStoreRelease.md` and not sent.**
 
