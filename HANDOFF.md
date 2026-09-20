@@ -375,7 +375,9 @@ xcrun simctl io <sim> screenshot --type=png out.png       # captures no status b
 step without a paired watch; the REAL condition is reachable on a Simulator too — see the Apple Watch note
 below) · `-debugSpinCompass 1` (turns the compass at 30 Hz and
 reports a deliberately POOR 25° accuracy, since the simulator has no magnetometer; change the timer interval
-to rehearse a slow aim, which is the case that used to be silent) · `-debugAudioBaseURL https://unreachable.invalid`
+to rehearse a slow aim, which is the case that used to be silent) · `-debugHeadingAccuracy 5` (overrides
+that 25°, for rehearsing a well-calibrated phone or for a screenshot, where the figure-8 prompt is not the
+state worth showing; the DEFAULT stays 25 on purpose, see §3) · `-debugAudioBaseURL https://unreachable.invalid`
 (fails every verse, to test offline handling). Any UserDefaults key can also be overridden for one run,
 e.g. `-lastSeenWhatsNewVersion 1.0.0`, `-hasSeenOnboarding YES`, `-appLanguage ar`, `-userName "Youssef Keram"`
 (the last one shows the signed-in greeting without signing in).
