@@ -39,8 +39,8 @@ and what is still open. The README describes the product; this describes the wor
 - **19 September 2026, later:** PR #16 (`account-deletion`, MERGED to `main`, branch deleted) carried the release:
   the App Store account-deletion flow (section 6), build number 4, the README licence made consistent (all rights
   reserved; the MIT claim and the missing LICENSE file are gone), `docs/AppStoreRelease.md` (submission checklist,
-  release notes, review notes, privacy answers, a draft rights email to EveryAyah) and `docs/screenshots/` (iPhone
-  6.9" and iPad 13", five screens each, simulator captures). Release configuration builds clean.
+  release notes, review notes, privacy answers, a draft rights email to EveryAyah) and `docs/screenshots/` (since
+  superseded, see below). Release configuration builds clean.
 - **Swift 6 capture rule, now swept (#23).** A `[weak self]` capture is a MUTABLE variable, so a concurrently
   executing closure may not reference it: bind with `guard let self` BEFORE starting the `Task`, never inside.
   This bit three times in one round (the orientation observer, the debug compass timer, the remote-command
@@ -77,6 +77,15 @@ and what is still open. The README describes the product; this describes the wor
   refresh the watch was missing, and rebuilt the next-prayer "then" line as a single `Text`. Build 9,
   archived. Two §3 rules came out of it and must not be undone: the RTL first-strong isolate rule, and
   that watchOS mirrors GLYPHS if you set `\.layoutDirection`.
+- **Screenshots (20 September 2026).** `docs/screenshots/` now holds 32 captures, replacing the earlier
+  ten English-only ones: iPhone 6.9" (1320x2868, seven screens), iPad 13" (2064x2752, six screens) and Apple
+  Watch 44mm (368x448, three screens), each in BOTH English and Arabic. Named
+  `<device><size>-<en|ar>-<NN>-<screen>.png`. Captured on the simulator with debug launch arguments and a
+  frozen 9:41 status bar; the streak, tracker and Tasbih counts are seeded so the cards are not empty.
+  Two deliberate omissions, both in §5: no onboarding Apple Watch step for iPad, because an iPad cannot pair
+  a watch and that screen would be unreachable for anyone who saw it in the listing; and the watch has no
+  Quran or Duas page to shoot. The 44mm watch was chosen over the Ultra because it gives 368x448, a size the
+  App Store lists, where the Ultra gives 422x514.
 - **Archives.** Release archives are built with `xcodebuild archive` (widget + watch app + complication
   embedded, development-signed; Xcode re-signs for distribution on upload). Keep exactly ONE current: each
   new build's archive supersedes the last, and 4 through 8 were deleted in turn. The only 1.1.0 archive
@@ -375,7 +384,9 @@ xcrun simctl io <sim> screenshot --type=png out.png       # captures no status b
 step without a paired watch; the REAL condition is reachable on a Simulator too — see the Apple Watch note
 below) · `-debugSpinCompass 1` (turns the compass at 30 Hz and
 reports a deliberately POOR 25° accuracy, since the simulator has no magnetometer; change the timer interval
-to rehearse a slow aim, which is the case that used to be silent) · `-debugAudioBaseURL https://unreachable.invalid`
+to rehearse a slow aim, which is the case that used to be silent) · `-debugHeadingAccuracy 5` (overrides
+that 25°, for rehearsing a well-calibrated phone or for a screenshot, where the figure-8 prompt is not the
+state worth showing; the DEFAULT stays 25 on purpose, see §3) · `-debugAudioBaseURL https://unreachable.invalid`
 (fails every verse, to test offline handling). Any UserDefaults key can also be overridden for one run,
 e.g. `-lastSeenWhatsNewVersion 1.0.0`, `-hasSeenOnboarding YES`, `-appLanguage ar`, `-userName "Youssef Keram"`
 (the last one shows the signed-in greeting without signing in).

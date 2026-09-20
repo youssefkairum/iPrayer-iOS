@@ -110,12 +110,18 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                 // Bind before the Task: `[weak self]` is a mutable capture, and Swift 6 forbids a
                 // concurrently-executing closure referencing one.
                 guard let self else { return }
+                // A realistically POOR accuracy BY DEFAULT. An earlier harness hardcoded 5, the one value
+                // that kept the old accuracy gate open, and that is precisely why two rounds of simulator
+                // testing missed a compass that was silent on a real phone. Keep 25 unless you have a
+                // reason: `-debugHeadingAccuracy 5` overrides it, for rehearsing a well-calibrated phone
+                // (or for a screenshot, where the figure-8 prompt is not the state worth showing).
+                // `double(forKey:)`, not `object(forKey:) as? Double`: a launch argument arrives in the
+                // argument domain as a STRING, so the cast silently failed and the default came back.
+                let override = UserDefaults.standard.double(forKey: "debugHeadingAccuracy")
+                let accuracy = override > 0 ? override : 25
                 Task { @MainActor in
                     self.currentHeading += 1
-                    // A realistically POOR accuracy on purpose. The previous harness hardcoded 5, which
-                    // is the one value that kept the old accuracy gate open, and that is precisely why two
-                    // rounds of simulator testing missed a compass that was silent on a real phone.
-                    self.headingAccuracy = 25
+                    self.headingAccuracy = accuracy
                 }
             }
         }

@@ -25,6 +25,20 @@ struct QiblaCompassView: View {
     /// re-lighting the whole dial with it.
     @State private var isFacingQibla = false
     
+    /// Whether this device has a magnetometer at all — which decides between the turn guidance and the
+    /// "Compass unavailable" note below the dial.
+    ///
+    /// `-debugSpinCompass 1` counts, in DEBUG only. The harness fakes a phone being turned, but this label
+    /// asked CoreLocation directly, so the Simulator spun a heading while the screen still said there was
+    /// no compass — the harness could never show the state it exists to rehearse, and the screen could not
+    /// be screenshotted as it actually appears on a phone.
+    private static var headingHardwareAvailable: Bool {
+        #if DEBUG
+        if UserDefaults.standard.integer(forKey: "debugSpinCompass") > 0 { return true }
+        #endif
+        return CLLocationManager.headingAvailable()
+    }
+    
     private static let kaaba = CLLocation(latitude: 21.422487, longitude: 39.826206)
     private static let facingTolerance = 5.0
     private static let releaseTolerance = 8.0
@@ -266,6 +280,14 @@ struct QiblaCompassView: View {
                 .frame(width: 10, height: 10)
                 .animation(.easeInOut, value: isFacingQibla)
         }
+        // A COMPASS MUST NOT MIRROR. The app sets `\.layoutDirection` to .rightToLeft for Arabic and Urdu
+        // (iPrayerApp.swift), which is right for text and for rows — and catastrophic here. It flipped the
+        // dial horizontally: E drew on the left, W on the right, and the Kaaba marker swung to the mirror
+        // image of the true bearing. At Cairo's 136° that pointed Arabic-speaking users SOUTH-WEST instead
+        // of south-east, about 88° wrong, on the one screen in the app whose whole job is to be correct.
+        // North, east, south and west are facts about the world, not about reading order, so the dial's
+        // geometry is pinned. The text around it stays right-to-left.
+        .environment(\.layoutDirection, .leftToRight)
         .opacity(hasLocation ? 1 : 0.35)
     }
     
@@ -276,7 +298,7 @@ struct QiblaCompassView: View {
                 .foregroundColor(isFacingQibla ? .yellow : .white)
                 .animation(.easeInOut, value: isFacingQibla)
             
-            if !CLLocationManager.headingAvailable() {
+            if !Self.headingHardwareAvailable {
                 // No magnetometer (or the Simulator): the bearing below is still usable with a physical compass
                 Text(AppTranslations.translate("Compass unavailable", to: appLanguage))
                     .font(.custom("AvenirNext-DemiBold", size: 15))
