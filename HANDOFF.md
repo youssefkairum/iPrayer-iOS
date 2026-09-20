@@ -249,6 +249,14 @@ must follow the *in-app* language (notifications, some labels) goes through
   registered "en" default makes `string(forKey:)` look chosen on a brand-new install.
 - **Onboarding controls have a fixed height (104 pt) and crossfade**; slides animate in once and never out.
   Anything else made the features -> location page change feel rough.
+- **The onboarding's Apple Watch step is LATCHED, not read live (PR #25).** It appears only when a watch is
+  paired and iPrayer is not on it — the same condition as the Settings card — which makes the step count 5
+  instead of 4 and pushes sign-in from tag 3 to tag 4. `WCSession` activates at launch and answers
+  ASYNCHRONOUSLY, so that truth can land while onboarding is already on screen. Reading it live would
+  renumber the tags under the person: someone on the sign-in page would find a watch prompt in its place.
+  So `refreshWatchStep()` only writes while `currentTab < watchTab`; once the step is reached or passed, the
+  flow is frozen for that run. Anything else keyed off an async capability check in this flow needs the same
+  treatment.
 - **Onboarding entrance timing (PR #17, merged).** The onboarding sits under the splash from launch, so
   its welcome slide used to play its entrance unseen and then "pop" when the splash faded. Now `AppEntrance.splashDismissed`
   is set when the splash starts fading, the welcome slide waits for it, and the onboarding settles in from 0.94 scale
@@ -338,7 +346,9 @@ xcrun simctl io <sim> screenshot --type=png out.png       # captures no status b
 
 **Debug-only launch arguments** (compiled out of Release):
 `-debugInitialTab quran|tasbih|qibla|settings` · `-debugOpenSurah N` · `-debugOpenVerse N` ·
-`-debugOnboardingSlide N` · `-debugShowWhatsNew 1` · `-debugSpinCompass 1` (turns the compass at 30 Hz and
+`-debugOnboardingSlide N` · `-debugShowWhatsNew 1` · `-debugWatchStep 1` (forces onboarding's Apple Watch
+step; a Simulator cannot reach it on its own, because pairing a watch simulator installs the embedded app
+automatically, so `paired && !installed` is unreachable there) · `-debugSpinCompass 1` (turns the compass at 30 Hz and
 reports a deliberately POOR 25° accuracy, since the simulator has no magnetometer; change the timer interval
 to rehearse a slow aim, which is the case that used to be silent) · `-debugAudioBaseURL https://unreachable.invalid`
 (fails every verse, to test offline handling). Any UserDefaults key can also be overridden for one run,

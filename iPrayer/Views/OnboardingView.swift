@@ -2,9 +2,12 @@
 //  OnboardingView.swift
 //  iPrayer
 //
-//  Four steps: welcome, what the app does, location (asked here, next to the reason, never at launch),
-//  and Sign in with Apple. One scaffold holds the progress, the language menu and the controls, so the
-//  pages only carry content and the buttons never jump between steps.
+//  Welcome, what the app does, location (asked here, next to the reason, never at launch), and Sign in
+//  with Apple. One scaffold holds the progress, the language menu and the controls, so the pages only
+//  carry content and the buttons never jump between steps.
+//
+//  A fifth step, offering to install the watch app, appears ONLY when a watch is paired and the app is not
+//  on it — the same condition as the Settings card. For everyone else the flow is the four it always was.
 //
 
 import SwiftUI
@@ -17,8 +20,18 @@ struct OnboardingView: View {
     @StateObject private var accountManager = AccountManager.shared
     @State private var currentTab = OnboardingView.initialSlide
     @ObservedObject private var entrance = AppEntrance.shared
+    @ObservedObject private var watchLink = PhoneWatchSync.shared
+    @Environment(\.openURL) private var openURL
+    /// Whether the watch step is part of this run. LATCHED, not read live: `WCSession` activates at launch
+    /// and answers asynchronously, so the truth can arrive while onboarding is already on screen. Letting it
+    /// change once the person is AT the step would renumber the tags under them and swap a sign-in page for
+    /// a watch prompt, so it is only ever updated while the step is still ahead of them.
+    @State private var includesWatchStep = false
     
-    private static let stepCount = 4
+    /// The watch step's index when it exists. Everything before it is fixed, so this is a constant.
+    private static let watchTab = 3
+    private var syncTab: Int { includesWatchStep ? 4 : 3 }
+    private var stepCount: Int { includesWatchStep ? 5 : 4 }
     
     private static var initialSlide: Int {
         #if DEBUG
@@ -48,7 +61,10 @@ struct OnboardingView: View {
                     WelcomeSlide(shown: entrance.splashDismissed).tag(0)
                     FeaturesSlide(shown: currentTab >= 1).tag(1)
                     LocationSlide(shown: currentTab >= 2).tag(2)
-                    SyncSlide(shown: currentTab >= 3).tag(3)
+                    if includesWatchStep {
+                        WatchSlide(shown: currentTab >= Self.watchTab).tag(Self.watchTab)
+                    }
+                    SyncSlide(shown: currentTab >= syncTab).tag(syncTab)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .onChange(of: currentTab) { _, _ in Haptics.selection() }
@@ -66,6 +82,24 @@ struct OnboardingView: View {
                 .padding(.bottom, 20)
             }
         }
+        .onAppear { refreshWatchStep() }
+        .onChange(of: watchLink.isPaired) { _, _ in refreshWatchStep() }
+        .onChange(of: watchLink.isWatchAppInstalled) { _, _ in refreshWatchStep() }
+    }
+    
+    /// Take the watch state only while the step is still ahead of the person; see `includesWatchStep`.
+    private func refreshWatchStep() {
+        #if DEBUG
+        // `-debugWatchStep 1`. A Simulator cannot stage the real condition: pairing a watch simulator
+        // installs the embedded app automatically, so `paired && !installed` is unreachable there. Ahead of
+        // the latch below, so `-debugOnboardingSlide 3` can land straight on the step.
+        if UserDefaults.standard.bool(forKey: "debugWatchStep") {
+            includesWatchStep = true
+            return
+        }
+        #endif
+        guard currentTab < Self.watchTab else { return }
+        includesWatchStep = watchLink.isPaired && !watchLink.isWatchAppInstalled
     }
     
     // MARK: - Top: progress and language
@@ -74,7 +108,7 @@ struct OnboardingView: View {
         HStack(alignment: .center) {
             // Step progress: the current step is the long capsule
             HStack(spacing: 6) {
-                ForEach(0..<Self.stepCount, id: \.self) { step in
+                ForEach(0..<stepCount, id: \.self) { step in
                     Capsule()
                         .fill(step == currentTab ? Color.teal : Color.white.opacity(step < currentTab ? 0.5 : 0.18))
                         .frame(width: step == currentTab ? 26 : 8, height: 8)
@@ -134,6 +168,16 @@ struct OnboardingView: View {
                     secondaryButton(AppTranslations.translate("Not now", to: appLanguage)) { advance() }
                 }
             }
+        case Self.watchTab where includesWatchStep:
+            VStack(spacing: 12) {
+                // Advances before leaving, as the location step does, so coming back from the Watch app
+                // lands on sign-in rather than on a prompt that has already been answered.
+                primaryButton(AppTranslations.translate("Open the Watch app", to: appLanguage)) {
+                    if let url = URL(string: "itms-watchs://") { openURL(url) }
+                    advance()
+                }
+                secondaryButton(AppTranslations.translate("Not now", to: appLanguage)) { advance() }
+            }
         default:
             VStack(spacing: 12) {
                 SignInWithAppleButton(.signIn) { request in
@@ -177,7 +221,7 @@ struct OnboardingView: View {
     
     private func advance() {
         withAnimation(.easeInOut(duration: 0.35)) {
-            currentTab = min(currentTab + 1, Self.stepCount - 1)
+            currentTab = min(currentTab + 1, stepCount - 1)
         }
     }
     
@@ -391,6 +435,29 @@ private struct SyncSlide: View {
                 ("circle.grid.cross.fill", AppTranslations.translate("Tasbih", to: appLanguage)),
                 ("bookmark.fill", AppTranslations.translate("Bookmarks", to: appLanguage)),
                 ("flame.fill", AppTranslations.translate("Tracker", to: appLanguage))
+            ]
+        )
+    }
+}
+
+/// Offered only when a watch is paired and iPrayer is not on it. iOS installs an embedded watch app
+/// automatically unless the person turned that off, so this is the case where they did, or where it failed.
+/// Every string here is one Settings already uses, so this step added no new translation keys.
+private struct WatchSlide: View {
+    let shown: Bool
+    @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
+    
+    var body: some View {
+        PermissionSlide(
+            shown: shown,
+            icon: "applewatch",
+            tint: .mint,
+            title: "Apple Watch",
+            message: AppTranslations.translate("iPrayer isn't on your Apple Watch yet. Install it from the Watch app, under Available Apps.", to: appLanguage),
+            points: [
+                ("clock.fill", AppTranslations.translate("Prayer Times", to: appLanguage)),
+                ("circle.grid.cross.fill", AppTranslations.translate("Tasbih", to: appLanguage)),
+                ("safari.fill", AppTranslations.translate("Qibla", to: appLanguage))
             ]
         )
     }
