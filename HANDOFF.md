@@ -83,7 +83,8 @@ and what is still open. The README describes the product; this describes the wor
   on disk is `~/Library/Developer/Xcode/Archives/2026-09-20/iPrayer 1.1.0 (9).xcarchive`. (A pre-1.1.0
   archive from 18 September is also on disk and is not part of this release.)
   **Next (owner only): Organizer > Distribute App on that 1.1.0 (9) archive, paste `docs/AppStoreRelease.md`
-  into App Store Connect with `docs/screenshots/`, submit; device pass in section 6; the EveryAyah email.**
+  into App Store Connect with `docs/screenshots/`, and submit. The device pass is DONE (§5, 20 September).
+  The only other loose end is the EveryAyah rights email, drafted in `docs/AppStoreRelease.md` and not sent.**
 
 ## 2. Map of the code
 
@@ -480,15 +481,23 @@ readout; and under `-debugSpinCompass 1` the ratchet logged 184 clicks, so remov
 silence it. That build's archive contained zero hits for all four removed strings. NOT verified:
 how any of it FEELS — there is no Taptic Engine on the Simulator, which is exactly what caused #22.
 
-Not verified: PR #7's tracker fix across a real midnight on two devices (reasoned + built only) · the Today's
-Prayers widget rendered anywhere · the watch complications on a watch face · the watch background refresh
-actually firing · Crown sensitivity on the watch Tasbih · the Settings "install on watch" card (needs a paired
-watch without the app) · WatchConnectivity round-trips (Tasbih/tracker both ways, settings down) · the watch on
-watchOS 10 specifically · the Verse of the Day widget rendered on a Home Screen or Lock Screen · how the haptics
-feel · iPad landscape · Dynamic Island appearance · Live Activity "Now" state · pre-prayer reminder firing ·
-true Airplane-Mode playback of downloaded audio · two-device iCloud sync · real midnight rollover of
-verse/dua/widget · audio *sound* · Lock Screen playback controls · the model-written translations in
-Urdu/Hindi/Russian/Chinese (now including 39 duas and the onboarding, Tasbih, Qibla, What's New strings).
+**DEVICE PASS DONE — 20 September 2026.** The owner went through the whole standing "not verified" list on
+their own iPhone and Apple Watch and reported everything working. That closes, all at once: the tracker
+across a real midnight on two devices · the Today's Prayers widget rendered · the Verse of the Day widget on
+a Home Screen and a Lock Screen, INCLUDING the KFGQPC font question that §6 had flagged as a possible
+system-font fallback · the watch complications on a face · watch background refresh · Crown sensitivity on
+the watch Tasbih · the Settings "install on watch" card · WatchConnectivity round-trips both ways · how the
+haptics feel · iPad landscape · Dynamic Island · the Live Activity "Now" state · the pre-prayer reminder
+firing · Airplane-Mode playback of downloaded audio · two-device iCloud sync · the real midnight rollover of
+verse/dua/widget · audio sound · Lock Screen playback controls.
+
+A future session should take that as tested, not as "reasoned about" — several of these (the tracker
+ordering bugs of #20, the compass of #22) were things only a real device could ever have settled.
+
+STILL not verified, and NOT a device question: the model-written translations in Urdu/Hindi/Russian/Chinese
+need a reader of those languages. This is now sharper than it looks — a bidi audit on 20 September found
+twelve Urdu entries still holding verbatim English (the dua translations, "Quran 3:173", "Sunan an-Nasa'i"),
+which no amount of device testing surfaces.
 
 ## 6. Open items
 
@@ -511,9 +520,14 @@ Urdu/Hindi/Russian/Chinese (now including 39 duas and the onboarding, Tasbih, Qi
   licences pointed to; the MIT badge and LICENSE reference were removed. Switch to MIT later if wanted, but note the
   Tanzil text, KFGQPC font and EveryAyah audio could not be MIT anyway.
 - Translations were written by the model: Arabic/French/German/Turkish confident; Urdu/Hindi/Russian/
-  Chinese need a native read. This now includes 39 dua translations (7 languages each).
-- Verse widget: confirm on a device that the KFGQPC font renders in both Home Screen sizes and the Lock
-  Screen rectangular family; if not, fall back to the system font in the widget only.
+  Chinese need a native read. This now includes 39 dua translations (7 languages each). The 20 September
+  bidi audit also found TWELVE Urdu entries that are still verbatim English — the dua translations plus
+  "Quran 3:173", "Quran 2:201", "Quran 3:8", "Quran 17:24", "Quran 20:114" and "Sunan an-Nasa'i". Those are
+  missing translations, not direction bugs, and they are the first thing a native reader should be pointed
+  at. Rerun the audit (§4) to list them again.
+- Verse widget: DONE — the owner confirmed on a device that the KFGQPC font renders in both Home Screen
+  sizes and the Lock Screen rectangular family, so the system-font fallback is not needed. Keep the font
+  registered through UIAppFonts only (§7); that is what makes it work in the widget process.
 
 **Features suggested, not built**
 - Cache-as-you-listen (save streamed verses), background `URLSession` downloads, "download all",
