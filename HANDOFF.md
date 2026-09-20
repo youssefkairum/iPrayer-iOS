@@ -249,6 +249,16 @@ must follow the *in-app* language (notifications, some labels) goes through
   registered "en" default makes `string(forKey:)` look chosen on a brand-new install.
 - **Onboarding controls have a fixed height (104 pt) and crossfade**; slides animate in once and never out.
   Anything else made the features -> location page change feel rough.
+- **An RTL string that opens with a Latin word flips the WHOLE paragraph to left-to-right.** Unicode bidi
+  P2/P3 takes a paragraph's direction from its first STRONG character, skipping isolates — so
+  `"iPrayer غير مثبّت..."` is laid out LTR and its clauses land in the wrong order on screen. This is the
+  same trap App Store Connect sprang on the Arabic description, and it was live in the shipped app: the
+  Apple Watch card's message and the Urdu location, "Tap to open" and "More in iCloud" strings all flipped.
+  Fix: wrap Latin runs in a first-strong isolate, `\u{2068}…\u{2069}`, which is what the Home card's time
+  and the copyright line already do. **Wrap a whole PHRASE in one isolate, never word by word** — separate
+  isolates are placed as separate RTL units, so `⁨Liquid⁩ ⁨Glass⁩` renders "Glass Liquid".
+  Check it by taking each `ar`/`ur` value's first strong character (skipping isolate runs) and flagging any
+  that is `L`; ignore values that are entirely English, which are a missing translation, not a direction bug.
 - **The onboarding's Apple Watch step is LATCHED, not read live (PR #25).** It appears only when a watch is
   paired and iPrayer is not on it — the same condition as the Settings card — which makes the step count 5
   instead of 4 and pushes sign-in from tag 3 to tag 4. `WCSession` activates at launch and answers
@@ -395,7 +405,9 @@ watchOS runtime in Xcode > Settings > Components, pair a watch simulator with th
 
 **Verification tooling in the scratchpad (recreate if needed):** a Swift CoreText script that shapes
 every verse with the bundled font and counts placeholder glyphs / fallback fonts — rerun it if the
-encoder or the font changes.
+encoder or the font changes. And a Python bidi audit over `AppTranslations.swift` that reports every `ar`
+and `ur` value whose first strong character is left-to-right (see the §3 rule) — rerun it whenever a
+translation is added, because the failure is invisible until someone who reads the language looks at it.
 
 ## 5. Verified vs not verified (as of 20 September 2026)
 
@@ -422,6 +434,12 @@ ratchet and the alignment chime both fire and that the dial tracks without lag �
 first fix was Simulator-verified only and was silent on the phone (§3). The tracker day reset, the Continue
 Reading position and the duplicate Live Activity were fixed and build-verified. The Swift 6 capture sweep
 (#23) is build-verified across all four targets with `SWIFT_STRICT_CONCURRENCY=complete`.
+
+Verified for the RTL fix on the iPhone 17 simulator, by reading the rendered text rather than the source:
+the Apple Watch message and the location slide now open with their Latin word at the RIGHT (logical first)
+in both Arabic and Urdu, and "Available Apps" stays one unit. Before the fix the owner spotted that the
+Arabic "did not make sense" — the clauses were in the wrong order. NOT verified: the remaining un-isolated
+Latin runs in otherwise-correct RTL values, and the twelve Urdu entries still holding verbatim English.
 
 Verified for #24 on the iPhone 17 simulator: Settings > General is now App Language, App Version & Info,
 Rate iPrayer and Manage Notifications & Location, with nothing else; the Qibla status card carries no
@@ -475,7 +493,7 @@ Urdu/Hindi/Russian/Chinese (now including 39 duas and the onboarding, Tasbih, Qi
 **Known cosmetic**
 - What's New was rebuilt in PR #12 (merged via #15); still to check: the four sections at larger Dynamic Type.
 - Arabic hero card: the "at <time>" line is correct now (first-strong isolate); keep that pattern for any
-  new interpolated time strings.
+  new interpolated time string, and see the §3 bidi rule for why it matters beyond cosmetics.
 
 ## 7. Data and licensing
 
