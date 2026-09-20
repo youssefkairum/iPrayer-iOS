@@ -9,7 +9,7 @@ and what is still open. The README describes the product; this describes the wor
 
 ## 1. Where things stand
 
-- **Version:** 1.1.0, build 7 (App Store has 1.0). Deployment target iOS 26.0 (watchOS 10.0 on the watch
+- **Version:** 1.1.0, build 8 (App Store has 1.0). Deployment target iOS 26.0 (watchOS 10.0 on the watch
   targets), Xcode 27. The Swift 6.2 *toolchain*, but still the Swift 5 *language mode*
   (`SWIFT_VERSION = 5.0` in all eight configurations) — which is why the capture rule below is a warning
   and not yet an error. `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and approachable concurrency are on for
@@ -61,11 +61,21 @@ and what is still open. The README describes the product; this describes the wor
   reliable slide entrances, #18 Qibla heading accuracy, #19 reader (TextKit 2, line spacing, green resume mark,
   Arabic references). Build was bumped to 5 for that round. `main` is again the complete state with no open
   PR or branch.
+- **20 September 2026, diagnostics removed — MERGED (#24).** The owner asked for the compass diagnostics
+  UI to go and for the haptics to be simply on: the Compass Haptics toggle, the Test Haptic button, the
+  `taptic engine / low power mode` line and the Compass Diagnostics toggle are gone, and with them
+  `Haptics.testCompassPair()`, `Haptics.supportsHaptics` (the file's only `CoreHaptics` use), the
+  compass's `diagnosticsLine` and both `UDKey` cases. The detent is now unconditional: `ratchet.begin`
+  runs whenever the compass runs. Neither removed key was in a sync list and nothing iterates
+  `UDKey.allCases`, so a stored `compassHapticsEnabled = false` is simply ignored and those users get
+  their haptics back. Build 8, archived. See the two §3 bullets for what the readouts taught and for the
+  ratchet's actual design.
 - **Archives.** Release archives are built with `xcodebuild archive` (widget + watch app + complication
   embedded, development-signed; Xcode re-signs for distribution on upload). Keep exactly ONE current: each
-  new build's archive supersedes the last, and 4, 5 and 6 were deleted in turn. The only 1.1.0 archive on
-  disk is `~/Library/Developer/Xcode/Archives/2026-09-20/iPrayer 1.1.0 (7).xcarchive`.
-  **Next (owner only): Organizer > Distribute App on that 1.1.0 (7) archive, paste `docs/AppStoreRelease.md`
+  new build's archive supersedes the last, and 4, 5, 6 and 7 were deleted in turn. The only 1.1.0 archive
+  on disk is `~/Library/Developer/Xcode/Archives/2026-09-20/iPrayer 1.1.0 (8).xcarchive`. (A pre-1.1.0
+  archive from 18 September is also on disk and is not part of this release.)
+  **Next (owner only): Organizer > Distribute App on that 1.1.0 (8) archive, paste `docs/AppStoreRelease.md`
   into App Store Connect with `docs/screenshots/`, submit; device pass in section 6; the EveryAyah email.**
 
 ## 2. Map of the code
@@ -402,6 +412,12 @@ ratchet and the alignment chime both fire and that the dial tracks without lag �
 first fix was Simulator-verified only and was silent on the phone (§3). The tracker day reset, the Continue
 Reading position and the duplicate Live Activity were fixed and build-verified. The Swift 6 capture sweep
 (#23) is build-verified across all four targets with `SWIFT_STRICT_CONCURRENCY=complete`.
+
+Verified for #24 on the iPhone 17 simulator: Settings > General is now App Language, App Version & Info,
+Rate iPrayer and Manage Notifications & Location, with nothing else; the Qibla status card carries no
+readout; and under `-debugSpinCompass 1` the ratchet logged 184 clicks, so removing the toggle did not
+silence it. The 1.1.0 (8) archive's binary contains zero hits for all four removed strings. NOT verified:
+how any of it FEELS — there is no Taptic Engine on the Simulator, which is exactly what caused #22.
 
 Not verified: PR #7's tracker fix across a real midnight on two devices (reasoned + built only) · the Today's
 Prayers widget rendered anywhere · the watch complications on a watch face · the watch background refresh
