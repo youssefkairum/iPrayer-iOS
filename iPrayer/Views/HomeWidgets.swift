@@ -7,7 +7,6 @@ struct StreakWidgetView: View {
     @EnvironmentObject var viewModel: PrayerViewModel
     @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
     
-    let prayers = ["F", "D", "A", "M", "I"]
     let fullPrayerNames = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
     let colors: [Color] = [.purple, .blue, .orange, .red, .indigo]
     
@@ -54,8 +53,12 @@ struct StreakWidgetView: View {
                                     .font(.system(size: 9, weight: .bold))
                                     .foregroundColor(.white)
                             } else {
-                                Text(prayers[index])
-                                    .font(.system(size: 10, weight: .bold))
+                                // The prayer's own icon, not a letter. This used to be a hardcoded
+                                // "F D A M I", which is English in all eight languages. Initials do not
+                                // survive translation either: Arabic gives ف ظ ع م ع, and العصر and العشاء
+                                // collide on ع. The watch tracker already identifies prayers this way.
+                                Image(systemName: PrayerSchedule.icon(for: prayerName))
+                                    .font(.system(size: 11, weight: .semibold))
                                     .foregroundColor(.gray)
                             }
                         }

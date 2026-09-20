@@ -129,6 +129,12 @@ struct TasbihView: View {
     
     /// Which phrase is being counted. Changing it keeps the count: many people run one count across phrases.
     private var dhikrChips: some View {
+        // ScrollViewReader, not a scroll anchor. A horizontal ScrollView opens at content offset 0, which
+        // is the LEFT edge whatever the layout direction — so in Arabic, where the row is laid out
+        // right-to-left, the first chip and the SELECTED one both started off-screen and the row looked
+        // like nothing was chosen. Scrolling to the selection by identity is direction-agnostic, and it
+        // also helps English once the list is longer than the screen.
+        ScrollViewReader { proxy in
         ScrollView(.horizontal, showsIndicators: false) {
             GlassEffectContainer(spacing: 8) {
                 HStack(spacing: 8) {
@@ -147,11 +153,17 @@ struct TasbihView: View {
                                 .padding(.vertical, 8)
                                 .glassEffect(selected ? .regular.tint(.teal).interactive() : .regular.interactive(), in: .capsule)
                         }
+                        .id(item.id)
                     }
                 }
                 .padding(.horizontal)
                 .padding(.vertical, 4)
             }
+        }
+        .onAppear {
+            // One run-loop turn: the row has to be laid out before it can be scrolled.
+            DispatchQueue.main.async { proxy.scrollTo(dhikrID, anchor: .center) }
+        }
         }
     }
     
