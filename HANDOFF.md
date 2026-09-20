@@ -9,7 +9,7 @@ and what is still open. The README describes the product; this describes the wor
 
 ## 1. Where things stand
 
-- **Version:** 1.1.0, build 9 (App Store has 1.0). Deployment target iOS 26.0 (watchOS 10.0 on the watch
+- **Version:** 1.1.0, build 10 (App Store has 1.0). Deployment target iOS 26.0 (watchOS 10.0 on the watch
   targets), Xcode 27. The Swift 6.2 *toolchain*, but still the Swift 5 *language mode*
   (`SWIFT_VERSION = 5.0` in all eight configurations) — which is why the capture rule below is a warning
   and not yet an error. `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and approachable concurrency are on for
@@ -86,12 +86,19 @@ and what is still open. The README describes the product; this describes the wor
   a watch and that screen would be unreachable for anyone who saw it in the listing; and the watch has no
   Quran or Duas page to shoot. The 44mm watch was chosen over the Ultra because it gives 368x448, a size the
   App Store lists, where the Ultra gives 422x514.
+- **20 September 2026, Arabic round — MERGED (#27, #28, #29).** Shooting App Store screenshots in BOTH
+  languages found the Qibla dial MIRRORED in Arabic: the app-wide RTL layout flipped the rose, so E drew
+  left and W right and the Kaaba marker pointed at the mirror image of the bearing. At Cairo's 136° that
+  sent Arabic and Urdu users about 88° wrong, and it had shipped that way since RTL went in. #27 pinned
+  `dial(size:)` to `.leftToRight` (§3) and added 32 screenshots. #28 replaced the Home tracker's hardcoded
+  `F D A M I` with each prayer's icon, and fixed chip rows that opened at the LTR end in Arabic. #29 gave
+  the watch the same compass harness the phone has. Build 10, archived.
 - **Archives.** Release archives are built with `xcodebuild archive` (widget + watch app + complication
   embedded, development-signed; Xcode re-signs for distribution on upload). Keep exactly ONE current: each
-  new build's archive supersedes the last, and 4 through 8 were deleted in turn. The only 1.1.0 archive
-  on disk is `~/Library/Developer/Xcode/Archives/2026-09-20/iPrayer 1.1.0 (9).xcarchive`. (A pre-1.1.0
+  new build's archive supersedes the last, and 4 through 9 were deleted in turn. The only 1.1.0 archive
+  on disk is `~/Library/Developer/Xcode/Archives/2026-09-20/iPrayer 1.1.0 (10).xcarchive`. (A pre-1.1.0
   archive from 18 September is also on disk and is not part of this release.)
-  **Next (owner only): Organizer > Distribute App on that 1.1.0 (9) archive, paste `docs/AppStoreRelease.md`
+  **Next (owner only): Organizer > Distribute App on that 1.1.0 (10) archive, paste `docs/AppStoreRelease.md`
   into App Store Connect with `docs/screenshots/`, and submit. The device pass is DONE (§5, 20 September).
   The only other loose end is the EveryAyah rights email, drafted in `docs/AppStoreRelease.md` and not sent.**
 
