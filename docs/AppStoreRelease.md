@@ -45,9 +45,24 @@ developer. The required-reason API declaration for UserDefaults is in `PrivacyIn
 
 ## Screenshots
 
-`docs/screenshots/` holds simulator captures in English: iPhone 6.9" (iPhone 18 Pro Max, 1320x2868) and
-iPad 13" (iPad Pro 13-inch, 2064x2752): Home, Quran reader, Tasbih, Qibla, Settings. App Store Connect accepts
-them as is; add device frames or captions in Keynote if wanted.
+`docs/screenshots/` holds 32 simulator captures, each screen in BOTH English and Arabic:
+
+| set | device | size | screens |
+|---|---|---|---|
+| `iphone69-*` | iPhone 18 Pro Max | 1320x2868 | home, Quran light, Quran dark, duas, tasbih, qibla, onboarding watch step |
+| `ipad13-*` | iPad Pro 13-inch | 2064x2752 | the same six; NO watch step, an iPad cannot pair a watch |
+| `watch44-*` | Apple Watch SE 3 (44mm) | 368x448 | next prayer, tasbih, qibla |
+
+Named `<device>-<en|ar>-<NN>-<screen>.png`. The 44mm watch is used rather than the Ultra because it gives
+368x448, a size the App Store lists, where the Ultra gives 422x514.
+
+`docs/screenshots/captioned/` holds the SAME 32 at the SAME sizes with a marketing headline drawn above the
+screen, on the app's own gradient. **App Store Connect has no caption field** — a caption has to be part of
+the image, which is what these are for. Upload either set; the plain one if you would rather add frames and
+text yourself.
+
+Suggested order, since search results usually show only the first three: home, Quran, qibla, tasbih, duas,
+Quran dark, watch step.
 
 ## Audio rights email to EveryAyah (draft, not sent)
 
