@@ -275,6 +275,23 @@ must follow the *in-app* language (notifications, some labels) goes through
   registered "en" default makes `string(forKey:)` look chosen on a brand-new install.
 - **Onboarding controls have a fixed height (104 pt) and crossfade**; slides animate in once and never out.
   Anything else made the features -> location page change feel rough.
+- **A right-to-left `layoutDirection` MIRRORS DRAWN GEOMETRY, not just text and rows.** This is the bug that
+  shipped in the Qibla compass: the app sets `\.layoutDirection` to `.rightToLeft` for Arabic and Urdu
+  (iPrayerApp.swift), and SwiftUI horizontally mirrored the whole dial — E drew on the left, W on the right,
+  and the Kaaba marker pointed at the mirror image of the bearing. At Cairo's 136° that sent Arabic and Urdu
+  users about 88° wrong, on the one screen whose whole job is to be correct about a direction. Fixed in #27
+  by pinning `dial(size:)` to `.leftToRight`.
+  MEASURED, not assumed: a marker at `.offset(y: -80).rotationEffect(.degrees(90))` lands at x=179.5 under
+  LTR and x=19.5 under RTL in a 200-wide box, with y unchanged — a pure horizontal mirror, which maps a
+  rotation of +θ to −θ. Pinning `.leftToRight` inside an RTL ancestor restores x=179.5 exactly, so it fixes
+  rather than double-flips, and inside an LTR ancestor it is pixel-identical to doing nothing, so it cannot
+  affect English.
+  **The rule: anything whose meaning is its ANGLE must be pinned; anything whose meaning is reading order
+  must not.** So the dial is pinned and the text around it is not. Cardinal points are facts about the world.
+  One place still inherits the flip on purpose: the Tasbih bead ring (TasbihView.swift, the trimmed Circle
+  with `.rotationEffect(.degrees(-90))`) fills anti-clockwise in Arabic. The count and the lit-bead count are
+  right either way, and filling the other way is arguably correct in an RTL interface — unlike a compass.
+  Pin it with the same one line if that is ever decided otherwise. SF Symbol turn arrows do NOT auto-flip.
 - **An RTL string that opens with a Latin word flips the WHOLE paragraph to left-to-right.** Unicode bidi
   P2/P3 takes a paragraph's direction from its first STRONG character, skipping isolates — so
   `"iPrayer غير مثبّت..."` is laid out LTR and its clauses land in the wrong order on screen. This is the
