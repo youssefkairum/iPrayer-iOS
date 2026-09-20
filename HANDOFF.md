@@ -257,23 +257,32 @@ must follow the *in-app* language (notifications, some labels) goes through
   Second structural trap in the same code: a 0.25 s "stream gap" plus `headingFilter = 1` made it incapable of
   clicking below ~4°/s, which is slower than every final aim. `headingFilter` is now
   `kCLHeadingFilterNone`, which is also what lets a short spring track the wrist.
-- **When a bug lives only on the owner's device, ship them a readout.** Settings > General has a Test Haptic
-  button and a `taptic engine / low power mode` line; the compass has an opt-in `acc · reads · clicks · taptic`
-  readout. Reads climbing with clicks at zero is our bug; both climbing with nothing felt is the phone (Low
-  Power Mode alone silences every UIFeedbackGenerator AND caps ProMotion at 60 Hz, which reads as
-  "sluggish and no haptics" from outside the app).
+- **When a bug lives only on the owner's device, ship them a readout.** That is how #22 was diagnosed: a
+  Test Haptic button, a `taptic engine / low power mode` line in Settings and an opt-in
+  `acc · reads · clicks · taptic` line on the compass. Reads climbing with clicks at zero is our bug; both
+  climbing with nothing felt is the phone (Low Power Mode alone silences every UIFeedbackGenerator AND caps
+  ProMotion at 60 Hz, which reads as "sluggish and no haptics" from outside the app). **All of that shipped
+  UI was removed once it had done its job** — the owner asked for it gone and the haptics to be simply on.
+  Rebuild it the same way if a device-only haptics bug ever comes back; the history is in #22.
 - **The compass ratchet (`Haptics.Ratchet`) is the app's only STREAMED haptic, and that is why it is a class.**
   The other sensations build a generator per call and throw it away, which is right for a press because the
   finger is already down and the engine's 50-100 ms cold ramp is masked. A stream cannot do that, so one
-  generator is held for the life of the screen and re-`prepare()`d after each click. The notch size follows the
-  turn rate (5° / 15° / 45°, widening above 45 and 135 °/s) to hold the click rate in the 3 to 9 per second band
-  where the Taptic Engine renders separate taps rather than a hum; all three spacings divide 360 and each other
-  and the lattice is anchored on the Qibla, so no tier change can double a click. A resting phone is silent
-  three ways over: `headingFilter = 1` means it sends nothing, a gap over 250 ms re-anchors in silence, and a
-  direction latch makes a reversal travel 1.4 notches before it counts. `success()` at the lock now has
-  hysteresis (enter 5°, release 8°) and mutes the ratchet for 500 ms so the two never stutter together.
-  Measured on the Simulator with `-debugSpinCompass`: 30°/s gives 5° notches at 5.7 clicks/s, 90°/s gives 15°,
-  180°/s gives 45° at 3 clicks/s. Nothing about the FEEL can be judged without a real iPhone.
+  generator is held for the life of the screen and re-`prepare()`d after each click. ONE notch size at every
+  speed: 5°, which divides 360 so the lattice closes on itself. It is anchored on the QIBLA, not on north:
+  `update(angle:)` is fed `qiblaDirection - currentHeading`, so notch 0 is the Qibla itself and a click
+  always falls an exact multiple of 5° from it. That is the point — the one angle the detent must mark is
+  the one it is measured from. It does NOT follow that clicks line up with the rose's 72 ticks: those are
+  drawn on north and carried by `.rotationEffect(-currentHeading)`, so the two coincide only when the
+  bearing is itself a multiple of 5 (Cairo is 136°, so every click lands 1° past a mark). A notch counts
+  only after a WHOLE notch of travel from the last one, in
+  either direction, which is wider than any hand tremor — necessary now that `headingFilter` is
+  `kCLHeadingFilterNone` and readings arrive unfiltered. There are exactly two ways it can stay quiet: the
+  dial has not crossed a notch, or the last click was under 90 ms ago. `success()` at the lock has hysteresis
+  (enter 5°, release 8°) so it cannot re-fire on a heading sitting on the line. The earlier design — speed
+  tiers, a stream-gap timer, a warm-up count, a mute window, a reversal dead zone and an accuracy gate —
+  was removed in #22: between them they could swallow a click eleven different ways, and the compass felt
+  dead. Nothing about the FEEL can be judged without a real iPhone; there is no Taptic Engine on the
+  Simulator at all.
 - **The compass dial is ONE object and must move on ONE curve.** The rose turns by `-currentHeading` and the
   needle by `qiblaDirection - currentHeading`; those differ by a constant, so the Kaaba tip sits exactly over the
   Qibla mark on the rose only while both use the same animation. They used to use two (an `easeInOut(0.2)` and a
