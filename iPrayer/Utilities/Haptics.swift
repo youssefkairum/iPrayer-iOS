@@ -9,34 +9,15 @@
 //
 
 import UIKit
-import CoreHaptics
 
 @MainActor
 enum Haptics {
-    /// Whether this device has a Taptic Engine. Every iPhone on iOS 26 does; no iPad and no Simulator
-    /// does, where every call below is a silent no-op that still allocates. Read once: it cannot change.
-    /// This is the only public way to ask — there is no `UIDevice.hasTapticEngine`.
-    static let supportsHaptics = CHHapticEngine.capabilitiesForHardware().supportsHaptics
-
     static func tap() { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
     static func soft() { UIImpactFeedbackGenerator(style: .soft).impactOccurred() }
     static func rigid() { UIImpactFeedbackGenerator(style: .rigid).impactOccurred() }
     static func selection() { UISelectionFeedbackGenerator().selectionChanged() }
     static func success() { UINotificationFeedbackGenerator().notificationOccurred(.success) }
     static func warning() { UINotificationFeedbackGenerator().notificationOccurred(.warning) }
-
-    /// Both compass sensations back to back, for the Settings test button: the "facing Mecca" chime, then
-    /// a single detent click 600 ms later. This is the only thing the owner can do without a debugger.
-    /// Feeling neither means the phone is silencing them (Low Power Mode, or Sounds & Haptics), not us.
-    static func testCompassPair() {
-        success()
-        let generator = UISelectionFeedbackGenerator()
-        generator.prepare()
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(600))
-            generator.selectionChanged()
-        }
-    }
 }
 
 extension Haptics {
@@ -73,7 +54,7 @@ extension Haptics {
         private var notch = 0
         private var lastClick: CFTimeInterval = 0
 
-        /// Clicks emitted over this screen's lifetime. Read only by the compass's diagnostics line.
+        /// Clicks emitted over this screen's lifetime. Read only by the DEBUG log below.
         private(set) var clicks = 0
 
         /// Warms the engine and silently takes the dial's current angle as the starting notch, so opening
@@ -108,7 +89,7 @@ extension Haptics {
         /// several headings into one change, and paying that back as a burst is the buzz this exists to
         /// avoid. Nothing is queued — the skipped notches are simply gone.
         func update(angle: Double) {
-            guard generator != nil else { return }   // not on screen, or haptics switched off
+            guard generator != nil else { return }   // the screen is gone, or the app is not active
             let position = angle / Self.spacing
             if position >= Double(notch) + 1 {
                 notch += 1

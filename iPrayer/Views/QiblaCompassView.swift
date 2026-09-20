@@ -13,8 +13,6 @@ import CoreLocation
 struct QiblaCompassView: View {
     @EnvironmentObject var viewModel: PrayerViewModel
     @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
-    @AppStorage(UDKey.compassHapticsEnabled.rawValue) private var compassHapticsEnabled: Bool = true
-    @AppStorage(UDKey.compassDiagnostics.rawValue) private var compassDiagnostics: Bool = false
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     
@@ -26,9 +24,6 @@ struct QiblaCompassView: View {
     /// a bare 5° line used to re-enter this state over and over, re-firing `success()` every time and
     /// re-lighting the whole dial with it.
     @State private var isFacingQibla = false
-    /// Heading readings seen since the screen opened. Counted only while diagnostics are on, so it costs
-    /// nothing in the normal case; the body is already re-evaluating on this exact change.
-    @State private var headingReadings = 0
     
     private static let kaaba = CLLocation(latitude: 21.422487, longitude: 39.826206)
     private static let facingTolerance = 5.0
@@ -119,7 +114,7 @@ struct QiblaCompassView: View {
         .onAppear {
             viewModel.startCompass()
             distanceText = Self.distanceToKaaba()
-            if compassHapticsEnabled { ratchet.begin(at: qiblaRotation) }
+            ratchet.begin(at: qiblaRotation)
         }
         .onChange(of: viewModel.qiblaDirection) { _, _ in
             distanceText = Self.distanceToKaaba()
@@ -131,15 +126,12 @@ struct QiblaCompassView: View {
             ratchet.end()
         }
         .onChange(of: viewModel.currentHeading) { _, _ in headingChanged() }
-        .onChange(of: compassHapticsEnabled) { _, enabled in
-            if enabled { ratchet.begin(at: qiblaRotation) } else { ratchet.end() }
-        }
         .onChange(of: scenePhase) { _, phase in
             // onDisappear does not fire when the app is backgrounded from this screen, and the engine must
             // not be left warm there. Coming back, the heading may have jumped tens of degrees in one
             // delta, so begin() re-anchors rather than paying that out as clicks.
             if phase == .active {
-                if compassHapticsEnabled { ratchet.begin(at: qiblaRotation) }
+                ratchet.begin(at: qiblaRotation)
             } else {
                 ratchet.end()
             }
@@ -159,21 +151,7 @@ struct QiblaCompassView: View {
     /// Both the latch and the ratchet run off `viewModel.currentHeading`, not the animated presentation
     /// value, so a click leads the pixels by the dial spring's settle time. That is the right way round:
     /// hand-to-click stays inside the window where motion and sensation read as one event.
-/// A line the owner can photograph and send when the compass still feels wrong, since they cannot run
-    /// a debugger for us. `acc` is the magnetometer's own error estimate — the value that used to gate
-    /// every haptic on this screen. `reads` against `clicks` says whether headings are arriving at all and
-    /// whether the detent is firing on them: reads climbing with clicks stuck at 0 is our bug, both
-    /// climbing while nothing is felt is the phone's. Off by default; Settings › General › Compass
-    /// Diagnostics.
-    private var diagnosticsLine: String {
-        let accuracy = viewModel.headingAccuracy.map { String(format: "%.0f°", $0) } ?? "—"
-        let lowPower = ProcessInfo.processInfo.isLowPowerModeEnabled ? " · LOW POWER" : ""
-        let taptic = Haptics.supportsHaptics ? "y" : "n"
-        return "acc \(accuracy) · \(headingReadings) reads · \(ratchet.clicks) clicks · taptic \(taptic)\(lowPower)"
-    }
-    
     private func headingChanged() {
-        if compassDiagnostics { headingReadings += 1 }
         let aligned = abs(offset) < (isFacingQibla ? Self.releaseTolerance : Self.facingTolerance)
         if aligned != isFacingQibla {
             isFacingQibla = aligned
@@ -318,13 +296,6 @@ struct QiblaCompassView: View {
                 Label(AppTranslations.translate("Move your device in a figure 8 to calibrate the compass", to: appLanguage), systemImage: "exclamationmark.triangle.fill")
                     .font(.custom("AvenirNext-DemiBold", size: 12))
                     .foregroundColor(.orange)
-                    .multilineTextAlignment(.center)
-            }
-            
-            if compassDiagnostics {
-                Text(diagnosticsLine)
-                    .font(.system(size: 11, weight: .regular, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.55))
                     .multilineTextAlignment(.center)
             }
             

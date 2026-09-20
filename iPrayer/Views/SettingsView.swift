@@ -16,8 +16,6 @@ struct SettingsView: View {
     @AppStorage(UDKey.adhanSoundEnabled.rawValue) private var adhanSoundEnabled: Bool = true
     @AppStorage(UDKey.quranRemindersEnabled.rawValue) private var quranRemindersEnabled: Bool = true
     @AppStorage(UDKey.prePrayerReminderMinutes.rawValue) private var prePrayerReminderMinutes: Int = 0
-    @AppStorage(UDKey.compassHapticsEnabled.rawValue) private var compassHapticsEnabled: Bool = true
-    @AppStorage(UDKey.compassDiagnostics.rawValue) private var compassDiagnostics: Bool = false
     
     @AppStorage(UDKey.quranReciter.rawValue) private var reciterID: String = QuranReciter.default.id
     @ObservedObject private var downloads = QuranAudioDownloads.shared
@@ -243,76 +241,35 @@ struct SettingsView: View {
                         // 3. General Section (language + about)
                         SettingsCard(title: "General", icon: "info.circle.fill") {
                             VStack(spacing: 6) {
-                                Toggle(isOn: $compassHapticsEnabled) {
-                                    Text(AppTranslations.translate("Compass Haptics", to: appLanguage))
+                                HStack {
+                                    Text("App Language")
                                         .font(.custom("AvenirNext-Medium", size: 15))
                                         .foregroundColor(.white)
-                                }
-                                .tint(.teal)
-
-                                // Shown on every device now, including ones that report no Taptic Engine.
-                                // Hiding it hid the diagnosis: when the compass is silent, the first thing
-                                // worth knowing is whether this switch is even on.
-                                Button {
-                                    Haptics.testCompassPair()
-                                } label: {
-                                    HStack {
-                                        Text(AppTranslations.translate("Test Haptic", to: appLanguage))
-                                            .font(.custom("AvenirNext-Medium", size: 15))
-                                            .foregroundColor(.white)
-                                        Spacer()
-                                        Image(systemName: "hand.tap.fill")
-                                            .font(.title3)
-                                            .foregroundColor(.teal)
+                                    Spacer()
+                                    Menu {
+                                        Picker("Language", selection: $appLanguage) {
+                                            Text("English").tag("en")
+                                            Text("العربية (Arabic)").tag("ar")
+                                            Text("اردو (Urdu)").tag("ur")
+                                            Text("Français (French)").tag("fr")
+                                            Text("中文 (Chinese)").tag("zh-Hans")
+                                            Text("Deutsch (German)").tag("de")
+                                            Text("हिन्दी (Hindi)").tag("hi")
+                                            Text("Türkçe (Turkish)").tag("tr")
+                                            Text("Русский (Russian)").tag("ru")
+                                        }
+                                    } label: {
+                                        HStack(spacing: 5) {
+                                            Text(languageName(for: appLanguage))
+                                                .font(.custom("AvenirNext-Medium", size: 15))
+                                                .lineLimit(1)
+                                                .minimumScaleFactor(0.5)
+                                            Image(systemName: "chevron.up.chevron.down")
+                                                .font(.caption2)
+                                        }
+                                        .foregroundColor(.teal)
                                     }
                                 }
-
-                                // Everything about haptics on this phone that the app cannot control.
-                                // Low Power Mode alone silences every UIFeedbackGenerator on iOS and caps
-                                // a ProMotion display at 60 Hz — sluggish and silent at once, from
-                                // outside the app.
-                                Text("taptic engine: \(Haptics.supportsHaptics ? "yes" : "no") · low power mode: \(ProcessInfo.processInfo.isLowPowerModeEnabled ? "ON" : "off")")
-                                    .font(.system(size: 12, weight: .regular, design: .monospaced))
-                                    .foregroundColor(.white.opacity(0.55))
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                                Toggle(isOn: $compassDiagnostics) {
-                                    Text(AppTranslations.translate("Compass Diagnostics", to: appLanguage))
-                                        .font(.custom("AvenirNext-Medium", size: 15))
-                                        .foregroundColor(.white)
-                                }
-                                .tint(.teal)
-
-                                Divider().background(Color.white.opacity(0.2))
-                            HStack {
-                                Text("App Language")
-                                    .font(.custom("AvenirNext-Medium", size: 15))
-                                    .foregroundColor(.white)
-                                Spacer()
-                                Menu {
-                                    Picker("Language", selection: $appLanguage) {
-                                        Text("English").tag("en")
-                                        Text("العربية (Arabic)").tag("ar")
-                                        Text("اردو (Urdu)").tag("ur")
-                                        Text("Français (French)").tag("fr")
-                                        Text("中文 (Chinese)").tag("zh-Hans")
-                                        Text("Deutsch (German)").tag("de")
-                                        Text("हिन्दी (Hindi)").tag("hi")
-                                        Text("Türkçe (Turkish)").tag("tr")
-                                        Text("Русский (Russian)").tag("ru")
-                                    }
-                                } label: {
-                                    HStack(spacing: 5) {
-                                        Text(languageName(for: appLanguage))
-                                            .font(.custom("AvenirNext-Medium", size: 15))
-                                            .lineLimit(1)
-                                            .minimumScaleFactor(0.5)
-                                        Image(systemName: "chevron.up.chevron.down")
-                                            .font(.caption2)
-                                    }
-                                    .foregroundColor(.teal)
-                                }
-                            }
                                 
                                 Divider().background(Color.white.opacity(0.2))
                                 
