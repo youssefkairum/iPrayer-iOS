@@ -202,17 +202,27 @@ struct TasbihView: View {
                 .frame(width: discSize, height: discSize)
                 .glassEffect(.regular.interactive(), in: .circle)
             
-            // Beads: the faint full ring and the lit ones so far this cycle
+            // Beads: the faint full ring and the lit ones so far this cycle.
+            //
+            // Both are pinned left-to-right. A trimmed, rotated Circle is DRAWN GEOMETRY, and a
+            // right-to-left layout mirrors it — so in Arabic and Urdu the ring filled ANTI-clockwise from
+            // the top, the same mechanism that mirrored the Qibla dial (HANDOFF §3). A bead count is a
+            // tally, and a tally advances the same way whichever way the language reads.
+            //
+            // Pinned on each Circle rather than by wrapping them, so nothing about the layout moves. The
+            // count in the middle is TEXT and is deliberately left alone.
             Circle()
                 .stroke(Color.white.opacity(0.12), style: StrokeStyle(lineWidth: 12, lineCap: .round, dash: dashArray))
                 .rotationEffect(.degrees(-90))
                 .frame(width: ringSize, height: ringSize)
+                .environment(\.layoutDirection, .leftToRight)
             Circle()
                 .trim(from: 0, to: progressTrim)
                 .stroke(AngularGradient(gradient: Gradient(colors: [.teal.opacity(0.55), .teal]), center: .center),
                         style: StrokeStyle(lineWidth: 12, lineCap: .round, dash: dashArray))
                 .rotationEffect(.degrees(-90))
                 .frame(width: ringSize, height: ringSize)
+                .environment(\.layoutDirection, .leftToRight)
                 .animation(.spring(response: 0.4, dampingFraction: 0.7), value: count)
             
             VStack(spacing: 2) {

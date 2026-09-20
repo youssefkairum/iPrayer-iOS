@@ -288,10 +288,11 @@ must follow the *in-app* language (notifications, some labels) goes through
   affect English.
   **The rule: anything whose meaning is its ANGLE must be pinned; anything whose meaning is reading order
   must not.** So the dial is pinned and the text around it is not. Cardinal points are facts about the world.
-  One place still inherits the flip on purpose: the Tasbih bead ring (TasbihView.swift, the trimmed Circle
-  with `.rotationEffect(.degrees(-90))`) fills anti-clockwise in Arabic. The count and the lit-bead count are
-  right either way, and filling the other way is arguably correct in an RTL interface — unlike a compass.
-  Pin it with the same one line if that is ever decided otherwise. SF Symbol turn arrows do NOT auto-flip.
+  Two places are pinned for this reason: the Qibla dial, and the Tasbih bead ring (TasbihView.swift, the two
+  trimmed Circles with `.rotationEffect(.degrees(-90))`), which used to fill ANTI-clockwise in Arabic — the
+  owner asked for it to match. A tally advances the same way whichever way the language reads. Each Circle
+  carries the pin itself rather than being wrapped, so no layout moves, and the count in the middle is text
+  and is left alone. SF Symbol turn arrows do NOT auto-flip, so "turn left" keeps a left-turning arrow.
 - **An RTL string that opens with a Latin word flips the WHOLE paragraph to left-to-right.** Unicode bidi
   P2/P3 takes a paragraph's direction from its first STRONG character, skipping isolates — so
   `"iPrayer غير مثبّت..."` is laid out LTR and its clauses land in the wrong order on screen. This is the
