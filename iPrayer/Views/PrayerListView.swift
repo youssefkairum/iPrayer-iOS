@@ -38,6 +38,25 @@ struct PrayerListView: View {
         else { return "Good evening" }
     }
     
+    /// "مساء الخير، يوسف" — the greeting, then the person.
+    ///
+    /// The comma is a LANGUAGE choice, not a constant. Arabic and Urdu write it ARABIC COMMA (U+060C, ،)
+    /// and Chinese writes it fullwidth (U+FF0C, ，); a Latin comma in any of the three is a typographic
+    /// error, and it was shipping in all eight languages because the format string was written in English.
+    ///
+    /// The name goes in a first-strong isolate so a Latin name beside a neutral comma cannot drag the
+    /// punctuation to the wrong side of the phrase — the same rule as §3 and as the Home card's time.
+    private func greeting(with name: String) -> String {
+        let hello = AppTranslations.translate(timeGreetingString, to: appLanguage)
+        let comma: String
+        switch appLanguage {
+        case "ar", "ur": comma = "،"
+        case "zh-Hans":  comma = "，"
+        default:         comma = ","
+        }
+        return "\(hello)\(comma) \u{2068}\(name)\u{2069}"
+    }
+    
     var body: some View {
         let name = accountManager.userName.trimmingCharacters(in: .whitespaces)
         let firstName = name.components(separatedBy: " ").first ?? name
@@ -79,7 +98,7 @@ struct PrayerListView: View {
                     Group {
                         if !firstName.isEmpty {
                             // One Text so the comma and name can't wrap onto a second line
-                            Text("\(AppTranslations.translate(timeGreetingString, to: appLanguage)), \(firstName)")
+                            Text(greeting(with: firstName))
                         } else {
                             Text(AppTranslations.translate(timeGreetingString, to: appLanguage))
                         }
