@@ -9,7 +9,7 @@ and what is still open. The README describes the product; this describes the wor
 
 ## 1. Where things stand
 
-- **Version:** 1.1.0, build 10 (App Store has 1.0). Deployment target iOS 26.0 (watchOS 10.0 on the watch
+- **Version:** 1.1.0, build 11 (App Store has 1.0). Deployment target iOS 26.0 (watchOS 10.0 on the watch
   targets), Xcode 27. The Swift 6.2 *toolchain*, but still the Swift 5 *language mode*
   (`SWIFT_VERSION = 5.0` in all eight configurations) — which is why the capture rule below is a warning
   and not yet an error. `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and approachable concurrency are on for
@@ -95,10 +95,10 @@ and what is still open. The README describes the product; this describes the wor
   the watch the same compass harness the phone has. Build 10, archived.
 - **Archives.** Release archives are built with `xcodebuild archive` (widget + watch app + complication
   embedded, development-signed; Xcode re-signs for distribution on upload). Keep exactly ONE current: each
-  new build's archive supersedes the last, and 4 through 9 were deleted in turn. The only 1.1.0 archive
-  on disk is `~/Library/Developer/Xcode/Archives/2026-09-20/iPrayer 1.1.0 (10).xcarchive`. (A pre-1.1.0
+  new build's archive supersedes the last, and 4 through 10 were deleted in turn. The only 1.1.0 archive
+  on disk is `~/Library/Developer/Xcode/Archives/2026-09-20/iPrayer 1.1.0 (11).xcarchive`. (A pre-1.1.0
   archive from 18 September is also on disk and is not part of this release.)
-  **Next (owner only): Organizer > Distribute App on that 1.1.0 (10) archive, paste `docs/AppStoreRelease.md`
+  **Next (owner only): Organizer > Distribute App on that 1.1.0 (11) archive, paste `docs/AppStoreRelease.md`
   into App Store Connect with `docs/screenshots/`, and submit. The device pass is DONE (§5, 20 September).
   The only other loose end is the EveryAyah rights email, drafted in `docs/AppStoreRelease.md` and not sent.**
 
