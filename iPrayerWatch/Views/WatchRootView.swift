@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine   // for .receive(on:) on the day-change publisher
 
 struct WatchRootView: View {
     @EnvironmentObject private var model: WatchModel
@@ -22,6 +23,15 @@ struct WatchRootView: View {
             .tabViewStyle(.verticalPage)
         }
         .onAppear { model.start() }
+        // Midnight with the watch app left open. The 30 s tick in WatchModel only refreshes when a
+        // scheduled time passes, and after Isha the next one is TOMORROW's Fajr — so today's times would
+        // sit a day stale until then, every one of them in the past, and the tracker (just blanked by the
+        // day change) would offer all five rows again. The phone already does this; the watch did not.
+        .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)
+            .receive(on: DispatchQueue.main)) { _ in
+            HomeWidgetsData.shared.refreshDayState()
+            model.refresh()
+        }
     }
 }
 
@@ -76,11 +86,22 @@ struct NextPrayerPage: View {
                     Spacer(minLength: 2)
                     
                     if let following = model.followingPrayer {
-                        HStack(spacing: 4) {
-                            Text(AppTranslations.translate("Then", to: model.language))
-                            Text(model.name(for: following.name)).bold()
-                            Text(following.time, style: .time)
-                        }
+                        // ONE Text, not an HStack of three.
+                        //
+                        // An HStack places its children in LAYOUT order, and the watch does not mirror for
+                        // Arabic, so "ثم" sat to the left of "المغرب" and the line read "المغرب ثم". The
+                        // obvious fix — setting `\.layoutDirection` on the watch root, as the phone does —
+                        // was tried and REVERTED: on watchOS it mirrors the glyphs themselves, turning the
+                        // whole screen into mirror writing. A single Text sidesteps layout entirely and lets
+                        // the Unicode bidi algorithm order the run from its own content, in every language.
+                        //
+                        // The clock is wrapped in a first-strong isolate so a Latin "6:54 PM" cannot be
+                        // split apart inside an Arabic sentence — the pattern PrayerListView uses for its
+                        // "at <time>" line.
+                        let clock = following.time.formatted(date: .omitted, time: .shortened)
+                        (Text(AppTranslations.translate("Then", to: model.language) + " ")
+                         + Text(model.name(for: following.name)).bold()
+                         + Text(" \u{2068}\(clock)\u{2069}"))
                         .font(.caption2)
                         .foregroundStyle(.white.opacity(0.65))
                         .lineLimit(1)
@@ -163,6 +184,16 @@ struct TrackerPage: View {
     @ObservedObject private var tracker = HomeWidgetsData.shared
     private let prayers = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
     
+    /// A prayer can only be ticked once its time has come — the iPhone's rule, in HomeWidgets.swift.
+    ///
+    /// Matched by the ENGLISH name rather than by index, because `todayPrayers` also carries Sunrise and
+    /// so does not line up with the five above. Missing times mean TRUE, not false: `refresh()` returns
+    /// early without a location, and a watch with no fix would otherwise show five dead rows and no reason.
+    private func hasHappened(_ prayer: String) -> Bool {
+        guard let today = model.todayPrayers.first(where: { $0.name == prayer }) else { return true }
+        return Date() >= today.time
+    }
+    
     var body: some View {
         List {
             Section {
@@ -180,6 +211,7 @@ struct TrackerPage: View {
             Section {
                 ForEach(Array(prayers.enumerated()), id: \.offset) { index, prayer in
                     let done = tracker.dailyPrayersCompleted[index]
+                    let happened = hasHappened(prayer)
                     Button {
                         tracker.togglePrayer(index: index)
                     } label: {
@@ -195,6 +227,8 @@ struct TrackerPage: View {
                                 .contentTransition(.symbolEffect(.replace))
                         }
                     }
+                    .disabled(!happened)
+                    .opacity(happened ? 1.0 : 0.3)
                     .accessibilityLabel(model.name(for: prayer))
                     .accessibilityValue(done ? "1" : "0")
                 }
