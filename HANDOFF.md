@@ -9,7 +9,7 @@ and what is still open. The README describes the product; this describes the wor
 
 ## 1. Where things stand
 
-- **Version:** 1.1.0, build 8 (App Store has 1.0). Deployment target iOS 26.0 (watchOS 10.0 on the watch
+- **Version:** 1.1.0, build 9 (App Store has 1.0). Deployment target iOS 26.0 (watchOS 10.0 on the watch
   targets), Xcode 27. The Swift 6.2 *toolchain*, but still the Swift 5 *language mode*
   (`SWIFT_VERSION = 5.0` in all eight configurations) — which is why the capture rule below is a warning
   and not yet an error. `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and approachable concurrency are on for
@@ -70,12 +70,19 @@ and what is still open. The README describes the product; this describes the wor
   `UDKey.allCases`, so a stored `compassHapticsEnabled = false` is simply ignored and those users get
   their haptics back. Build 8, archived. See the two §3 bullets for what the readouts taught and for the
   ratchet's actual design.
+- **20 September 2026, onboarding and watch round — MERGED (#25, #26).** #25 added a fifth onboarding
+  step offering the Apple Watch install, shown only when a watch is paired and iPrayer is not on it, and
+  fixed six shipped Arabic/Urdu strings whose paragraph flipped to left-to-right (§3). #26 gave the watch
+  tracker the iPhone's rule — a prayer is only tickable once its time has passed — added the day-change
+  refresh the watch was missing, and rebuilt the next-prayer "then" line as a single `Text`. Build 9,
+  archived. Two §3 rules came out of it and must not be undone: the RTL first-strong isolate rule, and
+  that watchOS mirrors GLYPHS if you set `\.layoutDirection`.
 - **Archives.** Release archives are built with `xcodebuild archive` (widget + watch app + complication
   embedded, development-signed; Xcode re-signs for distribution on upload). Keep exactly ONE current: each
-  new build's archive supersedes the last, and 4, 5, 6 and 7 were deleted in turn. The only 1.1.0 archive
-  on disk is `~/Library/Developer/Xcode/Archives/2026-09-20/iPrayer 1.1.0 (8).xcarchive`. (A pre-1.1.0
+  new build's archive supersedes the last, and 4 through 8 were deleted in turn. The only 1.1.0 archive
+  on disk is `~/Library/Developer/Xcode/Archives/2026-09-20/iPrayer 1.1.0 (9).xcarchive`. (A pre-1.1.0
   archive from 18 September is also on disk and is not part of this release.)
-  **Next (owner only): Organizer > Distribute App on that 1.1.0 (8) archive, paste `docs/AppStoreRelease.md`
+  **Next (owner only): Organizer > Distribute App on that 1.1.0 (9) archive, paste `docs/AppStoreRelease.md`
   into App Store Connect with `docs/screenshots/`, submit; device pass in section 6; the EveryAyah email.**
 
 ## 2. Map of the code
@@ -447,6 +454,13 @@ first fix was Simulator-verified only and was silent on the phone (§3). The tra
 Reading position and the duplicate Live Activity were fixed and build-verified. The Swift 6 capture sweep
 (#23) is build-verified across all four targets with `SWIFT_STRICT_CONCURRENCY=complete`.
 
+Verified for #26 on the paired Apple Watch Ultra 4 simulator, in Arabic, computing Cairo times: at
+4:19 pm الفجر, الظهر and العصر are full-strength while المغرب (6:54 pm) and العشاء (8:10 pm) are dimmed
+and untappable, and the next-prayer line leads with ثم — the OWNER confirmed that reads correctly, after
+I had misread the same line from a screenshot and called it fine. NOT verified: a real midnight on a real
+watch, and the Digital Crown on the Tasbih page (untouched, but the one thing here a screenshot cannot
+catch).
+
 Verified for the onboarding Apple Watch step on the iPhone 17 simulator, against its REAL trigger and not
 only the debug flag: with the paired Apple Watch Ultra 4 booted and the watch app absent from it, the step
 appears on its own and the progress row shows five dots. Also checked with `-debugWatchStep 1`: the slide,
@@ -463,7 +477,7 @@ Latin runs in otherwise-correct RTL values, and the twelve Urdu entries still ho
 Verified for #24 on the iPhone 17 simulator: Settings > General is now App Language, App Version & Info,
 Rate iPrayer and Manage Notifications & Location, with nothing else; the Qibla status card carries no
 readout; and under `-debugSpinCompass 1` the ratchet logged 184 clicks, so removing the toggle did not
-silence it. The 1.1.0 (8) archive's binary contains zero hits for all four removed strings. NOT verified:
+silence it. That build's archive contained zero hits for all four removed strings. NOT verified:
 how any of it FEELS — there is no Taptic Engine on the Simulator, which is exactly what caused #22.
 
 Not verified: PR #7's tracker fix across a real midnight on two devices (reasoned + built only) · the Today's
