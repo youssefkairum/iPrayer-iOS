@@ -266,6 +266,14 @@ struct QiblaCompassView: View {
                 .frame(width: 10, height: 10)
                 .animation(.easeInOut, value: isFacingQibla)
         }
+        // A COMPASS MUST NOT MIRROR. The app sets `\.layoutDirection` to .rightToLeft for Arabic and Urdu
+        // (iPrayerApp.swift), which is right for text and for rows — and catastrophic here. It flipped the
+        // dial horizontally: E drew on the left, W on the right, and the Kaaba marker swung to the mirror
+        // image of the true bearing. At Cairo's 136° that pointed Arabic-speaking users SOUTH-WEST instead
+        // of south-east, about 88° wrong, on the one screen in the app whose whole job is to be correct.
+        // North, east, south and west are facts about the world, not about reading order, so the dial's
+        // geometry is pinned. The text around it stays right-to-left.
+        .environment(\.layoutDirection, .leftToRight)
         .opacity(hasLocation ? 1 : 0.35)
     }
     
