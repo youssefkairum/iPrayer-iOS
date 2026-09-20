@@ -105,7 +105,7 @@ Debug builds accept these arguments to open a specific screen, which helps with 
 | `-debugOnboardingSlide 2` | Starts onboarding on that slide |
 | `-debugShowWhatsNew 1` | Forces the What's New sheet |
 | `-debugWatchStep 1` | Forces onboarding's Apple Watch step without a paired watch |
-| `-debugSpinCompass 1` | Turns the compass at 30 Hz, reporting a deliberately poor 25° accuracy |
+| `-debugSpinCompass 1` | Turns the compass at 30 Hz, reporting a deliberately poor 25° accuracy. Works on the watch too |
 | `-debugHeadingAccuracy 5` | Overrides that 25°, to rehearse a well-calibrated phone |
 | `-debugAudioBaseURL https://unreachable.invalid` | Makes every verse fail, to test offline handling |
 | `-appLanguage ar` / `-userName "Name"` | Any UserDefaults key can be overridden for one run |

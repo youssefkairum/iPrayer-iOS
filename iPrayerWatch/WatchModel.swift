@@ -34,11 +34,23 @@ final class WatchModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published private(set) var prayerNames: [String: String] = [:]
     @Published private(set) var hijriDate: String = ""
     
-    var headingAvailable: Bool { CLLocationManager.headingAvailable() }
+    /// Whether this watch has a magnetometer, which decides between the live Qibla guidance and the
+    /// "Compass unavailable" note. `-debugSpinCompass 1` counts, in DEBUG only: the watchOS Simulator has
+    /// no magnetometer, so without it the Qibla page can only ever be seen — or screenshotted — in its
+    /// broken state. The phone gained the same escape hatch in #27.
+    var headingAvailable: Bool {
+        #if DEBUG
+        if UserDefaults.standard.integer(forKey: "debugSpinCompass") > 0 { return true }
+        #endif
+        return CLLocationManager.headingAvailable()
+    }
     
     private let locationManager = CLLocationManager()
     private let geocoder = CLGeocoder()
     private var tick: Timer?
+    #if DEBUG
+    private var fakeHeadingTimer: Timer?
+    #endif
     private var coordinates: (latitude: Double, longitude: Double)?
     private var lastFix: Date?
     
@@ -108,10 +120,26 @@ final class WatchModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     func startCompass() {
+        #if DEBUG
+        // Turn the dial by hand, since the Simulator cannot. 30 Hz, matching the phone's harness.
+        if UserDefaults.standard.integer(forKey: "debugSpinCompass") > 0, fakeHeadingTimer == nil {
+            fakeHeadingTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
+                // Bind before the Task: `[weak self]` is a mutable capture, and Swift 6 forbids a
+                // concurrently-executing closure referencing one.
+                guard let self else { return }
+                Task { @MainActor in self.currentHeading += 1 }
+            }
+            return
+        }
+        #endif
         if headingAvailable { locationManager.startUpdatingHeading() }
     }
     
     func stopCompass() {
+        #if DEBUG
+        fakeHeadingTimer?.invalidate()
+        fakeHeadingTimer = nil
+        #endif
         locationManager.stopUpdatingHeading()
     }
     

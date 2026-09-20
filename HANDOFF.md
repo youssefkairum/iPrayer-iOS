@@ -386,7 +386,12 @@ below) · `-debugSpinCompass 1` (turns the compass at 30 Hz and
 reports a deliberately POOR 25° accuracy, since the simulator has no magnetometer; change the timer interval
 to rehearse a slow aim, which is the case that used to be silent) · `-debugHeadingAccuracy 5` (overrides
 that 25°, for rehearsing a well-calibrated phone or for a screenshot, where the figure-8 prompt is not the
-state worth showing; the DEFAULT stays 25 on purpose, see §3) · `-debugAudioBaseURL https://unreachable.invalid`
+state worth showing; the DEFAULT stays 25 on purpose, see §3). `-debugSpinCompass 1` works on the WATCH
+as well, where it both fakes the heading and satisfies `WatchModel.headingAvailable` — without it the
+watch's Qibla page can only ever be seen in its "Compass unavailable" state, since no Simulator has a
+magnetometer. Set it with `simctl spawn <watch> defaults write <bundle> debugSpinCompass -int 1` rather
+than as a launch argument if you are going to be driving the app for a while: watchOS relaunches it, and
+launch arguments do not survive that · `-debugAudioBaseURL https://unreachable.invalid`
 (fails every verse, to test offline handling). Any UserDefaults key can also be overridden for one run,
 e.g. `-lastSeenWhatsNewVersion 1.0.0`, `-hasSeenOnboarding YES`, `-appLanguage ar`, `-userName "Youssef Keram"`
 (the last one shows the signed-in greeting without signing in).
