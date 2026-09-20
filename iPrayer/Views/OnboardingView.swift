@@ -22,14 +22,19 @@ struct OnboardingView: View {
     @ObservedObject private var entrance = AppEntrance.shared
     @ObservedObject private var watchLink = PhoneWatchSync.shared
     @Environment(\.openURL) private var openURL
-    /// Whether the watch step is part of this run. LATCHED, not read live: `WCSession` activates at launch
-    /// and answers asynchronously, so the truth can arrive while onboarding is already on screen. Letting it
-    /// change once the person is AT the step would renumber the tags under them and swap a sign-in page for
-    /// a watch prompt, so it is only ever updated while the step is still ahead of them.
+    /// Whether the watch step is part of this run. `WCSession` activates at launch and answers
+    /// asynchronously, so this arrives while onboarding is already on screen, and the two directions are
+    /// NOT symmetric — see `setWatchStep`.
     @State private var includesWatchStep = false
+    /// Pending "not installed has held long enough to believe" check; cancelled whenever the state moves.
+    @State private var watchSettle: Task<Void, Never>?
     
     /// The watch step's index when it exists. Everything before it is fixed, so this is a constant.
     private static let watchTab = 3
+    /// How long `paired && !installed` must HOLD before the step is added. iOS installs an embedded watch
+    /// app over the air, and `isWatchAppInstalled` is false for the whole transfer — so the raw flag says
+    /// "not installed" loudest for exactly the people who did nothing wrong and are about to have it.
+    private static let watchSettleSeconds: Double = 6
     private var syncTab: Int { includesWatchStep ? 4 : 3 }
     private var stepCount: Int { includesWatchStep ? 5 : 4 }
     
@@ -85,21 +90,50 @@ struct OnboardingView: View {
         .onAppear { refreshWatchStep() }
         .onChange(of: watchLink.isPaired) { _, _ in refreshWatchStep() }
         .onChange(of: watchLink.isWatchAppInstalled) { _, _ in refreshWatchStep() }
+        .onDisappear { watchSettle?.cancel() }
     }
     
-    /// Take the watch state only while the step is still ahead of the person; see `includesWatchStep`.
     private func refreshWatchStep() {
         #if DEBUG
-        // `-debugWatchStep 1`. A Simulator cannot stage the real condition: pairing a watch simulator
-        // installs the embedded app automatically, so `paired && !installed` is unreachable there. Ahead of
-        // the latch below, so `-debugOnboardingSlide 3` can land straight on the step.
+        // `-debugWatchStep 1`, for staging the step without a paired watch. Ahead of everything below so
+        // `-debugOnboardingSlide 3` lands straight on it.
         if UserDefaults.standard.bool(forKey: "debugWatchStep") {
             includesWatchStep = true
             return
         }
         #endif
-        guard currentTab < Self.watchTab else { return }
-        includesWatchStep = watchLink.isPaired && !watchLink.isWatchAppInstalled
+        watchSettle?.cancel()
+        guard watchLink.isPaired, !watchLink.isWatchAppInstalled else {
+            setWatchStep(false)     // a correction is believed at once
+            return
+        }
+        // Adding waits: see `watchSettleSeconds`.
+        watchSettle = Task {
+            try? await Task.sleep(for: .seconds(Self.watchSettleSeconds))
+            guard !Task.isCancelled,
+                  watchLink.isPaired, !watchLink.isWatchAppInstalled else { return }
+            setWatchStep(true)
+        }
+    }
+    
+    /// ADDING and REMOVING the step are not symmetric.
+    ///
+    /// Adding renumbers sign-in from tag 3 to tag 4, so it may only happen while the step is still ahead of
+    /// the person — otherwise someone reading the sign-in page would find a watch prompt in its place.
+    ///
+    /// Removing is always allowed, including while the step is on screen. If the watch app finishes
+    /// installing while they are looking at a page that says it has not, the page is now a lie, and moving
+    /// them on is the honest outcome: removal can only ever carry them FORWARD onto sign-in, which is where
+    /// this step was leading anyway. `currentTab` is clamped because tag 4 stops existing.
+    private func setWatchStep(_ wanted: Bool) {
+        guard wanted != includesWatchStep else { return }
+        if wanted {
+            guard currentTab < Self.watchTab else { return }
+            includesWatchStep = true
+        } else {
+            includesWatchStep = false
+            if currentTab > Self.watchTab { currentTab = Self.watchTab }
+        }
     }
     
     // MARK: - Top: progress and language
@@ -440,8 +474,8 @@ private struct SyncSlide: View {
     }
 }
 
-/// Offered only when a watch is paired and iPrayer is not on it. iOS installs an embedded watch app
-/// automatically unless the person turned that off, so this is the case where they did, or where it failed.
+/// Offered only when a watch is paired and iPrayer is not on it — after that has held for a few seconds,
+/// because an over-the-air install reports "not installed" for its whole duration.
 /// Every string here is one Settings already uses, so this step added no new translation keys.
 private struct WatchSlide: View {
     let shown: Bool
@@ -507,6 +541,9 @@ private struct PermissionSlide: View {
                         .font(.custom("AvenirNext-DemiBold", size: 12))
                         .foregroundColor(.white.opacity(0.85))
                         .lineLimit(1)
+                        // Three capsules is the widest this row gets, and the paddings do not scale with
+                        // Dynamic Type while the text does. Shrink rather than truncate a translation.
+                        .minimumScaleFactor(0.75)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .glassEffect(.regular, in: .capsule)

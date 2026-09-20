@@ -104,7 +104,7 @@ Debug builds accept these arguments to open a specific screen, which helps with 
 | `-debugOpenSurah 18 -debugOpenVerse 40` | Opens that surah in the reader, optionally at a verse |
 | `-debugOnboardingSlide 2` | Starts onboarding on that slide |
 | `-debugShowWhatsNew 1` | Forces the What's New sheet |
-| `-debugWatchStep 1` | Forces onboarding's Apple Watch step, which a Simulator cannot stage |
+| `-debugWatchStep 1` | Forces onboarding's Apple Watch step without a paired watch |
 | `-debugSpinCompass 1` | Turns the compass at 30 Hz, reporting a deliberately poor 25° accuracy |
 | `-debugAudioBaseURL https://unreachable.invalid` | Makes every verse fail, to test offline handling |
 | `-appLanguage ar` / `-userName "Name"` | Any UserDefaults key can be overridden for one run |
