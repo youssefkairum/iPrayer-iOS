@@ -140,6 +140,10 @@ struct DuaLibraryView: View {
     }
     
     private var categoryChips: some View {
+        // See TasbihView.dhikrChips: a horizontal ScrollView opens at offset 0, the LEFT edge whatever the
+        // layout direction, so in Arabic the selected chip — "الكل" by default — started off-screen and the
+        // row read as though nothing was chosen.
+        ScrollViewReader { proxy in
         ScrollView(.horizontal, showsIndicators: false) {
             // Liquid Glass: the container lets neighbouring chips blend as they pass each other
             GlassEffectContainer(spacing: 8) {
@@ -147,10 +151,12 @@ struct DuaLibraryView: View {
                     chip(title: AppTranslations.translate("All", to: appLanguage), selected: selectedCategory == nil) {
                         selectedCategory = nil
                     }
+                    .id(Self.allChipID)
                     ForEach(data.categories, id: \.self) { category in
                         chip(title: AppTranslations.translate(category, to: appLanguage), selected: selectedCategory == category) {
                             selectedCategory = selectedCategory == category ? nil : category
                         }
+                        .id(category)
                     }
                 }
             }
@@ -158,7 +164,15 @@ struct DuaLibraryView: View {
             .padding(.vertical, 6)
         }
         .padding(.top, 6)
+        .onAppear {
+            // One run-loop turn: the row has to be laid out before it can be scrolled.
+            DispatchQueue.main.async { proxy.scrollTo(selectedCategory ?? Self.allChipID, anchor: .center) }
+        }
+        }
     }
+    
+    /// Identity for the "All" chip, which has no category of its own to be identified by.
+    private static let allChipID = "__all__"
     
     private func chip(title: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button {
