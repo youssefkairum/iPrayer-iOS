@@ -94,7 +94,9 @@ iPrayer/
     SurahDetailView.swift     reader screen: text size/theme/reciter/download menu, verse action bar, playback bar
     MushafTextView.swift      UITextView-based reader: page-by-page loading, highlights, resume, auto-follow
     OnboardingView.swift      one scaffold (progress capsules, language menu, fixed-height controls that crossfade)
-                              + 4 slides that animate in once; fresh installs start in the phone's language
+                              + 4 slides that animate in once, plus a conditional 5th (Apple Watch) at tag 3
+                              which makes sign-in's tag computed, not fixed; fresh installs start in the
+                              phone's language
     WhatsNewView.swift        four sections (Quran / Every day / Everywhere / Look and feel), prayer-coloured
                               tiles, contentVersion gate; `-debugShowWhatsNew 1` forces it
     TasbihView.swift          Dhikr chips (6 phrases, `tasbihDhikr` key), target chips, position-in-cycle count,
@@ -249,6 +251,29 @@ must follow the *in-app* language (notifications, some labels) goes through
   registered "en" default makes `string(forKey:)` look chosen on a brand-new install.
 - **Onboarding controls have a fixed height (104 pt) and crossfade**; slides animate in once and never out.
   Anything else made the features -> location page change feel rough.
+- **An RTL string that opens with a Latin word flips the WHOLE paragraph to left-to-right.** Unicode bidi
+  P2/P3 takes a paragraph's direction from its first STRONG character, skipping isolates — so
+  `"iPrayer غير مثبّت..."` is laid out LTR and its clauses land in the wrong order on screen. This is the
+  same trap App Store Connect sprang on the Arabic description, and it was live in the shipped app: the
+  Apple Watch card's message and the Urdu location, "Tap to open" and "More in iCloud" strings all flipped.
+  Fix: wrap Latin runs in a first-strong isolate, `\u{2068}…\u{2069}`, which is what the Home card's time
+  and the copyright line already do. **Wrap a whole PHRASE in one isolate, never word by word** — separate
+  isolates are placed as separate RTL units, so `⁨Liquid⁩ ⁨Glass⁩` renders "Glass Liquid".
+  Check it by taking each `ar`/`ur` value's first strong character (skipping isolate runs) and flagging any
+  that is `L`; ignore values that are entirely English, which are a missing translation, not a direction bug.
+- **The onboarding's Apple Watch step ADDS and REMOVES itself asymmetrically (PR #25).** It appears only when a
+  watch is paired and iPrayer is not on it — the same condition as the Settings card — which makes the
+  step count 5 instead of 4 and pushes sign-in from tag 3 to tag 4. `WCSession` activates at launch and
+  answers ASYNCHRONOUSLY, so the answer lands while onboarding is already on screen, and the two
+  directions need opposite rules. ADDING may only happen while `currentTab < watchTab`, or someone
+  reading the sign-in page would find a watch prompt in its place. REMOVING is always allowed, even with
+  the step on screen, and clamps `currentTab`: it can only carry them forward onto sign-in, which is
+  where the step was leading anyway.
+  The trap underneath it: iOS installs an embedded watch app OVER THE AIR, and `isWatchAppInstalled` is
+  false for the whole transfer. Read raw, the flag says "not installed" loudest for exactly the people
+  who left automatic install ON and are about to have it — the opposite of who the step is for. So the
+  positive must HOLD for `watchSettleSeconds` before it counts, while a correction is believed at once.
+  Anything else keyed off an async capability check needs the same asymmetry.
 - **Onboarding entrance timing (PR #17, merged).** The onboarding sits under the splash from launch, so
   its welcome slide used to play its entrance unseen and then "pop" when the splash faded. Now `AppEntrance.splashDismissed`
   is set when the splash starts fading, the welcome slide waits for it, and the onboarding settles in from 0.94 scale
@@ -338,7 +363,9 @@ xcrun simctl io <sim> screenshot --type=png out.png       # captures no status b
 
 **Debug-only launch arguments** (compiled out of Release):
 `-debugInitialTab quran|tasbih|qibla|settings` · `-debugOpenSurah N` · `-debugOpenVerse N` ·
-`-debugOnboardingSlide N` · `-debugShowWhatsNew 1` · `-debugSpinCompass 1` (turns the compass at 30 Hz and
+`-debugOnboardingSlide N` · `-debugShowWhatsNew 1` · `-debugWatchStep 1` (forces onboarding's Apple Watch
+step without a paired watch; the REAL condition is reachable on a Simulator too — see the Apple Watch note
+below) · `-debugSpinCompass 1` (turns the compass at 30 Hz and
 reports a deliberately POOR 25° accuracy, since the simulator has no magnetometer; change the timer interval
 to rehearse a slow aim, which is the case that used to be silent) · `-debugAudioBaseURL https://unreachable.invalid`
 (fails every verse, to test offline handling). Any UserDefaults key can also be overridden for one run,
@@ -351,10 +378,15 @@ Fresh-install-in-Arabic test: `simctl uninstall`, install, then launch with
 the app think it is an update otherwise). `-tasbihCount 47` seeds the Tasbih. If `xcodebuild` says the build
 database is locked, Xcode is building at the same time: wait and retry.
 
-**Apple Watch:** no watchOS simulator runtime is installed on this Mac (`xcrun simctl list runtimes` shows none),
-only the watchOS 27 SDK, so the watch targets BUILD (as part of the iPhone scheme) but have never RUN. Install a
-watchOS runtime in Xcode > Settings > Components, pair a watch simulator with the iPhone 17 one, then run the
-`iPrayerWatch` scheme (Xcode autocreates it). On a real watch, WatchConnectivity needs the phone app opened once.
+**Apple Watch:** the watchOS 27.0 runtime IS installed and three pairs already exist — `xcrun simctl list pairs`
+shows the iPhone 17 sim paired with an Apple Watch Ultra 4. (This paragraph used to say no runtime existed;
+it was stale.) Run the `iPrayerWatch` scheme (Xcode autocreates it) with both booted. On a real watch,
+WatchConnectivity needs the phone app opened once.
+**Staging `paired && !installed`,** which the onboarding watch step and the Settings card both need: boot the
+iPhone and its paired watch, then confirm the watch app is absent with
+`xcrun simctl get_app_container <watch-udid> youssefkairum.iPrayer.watchkitapp app` (it errors when not
+installed). That is the state a fresh simulator is already in, so the real branch — not just
+`-debugWatchStep 1` — can be exercised.
 
 **Simulator quirks learned the hard way**
 - The iOS Simulator MCP tool (`attach`/`tap`/`swipe`/`text`) works, but each call takes ~25 s to return.
@@ -385,7 +417,9 @@ watchOS runtime in Xcode > Settings > Components, pair a watch simulator with th
 
 **Verification tooling in the scratchpad (recreate if needed):** a Swift CoreText script that shapes
 every verse with the bundled font and counts placeholder glyphs / fallback fonts — rerun it if the
-encoder or the font changes.
+encoder or the font changes. And a Python bidi audit over `AppTranslations.swift` that reports every `ar`
+and `ur` value whose first strong character is left-to-right (see the §3 rule) — rerun it whenever a
+translation is added, because the failure is invisible until someone who reads the language looks at it.
 
 ## 5. Verified vs not verified (as of 20 September 2026)
 
@@ -412,6 +446,19 @@ ratchet and the alignment chime both fire and that the dial tracks without lag �
 first fix was Simulator-verified only and was silent on the phone (§3). The tracker day reset, the Continue
 Reading position and the duplicate Live Activity were fixed and build-verified. The Swift 6 capture sweep
 (#23) is build-verified across all four targets with `SWIFT_STRICT_CONCURRENCY=complete`.
+
+Verified for the onboarding Apple Watch step on the iPhone 17 simulator, against its REAL trigger and not
+only the debug flag: with the paired Apple Watch Ultra 4 booted and the watch app absent from it, the step
+appears on its own and the progress row shows five dots. Also checked with `-debugWatchStep 1`: the slide,
+"Not now" advancing to sign-in, sign-in sitting fifth, Arabic and Urdu mirroring, and the four-step flow
+unchanged without a watch. NOT verified: the over-the-air install window on a real watch, which is what
+`watchSettleSeconds` exists for and which no Simulator reproduces, since its installs are instant.
+
+Verified for the RTL fix on the iPhone 17 simulator, by reading the rendered text rather than the source:
+the Apple Watch message and the location slide now open with their Latin word at the RIGHT (logical first)
+in both Arabic and Urdu, and "Available Apps" stays one unit. Before the fix the owner spotted that the
+Arabic "did not make sense" — the clauses were in the wrong order. NOT verified: the remaining un-isolated
+Latin runs in otherwise-correct RTL values, and the twelve Urdu entries still holding verbatim English.
 
 Verified for #24 on the iPhone 17 simulator: Settings > General is now App Language, App Version & Info,
 Rate iPrayer and Manage Notifications & Location, with nothing else; the Qibla status card carries no
@@ -465,7 +512,7 @@ Urdu/Hindi/Russian/Chinese (now including 39 duas and the onboarding, Tasbih, Qi
 **Known cosmetic**
 - What's New was rebuilt in PR #12 (merged via #15); still to check: the four sections at larger Dynamic Type.
 - Arabic hero card: the "at <time>" line is correct now (first-strong isolate); keep that pattern for any
-  new interpolated time strings.
+  new interpolated time string, and see the §3 bidi rule for why it matters beyond cosmetics.
 
 ## 7. Data and licensing
 

@@ -2,9 +2,12 @@
 //  OnboardingView.swift
 //  iPrayer
 //
-//  Four steps: welcome, what the app does, location (asked here, next to the reason, never at launch),
-//  and Sign in with Apple. One scaffold holds the progress, the language menu and the controls, so the
-//  pages only carry content and the buttons never jump between steps.
+//  Welcome, what the app does, location (asked here, next to the reason, never at launch), and Sign in
+//  with Apple. One scaffold holds the progress, the language menu and the controls, so the pages only
+//  carry content and the buttons never jump between steps.
+//
+//  A fifth step, offering to install the watch app, appears ONLY when a watch is paired and the app is not
+//  on it — the same condition as the Settings card. For everyone else the flow is the four it always was.
 //
 
 import SwiftUI
@@ -17,8 +20,23 @@ struct OnboardingView: View {
     @StateObject private var accountManager = AccountManager.shared
     @State private var currentTab = OnboardingView.initialSlide
     @ObservedObject private var entrance = AppEntrance.shared
+    @ObservedObject private var watchLink = PhoneWatchSync.shared
+    @Environment(\.openURL) private var openURL
+    /// Whether the watch step is part of this run. `WCSession` activates at launch and answers
+    /// asynchronously, so this arrives while onboarding is already on screen, and the two directions are
+    /// NOT symmetric — see `setWatchStep`.
+    @State private var includesWatchStep = false
+    /// Pending "not installed has held long enough to believe" check; cancelled whenever the state moves.
+    @State private var watchSettle: Task<Void, Never>?
     
-    private static let stepCount = 4
+    /// The watch step's index when it exists. Everything before it is fixed, so this is a constant.
+    private static let watchTab = 3
+    /// How long `paired && !installed` must HOLD before the step is added. iOS installs an embedded watch
+    /// app over the air, and `isWatchAppInstalled` is false for the whole transfer — so the raw flag says
+    /// "not installed" loudest for exactly the people who did nothing wrong and are about to have it.
+    private static let watchSettleSeconds: Double = 6
+    private var syncTab: Int { includesWatchStep ? 4 : 3 }
+    private var stepCount: Int { includesWatchStep ? 5 : 4 }
     
     private static var initialSlide: Int {
         #if DEBUG
@@ -48,7 +66,10 @@ struct OnboardingView: View {
                     WelcomeSlide(shown: entrance.splashDismissed).tag(0)
                     FeaturesSlide(shown: currentTab >= 1).tag(1)
                     LocationSlide(shown: currentTab >= 2).tag(2)
-                    SyncSlide(shown: currentTab >= 3).tag(3)
+                    if includesWatchStep {
+                        WatchSlide(shown: currentTab >= Self.watchTab).tag(Self.watchTab)
+                    }
+                    SyncSlide(shown: currentTab >= syncTab).tag(syncTab)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .onChange(of: currentTab) { _, _ in Haptics.selection() }
@@ -66,6 +87,53 @@ struct OnboardingView: View {
                 .padding(.bottom, 20)
             }
         }
+        .onAppear { refreshWatchStep() }
+        .onChange(of: watchLink.isPaired) { _, _ in refreshWatchStep() }
+        .onChange(of: watchLink.isWatchAppInstalled) { _, _ in refreshWatchStep() }
+        .onDisappear { watchSettle?.cancel() }
+    }
+    
+    private func refreshWatchStep() {
+        #if DEBUG
+        // `-debugWatchStep 1`, for staging the step without a paired watch. Ahead of everything below so
+        // `-debugOnboardingSlide 3` lands straight on it.
+        if UserDefaults.standard.bool(forKey: "debugWatchStep") {
+            includesWatchStep = true
+            return
+        }
+        #endif
+        watchSettle?.cancel()
+        guard watchLink.isPaired, !watchLink.isWatchAppInstalled else {
+            setWatchStep(false)     // a correction is believed at once
+            return
+        }
+        // Adding waits: see `watchSettleSeconds`.
+        watchSettle = Task {
+            try? await Task.sleep(for: .seconds(Self.watchSettleSeconds))
+            guard !Task.isCancelled,
+                  watchLink.isPaired, !watchLink.isWatchAppInstalled else { return }
+            setWatchStep(true)
+        }
+    }
+    
+    /// ADDING and REMOVING the step are not symmetric.
+    ///
+    /// Adding renumbers sign-in from tag 3 to tag 4, so it may only happen while the step is still ahead of
+    /// the person — otherwise someone reading the sign-in page would find a watch prompt in its place.
+    ///
+    /// Removing is always allowed, including while the step is on screen. If the watch app finishes
+    /// installing while they are looking at a page that says it has not, the page is now a lie, and moving
+    /// them on is the honest outcome: removal can only ever carry them FORWARD onto sign-in, which is where
+    /// this step was leading anyway. `currentTab` is clamped because tag 4 stops existing.
+    private func setWatchStep(_ wanted: Bool) {
+        guard wanted != includesWatchStep else { return }
+        if wanted {
+            guard currentTab < Self.watchTab else { return }
+            includesWatchStep = true
+        } else {
+            includesWatchStep = false
+            if currentTab > Self.watchTab { currentTab = Self.watchTab }
+        }
     }
     
     // MARK: - Top: progress and language
@@ -74,7 +142,7 @@ struct OnboardingView: View {
         HStack(alignment: .center) {
             // Step progress: the current step is the long capsule
             HStack(spacing: 6) {
-                ForEach(0..<Self.stepCount, id: \.self) { step in
+                ForEach(0..<stepCount, id: \.self) { step in
                     Capsule()
                         .fill(step == currentTab ? Color.teal : Color.white.opacity(step < currentTab ? 0.5 : 0.18))
                         .frame(width: step == currentTab ? 26 : 8, height: 8)
@@ -134,6 +202,16 @@ struct OnboardingView: View {
                     secondaryButton(AppTranslations.translate("Not now", to: appLanguage)) { advance() }
                 }
             }
+        case Self.watchTab where includesWatchStep:
+            VStack(spacing: 12) {
+                // Advances before leaving, as the location step does, so coming back from the Watch app
+                // lands on sign-in rather than on a prompt that has already been answered.
+                primaryButton(AppTranslations.translate("Open the Watch app", to: appLanguage)) {
+                    if let url = URL(string: "itms-watchs://") { openURL(url) }
+                    advance()
+                }
+                secondaryButton(AppTranslations.translate("Not now", to: appLanguage)) { advance() }
+            }
         default:
             VStack(spacing: 12) {
                 SignInWithAppleButton(.signIn) { request in
@@ -177,7 +255,7 @@ struct OnboardingView: View {
     
     private func advance() {
         withAnimation(.easeInOut(duration: 0.35)) {
-            currentTab = min(currentTab + 1, Self.stepCount - 1)
+            currentTab = min(currentTab + 1, stepCount - 1)
         }
     }
     
@@ -396,6 +474,29 @@ private struct SyncSlide: View {
     }
 }
 
+/// Offered only when a watch is paired and iPrayer is not on it — after that has held for a few seconds,
+/// because an over-the-air install reports "not installed" for its whole duration.
+/// Every string here is one Settings already uses, so this step added no new translation keys.
+private struct WatchSlide: View {
+    let shown: Bool
+    @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
+    
+    var body: some View {
+        PermissionSlide(
+            shown: shown,
+            icon: "applewatch",
+            tint: .mint,
+            title: "Apple Watch",
+            message: AppTranslations.translate("iPrayer isn't on your Apple Watch yet. Install it from the Watch app, under Available Apps.", to: appLanguage),
+            points: [
+                ("clock.fill", AppTranslations.translate("Prayer Times", to: appLanguage)),
+                ("circle.grid.cross.fill", AppTranslations.translate("Tasbih", to: appLanguage)),
+                ("safari.fill", AppTranslations.translate("Qibla", to: appLanguage))
+            ]
+        )
+    }
+}
+
 /// Icon in a glass disc, a title, one explaining sentence, and a short list of what it covers
 private struct PermissionSlide: View {
     let shown: Bool
@@ -440,6 +541,9 @@ private struct PermissionSlide: View {
                         .font(.custom("AvenirNext-DemiBold", size: 12))
                         .foregroundColor(.white.opacity(0.85))
                         .lineLimit(1)
+                        // Three capsules is the widest this row gets, and the paddings do not scale with
+                        // Dynamic Type while the text does. Shrink rather than truncate a translation.
+                        .minimumScaleFactor(0.75)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .glassEffect(.regular, in: .capsule)
