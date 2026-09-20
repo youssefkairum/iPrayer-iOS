@@ -45,7 +45,7 @@ athan,azan,adhan,salah,salat,namaz,muslim,islamic,tasbih,dhikr,dua,ramadan,hijri
 iPrayer is your complete Islamic companion: accurate prayer times, the full Quran with recitation, a Qibla compass, a Tasbih counter and daily duas, all in one beautifully designed app. Free, with no ads and no account required.
 
 PRAYER TIMES AND ADHAN
-• Accurate salah times for your location, worldwide, using ten calculation methods (Muslim World League, Umm Al-Qura, Egyptian, ISNA, Karachi and more) and both Asr madhabs
+• Accurate salah times for your location, worldwide, using eleven calculation methods (Muslim World League, Umm Al-Qura, Egyptian, ISNA, Karachi and more) and both Asr madhabs
 • Adhan notifications for Fajr, Dhuhr, Asr, Maghrib and Isha, with an optional reminder before each prayer
 • A countdown to the next prayer, the Hijri date, and tomorrow's times at a glance
 • Live Activities and Dynamic Island keep the next prayer on your Lock Screen
@@ -126,7 +126,7 @@ Whether you are looking for athan times, a Quran app with audio, a Qibla finder 
 رفيقك الإسلامي المتكامل iPrayer: مواقيت صلاة دقيقة، والقرآن الكريم كاملاً مع التلاوة، وبوصلة القبلة، وعدّاد التسبيح، والأدعية اليومية، في تطبيق واحد بتصميم أنيق. مجاني، بلا إعلانات، ولا يحتاج إلى حساب.
 
 مواقيت الصلاة والأذان
-• مواقيت دقيقة لموقعك في أي مكان في العالم، بعشر طرق حساب (رابطة العالم الإسلامي، أم القرى، الهيئة المصرية، ISNA، كراتشي وغيرها) ومذهبي العصر
+• مواقيت دقيقة لموقعك في أي مكان في العالم، بإحدى عشرة طريقة حساب (رابطة العالم الإسلامي، أم القرى، الهيئة المصرية، ISNA، كراتشي وغيرها) ومذهبي العصر
 • إشعارات الأذان للفجر والظهر والعصر والمغرب والعشاء، مع تذكير اختياري قبل كل صلاة
 • عدّ تنازلي للصلاة القادمة، والتاريخ الهجري، ومواقيت الغد في نظرة
 • الصلاة القادمة تبقى على شاشة القفل مع Live Activities وDynamic Island

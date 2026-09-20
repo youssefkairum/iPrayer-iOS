@@ -1,6 +1,7 @@
 # iPrayer — Handoff Notes
 
-Written 18 September 2026; updated 19 September 2026 after the post-release round (PRs #7 to #14). This is the context a future session
+Written 18 September 2026; updated 20 September 2026, after the compass device round (#22) and the Swift 6
+capture sweep (#23). Everything through PR #23 is merged to `main`. This is the context a future session
 needs that is *not* obvious from the code: where things stand, why decisions were made, how to test,
 and what is still open. The README describes the product; this describes the work.
 
@@ -8,8 +9,11 @@ and what is still open. The README describes the product; this describes the wor
 
 ## 1. Where things stand
 
-- **Version:** 1.1.0, build 7 (App Store has 1.0). Deployment target iOS 26.0, Xcode 27, Swift 6.2 mode with
-  `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and approachable concurrency on the app target.
+- **Version:** 1.1.0, build 7 (App Store has 1.0). Deployment target iOS 26.0 (watchOS 10.0 on the watch
+  targets), Xcode 27. The Swift 6.2 *toolchain*, but still the Swift 5 *language mode*
+  (`SWIFT_VERSION = 5.0` in all eight configurations) — which is why the capture rule below is a warning
+  and not yet an error. `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and approachable concurrency are on for
+  the app target.
 - **Repo:** `youssefkairum/iPrayer-iOS` on GitHub (renamed from `iPrayer`; the local remote points at the
   new name). `gh` is logged in as `youssefkairum` (a second account, `brentwelldigital`, is also present).
   `gh` lives in `~/.local/bin`, which `~/.zshrc` now adds to PATH.
@@ -49,17 +53,19 @@ and what is still open. The README describes the product; this describes the wor
 - **20 September 2026, bug and polish round — ALL MERGED to `main`.** PR #20: the tracker carrying yesterday's
   ticks into a new day, Continue Reading resuming one verse early, a stale Live Activity for the previous prayer
   staying on the Lock Screen. PR #21: the Qibla dial made rigid (one curve for rose and needle), detent haptics
-  as the phone turns, and the animated background pattern rasterised (~12% CPU to ~5%). Build 6, archived as
-  `iPrayer 1.1.0 (6).xcarchive`; the stale 4 and 5 archives were deleted. No branch or PR is open.
+  as the phone turns, and the animated background pattern rasterised (~12% CPU to ~5%). Build 6, archived at the time as
+  `iPrayer 1.1.0 (6).xcarchive`; that archive, and the stale 4 and 5, have since been deleted. No branch or
+  PR is open.
   The three §3 bullets on tracker ordering, the one-curve dial and the ratchet must not be undone.
 - **20 September 2026:** the owner's post-release notes were fixed and merged: #17 splash → onboarding hand-off and
   reliable slide entrances, #18 Qibla heading accuracy, #19 reader (TextKit 2, line spacing, green resume mark,
-  Arabic references). Build bumped to 5 and a fresh archive filed as `iPrayer 1.1.0 (5).xcarchive` in the same
-  Archives folder; that is the one to upload. `main` is again the complete state with no open PR or branch.
-  A Release archive of `main` (1.1.0 build 4, widget + watch app + complication embedded, development-signed; Xcode
-  re-signs for distribution on upload) was built with `xcodebuild archive` and filed in
-  `~/Library/Developer/Xcode/Archives/2026-09-19/iPrayer 1.1.0 (4).xcarchive`, so Organizer can upload it directly.
-  **Next (owner only): Organizer > Distribute App on the 1.1.0 (6) archive, paste `docs/AppStoreRelease.md`
+  Arabic references). Build was bumped to 5 for that round. `main` is again the complete state with no open
+  PR or branch.
+- **Archives.** Release archives are built with `xcodebuild archive` (widget + watch app + complication
+  embedded, development-signed; Xcode re-signs for distribution on upload). Keep exactly ONE current: each
+  new build's archive supersedes the last, and 4, 5 and 6 were deleted in turn. The only 1.1.0 archive on
+  disk is `~/Library/Developer/Xcode/Archives/2026-09-20/iPrayer 1.1.0 (7).xcarchive`.
+  **Next (owner only): Organizer > Distribute App on that 1.1.0 (7) archive, paste `docs/AppStoreRelease.md`
   into App Store Connect with `docs/screenshots/`, submit; device pass in section 6; the EveryAyah email.**
 
 ## 2. Map of the code
@@ -109,8 +115,10 @@ iPrayer/
     ZipArchive.swift          minimal ZIP reader (stored + deflate, CRC-checked)
     Haptics.swift             tap / soft / rigid / selection / success / warning, used everywhere
     DeepLinks.swift           DeepLinkRouter: iprayer://verse/S/A -> Quran tab pushes the reader
-  Models/DuaLibraryData.swift 50 duas with sources; duaOfTheDay(); displayArabic swaps the Arabic comma
     UserDefaultsKeys.swift    UDKey enum — every persisted key
+  Models/DuaLibraryData.swift 50 duas with sources; duaOfTheDay(); displayArabic swaps the Arabic comma
+    HomeWidgetsData.swift     tracker + streak + the App Group payload the widgets and watch read
+    QuranModel.swift          Surah / Ayah / SurahMetadata
   Localizable.xcstrings       String Catalog (Text literals); InfoPlist.xcstrings localises the location prompt
   quran-uthmani.json          Tanzil Uthmani text, slimmed to number/text/numberInSurah/page/juz (1.76 MB)
   adhan.caf                   IMA4 notification sound (mp3 is ignored by iOS)
@@ -231,7 +239,7 @@ must follow the *in-app* language (notifications, some labels) goes through
   registered "en" default makes `string(forKey:)` look chosen on a brand-new install.
 - **Onboarding controls have a fixed height (104 pt) and crossfade**; slides animate in once and never out.
   Anything else made the features -> location page change feel rough.
-- **Onboarding entrance timing (branch `onboarding-entrance`).** The onboarding sits under the splash from launch, so
+- **Onboarding entrance timing (PR #17, merged).** The onboarding sits under the splash from launch, so
   its welcome slide used to play its entrance unseen and then "pop" when the splash faded. Now `AppEntrance.splashDismissed`
   is set when the splash starts fading, the welcome slide waits for it, and the onboarding settles in from 0.94 scale
   like the main app. Each slide also gates its entrance on an `appeared` state set one run-loop turn after its first
@@ -280,7 +288,7 @@ must follow the *in-app* language (notifications, some labels) goes through
   the Qibla tab against 0% on tabs without it. `.drawingGroup()` rasterises it once and halves that, with no
   visible change. Anything else long-lived and animated on those screens pays the same tax, so measure before
   adding one. Note the radar sweep was measured and is NOT the cost.
-- **Qibla heading accuracy (branch `qibla-accuracy`).** The bearing is a great-circle computation (Adhan `Qibla`), exact
+- **Qibla heading accuracy (PR #18, merged).** The bearing is a great-circle computation (Adhan `Qibla`), exact
   for any location fix; all error is in the heading. True heading is preferred (declination-corrected; needs a location
   fix, which the app has), magnetic is the fallback. `headingOrientation` follows the device orientation while the
   compass is on (portrait-only headings put north 90° off on a sideways iPad). The delegate now allows iOS's figure-8
@@ -360,7 +368,7 @@ watchOS runtime in Xcode > Settings > Components, pair a watch simulator with th
 every verse with the bundled font and counts placeholder glyphs / fallback fonts — rerun it if the
 encoder or the font changes.
 
-## 5. Verified vs not verified (as of this handoff)
+## 5. Verified vs not verified (as of 20 September 2026)
 
 Verified on the iPhone 17 simulator (screenshots + logs): every tab, onboarding incl. the real location
 prompt, What's New for update vs fresh install, Home layout with and without a signed-in name (incl. a long
@@ -376,9 +384,15 @@ reader), string tables per language.
 Verified on the owner's iPhone: storage manager (after the /private/var path fix), About and Duas library.
 
 Verified by the owner: the Apple Watch app runs (the PR #6 version; #14 is build-verified only).
-Verified on the simulator for the open PRs: onboarding (all four slides, English and Arabic, fresh install
+Verified on the simulator for #17 to #19: onboarding (all four slides, English and Arabic, fresh install
 in the phone's language, stable page change), Tasbih (seeded count), Qibla (Cairo bearing 136°), copyright
 line in Arabic on the splash, What's New (Arabic), the iPad reader at 14 pt loading through page 8.
+
+Verified for #20 to #23 (20 September 2026): the owner confirmed on their own iPhone that the compass detent
+ratchet and the alignment chime both fire and that the dial tracks without lag — on the second attempt; the
+first fix was Simulator-verified only and was silent on the phone (§3). The tracker day reset, the Continue
+Reading position and the duplicate Live Activity were fixed and build-verified. The Swift 6 capture sweep
+(#23) is build-verified across all four targets with `SWIFT_STRICT_CONCURRENCY=complete`.
 
 Not verified: PR #7's tracker fix across a real midnight on two devices (reasoned + built only) · the Today's
 Prayers widget rendered anywhere · the watch complications on a watch face · the watch background refresh
@@ -393,7 +407,7 @@ Urdu/Hindi/Russian/Chinese (now including 39 duas and the onboarding, Tasbih, Qi
 ## 6. Open items
 
 **Compliance / release**
-- Account deletion (guideline 5.1.1 v): DONE (`account-deletion` branch): Settings > Account has "Sign out and
+- Account deletion (guideline 5.1.1 v): DONE (PR #16, merged, branch deleted): Settings > Account has "Sign out and
   delete my data" behind an alert; `AccountManager.deleteAccount` calls `CloudSyncManager.eraseCloudData` (removes
   every synced key from KVS, stops syncing) then `logout()`. On-device data is kept on purpose (deleting the app
   removes it). The Sign in with Apple grant cannot be revoked without a server (the REST revoke endpoint needs a
@@ -424,7 +438,7 @@ Urdu/Hindi/Russian/Chinese (now including 39 duas and the onboarding, Tasbih, Qi
   local adhan notifications on the watch (phone notifications already mirror to it).
 
 **Known cosmetic**
-- What's New was rebuilt in PR #12; check the four sections at larger Dynamic Type once merged.
+- What's New was rebuilt in PR #12 (merged via #15); still to check: the four sections at larger Dynamic Type.
 - Arabic hero card: the "at <time>" line is correct now (first-strong isolate); keep that pattern for any
   new interpolated time strings.
 

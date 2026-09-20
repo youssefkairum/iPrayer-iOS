@@ -26,6 +26,7 @@ Prayer times, the Quran text, Duas and the Tasbih all work offline. The network 
 
 ### 📱 Widgets & Live Activity
 - **Next Prayer Widgets:** Small and medium Home Screen widgets plus inline, circular and rectangular Lock Screen widgets showing the next prayer.
+- **Today's Prayers Widget:** Medium and large Home Screen widgets showing all six of today's times in each prayer's colour, with passed prayers dimmed and the next one highlighted.
 - **Verse of the Day Widgets:** Medium and large Home Screen widgets and rectangular and inline Lock Screen widgets with the day's verse in the Quran font. Tapping opens the verse in the reader.
 - **Self-Sufficient:** The widget computes its own timeline with Adhan from settings shared through an App Group, so it stays correct without opening the app.
 - **Live Activity & Dynamic Island:** A countdown to the next prayer that switches to "Now" when the time arrives.
@@ -54,7 +55,7 @@ Prayer times, the Quran text, Duas and the Tasbih all work offline. The network 
 
 ### 🧭 Qibla Compass
 - **Real-Time Tracking:** Uses the device heading and your coordinates to point towards the Kaaba.
-- **Visual & Haptic Feedback:** The dial glows and the phone taps when you are within 5 degrees of the Qibla.
+- **Visual & Haptic Feedback:** The dial clicks like a physical detent as you turn, and glows with a confirming tap when you settle within 5 degrees of the Qibla.
 - **Accuracy:** True-north heading corrected for the device's orientation, iOS's figure-8 calibration prompt when the magnetometer needs it, and an in-app hint while the heading error is above 15°. Devices without a compass still get the bearing and distance.
 
 ### 📿 Digital Tasbih
@@ -87,10 +88,10 @@ Prayer times, the Quran text, Duas and the Tasbih all work offline. The network 
 
 ## 🚀 Getting Started
 
-**Requirements:** Xcode 26 or later, iOS 26.0 or later.
+**Requirements:** Xcode 27 (26 may work for the iPhone targets), iOS 26.0 or later, watchOS 10.0 or later for the Apple Watch app.
 
 1. Clone the repository and open `iPrayer.xcodeproj`. Swift Package Manager resolves Adhan automatically.
-2. Select your own development team for both targets, `iPrayer` and `iPrayerWidgetExtension`.
+2. Select your own development team for all four targets: `iPrayer`, `iPrayerWidgetExtension`, `iPrayerWatch` and `iPrayerWatchWidgetExtension`.
 3. The app uses these capabilities, which must exist for your team: **App Groups** (`group.iPrayer.shared`), **iCloud key-value storage**, **Sign in with Apple**, and **Background Modes** (background fetch).
 4. Build and run the `iPrayer` scheme. In the Simulator, set a location under *Features > Location* so prayer times can be calculated.
 
@@ -102,6 +103,9 @@ Debug builds accept these arguments to open a specific screen, which helps with 
 | `-debugInitialTab quran` | Starts on a tab: `quran`, `tasbih`, `qibla` or `settings` |
 | `-debugOpenSurah 18 -debugOpenVerse 40` | Opens that surah in the reader, optionally at a verse |
 | `-debugOnboardingSlide 2` | Starts onboarding on that slide |
+| `-debugShowWhatsNew 1` | Forces the What's New sheet |
+| `-debugSpinCompass 1` | Turns the compass at 30 Hz, reporting a deliberately poor 25° accuracy |
+| `-debugAudioBaseURL https://unreachable.invalid` | Makes every verse fail, to test offline handling |
 | `-appLanguage ar` / `-userName "Name"` | Any UserDefaults key can be overridden for one run |
 
 Deep link: `iprayer://verse/2/255` opens the reader at a verse (used by the Verse of the Day widget).
@@ -176,6 +180,7 @@ iPrayer/
 
 iPrayerWidget/
 ├── iPrayerWidget.swift            # Next-prayer Home Screen and Lock Screen widgets
+├── TodayPrayersWidget.swift       # Today's six prayer times, medium and large
 ├── VerseOfTheDayWidget.swift      # Verse of the Day Home Screen and Lock Screen widgets
 ├── iPrayerWidgetLiveActivity.swift
 └── iPrayerWidgetBundle.swift
