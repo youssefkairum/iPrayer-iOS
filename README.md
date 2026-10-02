@@ -37,6 +37,12 @@ Prayer times, the Quran text, Duas and the Tasbih all work offline. The network 
 - **Complications:** Circular, corner, rectangular and inline watch-face complications showing the next prayer.
 - **Two-Way Sync:** Settings, language and location flow to the watch; Tasbih and tracker changes made on the wrist flow back to the phone and on to iCloud.
 
+### 🗣 Siri & Shortcuts
+- **Ask Siri:** "When is the next prayer in iPrayer", "When is Maghrib in iPrayer" and "Which way is the Qibla in iPrayer" are answered on the spot, without opening the app.
+- **Open by Voice:** "Open the Qibla compass in iPrayer", "Continue reading the Quran in iPrayer" (back to your last verse) and "Open Tasbih in iPrayer".
+- **No Setup:** The six shortcuts appear in the Shortcuts app and Spotlight as soon as the app is installed, with a tile for each prayer.
+- **Languages:** Spoken phrases in English, Arabic, French, German, Turkish, Russian and Chinese; titles and answers in all nine app languages. Siri itself does not offer Urdu or Hindi, so those two get the shortcuts and the answers but not the voice phrases.
+
 ### 📖 The Holy Quran
 - **Fully Offline:** All 114 surahs are bundled with the app. No network is needed.
 - **Faithful Rendering:** Uthmani text drawn with the KFGQPC Hafs font. Recitation signs are re-encoded for the font at display time, so pause marks, open tanween, iqlab and silent-letter marks all appear. The mapping is verified against all 6,236 verses.
@@ -92,7 +98,7 @@ Prayer times, the Quran text, Duas and the Tasbih all work offline. The network 
 
 1. Clone the repository and open `iPrayer.xcodeproj`. Swift Package Manager resolves Adhan automatically.
 2. Select your own development team for all four targets: `iPrayer`, `iPrayerWidgetExtension`, `iPrayerWatch` and `iPrayerWatchWidgetExtension`.
-3. The app uses these capabilities, which must exist for your team: **App Groups** (`group.iPrayer.shared`), **iCloud key-value storage**, **Sign in with Apple**, and **Background Modes** (background fetch).
+3. The app uses these capabilities, which must exist for your team: **App Groups** (`group.iPrayer.shared`), **iCloud key-value storage**, **Sign in with Apple**, and **Background Modes** (audio, background fetch).
 4. Build and run the `iPrayer` scheme. In the Simulator, set a location under *Features > Location* so prayer times can be calculated.
 
 ### Debug launch arguments
@@ -108,9 +114,11 @@ Debug builds accept these arguments to open a specific screen, which helps with 
 | `-debugSpinCompass 1` | Turns the compass at 30 Hz, reporting a deliberately poor 25° accuracy. Works on the watch too |
 | `-debugHeadingAccuracy 5` | Overrides that 25°, to rehearse a well-calibrated phone |
 | `-debugAudioBaseURL https://unreachable.invalid` | Makes every verse fail, to test offline handling |
+| `-debugLogNotifications 1` | Logs each prayer notification's wanted time and the time iOS will fire it (`[Notify]` lines) |
+| `-debugSiriDialogs 1` | Logs every Siri answer in all nine languages (`[SiriDialog]` lines), plus what this device would say by default |
 | `-appLanguage ar` / `-userName "Name"` | Any UserDefaults key can be overridden for one run |
 
-Deep link: `iprayer://verse/2/255` opens the reader at a verse (used by the Verse of the Day widget).
+Deep links: `iprayer://verse/2/255` opens the reader at a verse (used by the Verse of the Day widget), and `iprayer://open/quran` switches to a tab (`prayers`, `quran`, `tasbih`, `qibla` or `settings`).
 
 ## 🎨 Design System
 Colors: The app uses a consistent Deep Blue/Teal gradient theme.
@@ -167,14 +175,18 @@ iPrayer/
 │   ├── CloudSyncManager.swift     # iCloud key-value sync
 │   ├── AccountManager.swift       # Sign in with Apple
 │   └── NotificationManager.swift  # Quran reminders
+├── Intents/
+│   └── PrayerIntents.swift        # Siri / Shortcuts: App Intents and the spoken phrases
 ├── Utilities/
 │   ├── QuranTextEncoder.swift     # Display re-encoding for the KFGQPC font
 │   ├── AppTranslations.swift
 │   ├── Haptics.swift
-│   ├── DeepLinks.swift            # iprayer://verse/S/A
+│   ├── DeepLinks.swift            # iprayer://verse/S/A and iprayer://open/<tab>
 │   ├── ZipArchive.swift
 │   └── UserDefaultsKeys.swift
 ├── Localizable.xcstrings
+├── AppShortcuts.xcstrings         # What Siri listens for, per Siri language
+├── AppIntents.xcstrings           # Shortcut titles and Siri's answers, per language
 ├── quran-uthmani.json             # Offline Quran text
 ├── surah-metadata.json
 ├── adhan.caf                      # Notification sound

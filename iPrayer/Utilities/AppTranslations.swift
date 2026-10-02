@@ -44,7 +44,8 @@ nonisolated struct AppTranslations {
     
     /// "© 2026 Youssef Keram. All rights reserved." in the app language. Right-to-left languages lead with
     /// the phrase: a Latin sentence followed by Arabic puts the Arabic full stop on the wrong side.
-    static func copyrightLine(language: String, year: Int = Calendar.current.component(.year, from: Date())) -> String {
+    /// The year is the GREGORIAN one whatever the device calendar: "© 1448" or "© 8" is not a copyright year.
+    static func copyrightLine(language: String, year: Int = Calendar(identifier: .gregorian).component(.year, from: Date())) -> String {
         let rights = translate("All rights reserved.", to: language)
         let owner = "\u{2068}© \(year) Youssef Keram\u{2069}"   // first-strong isolate keeps the Latin part together
         return ["ar", "ur"].contains(language) ? "\(rights) \(owner)" : "\(owner). \(rights)"

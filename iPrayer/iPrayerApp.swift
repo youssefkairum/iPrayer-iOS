@@ -125,6 +125,10 @@ struct iPrayerApp: App {
                 // Apple Watch link: settings and location down, Tasbih and tracker changes up
                 PhoneWatchSync.shared.activate()
                 
+                #if DEBUG
+                SiriDebug.logDialogsIfAsked()
+                #endif
+                
                 // MARK: - iCloud Auto-Sync
                 if accountManager.isLoggedIn {
                     CloudSyncManager.shared.startSyncing()
