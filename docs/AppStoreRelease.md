@@ -1,19 +1,19 @@
-# App Store release notes for 1.1.0 (build 13)
+# App Store release notes for 1.1.1 (build 14)
 
 The release-specific texts for App Store Connect, ready to paste: What's New, review notes, privacy answers
 and screenshots. The listing fields (subtitle, promotional text, keywords, description, and What's New as
 bullets, in English and Arabic) are in `docs/AppStoreListing.md`. Written 19 September 2026, updated
-2 October 2026 for build 13.
+3 October 2026 for 1.1.1 (14).
 
 ## Submission checklist
 
-1. DONE — everything is merged to `main` and 1.1.0 (13) is already archived at
-   `~/Library/Developer/Xcode/Archives/2026-10-02/iPrayer 1.1.0 (13).xcarchive`. Do NOT upload build 12:
+1. DONE — everything is merged to `main` and 1.1.1 (14) is already archived at
+   `~/Library/Developer/Xcode/Archives/2026-10-03/iPrayer 1.1.1 (14).xcarchive`. Build 13 is superseded. Do NOT upload build 12:
    it crashes at launch on phones set to the Hijri calendar. Only redo steps 1 and 2 if
    the code changes; otherwise try Siri on a real iPhone first (HANDOFF §6: say each phrase in English and
    Arabic), then start at step 3.
-2. DONE for build 13 — Product > Archive with the iPrayer scheme (the watch app and both widget extensions archive with it).
-3. Upload, then in App Store Connect: attach build 13 (Xcode's record shows a 1.1.0 build 3
+2. DONE for build 14 — Product > Archive with the iPrayer scheme (the watch app and both widget extensions archive with it).
+3. Upload, then in App Store Connect: attach build 14 under version 1.1.1 (Xcode's record shows a 1.1.0 build 3
    was uploaded on 18 September; if it is still listed, do not select it), paste the texts below, upload the screenshots from
    `docs/screenshots/`, answer the privacy questions as listed, and submit.
 4. Export compliance is already answered in the Info.plist (`ITSAppUsesNonExemptEncryption` = NO).

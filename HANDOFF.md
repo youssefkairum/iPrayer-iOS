@@ -1,7 +1,7 @@
 # iPrayer — Handoff Notes
 
-Written 18 September 2026; updated 2 October 2026, after Siri (#32) and the non-Gregorian calendar fix
-(#33). Everything through PR #33 is merged to `main`. This is the context a future session
+Written 18 September 2026; updated 3 October 2026, after Siri (#32), the non-Gregorian calendar fix (#33)
+and the language-consistency round (#34). Everything through PR #34 is merged to `main`. This is the context a future session
 needs that is *not* obvious from the code: where things stand, why decisions were made, how to test,
 and what is still open. The README describes the product; this describes the work.
 
@@ -9,7 +9,7 @@ and what is still open. The README describes the product; this describes the wor
 
 ## 1. Where things stand
 
-- **Version:** 1.1.0, build 13 (App Store has 1.0). Deployment target iOS 26.0 (watchOS 10.0 on the watch
+- **Version:** 1.1.1, build 14 (App Store has 1.0; a 1.1.0 build 3 was uploaded on 18 September, see Archives). Deployment target iOS 26.0 (watchOS 10.0 on the watch
   targets), Xcode 27. The Swift 6.4 *toolchain*, but still the Swift 5 *language mode*
   (`SWIFT_VERSION = 5.0` in all eight configurations) — which is why the capture rule below is a warning
   and not yet an error. `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and approachable concurrency are on for
@@ -106,7 +106,7 @@ and what is still open. The README describes the product; this describes the wor
   pre-prayer reminder was ever delivered, silently, because the notification triggers carried Gregorian
   numbers with no calendar and iOS read them in the device's (§3); (3) the copyright line said © 1448.
   Fixed in #33, with the Today's Prayers widget's reload date on the night the clocks go forward, which the
-  same audit turned up. Two things it found were NOT calendar bugs and were left for a separate change (§6).
+  same audit turned up. Two things it found were NOT calendar bugs and were left for a separate change: #34, below.
   Build 13.
 - **2 October 2026, Siri — MERGED (#32).** The owner asked for Siri
   "in the languages". Built as App Intents inside the app target: six shortcuts that need no setup (next
@@ -115,19 +115,38 @@ and what is still open. The README describes the product; this describes the wor
   `iprayer://open/<tab>` came with it. An adversarial review before the PR found three navigation bugs in
   the first version, all invisible on a cold launch, and two wrong answers around midnight (§3); all five
   are fixed and re-tested. Nobody has SPOKEN to it yet: that needs the owner's iPhone (§5, §6). Build 13.
+- **2–3 October 2026, language consistency — MERGED (#34).** These are the two bugs the
+  calendar audit found and left. Two places formatted with the DEVICE locale while the screen
+  around them was in the in-app language: the Qibla tab's distance (an Arabic phone with the app in
+  English showed "١٬٢٨٦ كم" on an English screen) and the watch's three clock times (with the app in
+  Arabic the page said "5:30AM" beside a complication saying "5:30 ص"). Both fixed; the rule is in §3.
+  Verifying it turned up two more things on the watch, fixed in the PR's second commit so it can be dropped
+  on its own: the watch's Qibla page had the same distance fault, and the Today list split a passed
+  prayer's time across two lines ("6:49A" / "M") in every language. On 3 October the owner asked for what
+  that round had found to be fixed too, and it is, one commit each: the Qibla tab's bearing and turn lines
+  read word-first in Arabic and Urdu (§3), and the watch's Today page no longer puts a tick on a passed
+  prayer, which is what cut "Sunrise" to "Sun…" on the 40mm. A review before the merge (3 October) added
+  three small things: the Qibla distance is rewritten when the language changes under a showing compass
+  (iCloud, or a second iPad window), the watch clock uses the complication's DateFormatter so the two agree
+  on the leading zero in the 24-hour languages ("06:49", not "6:49"), and a passed prayer on the watch's
+  Today page tells VoiceOver "Passed" now that the tick is gone. Merged with the version bump: 1.1.1, build
+  14, at the owner's choice of number. Five App Store screenshots go stale and the owner does not want them
+  retaken (§6).
 - **Archives.** Release archives are built with `xcodebuild archive` (widget + watch app + complication
   embedded, development-signed; Xcode re-signs for distribution on upload). Keep exactly ONE current: each
   new build's archive supersedes the last, and 4 through 11 were deleted in turn; build 12's, the one with
-  the launch crash, was moved to the Trash on 2 October rather than deleted, and can be emptied. The
-  CURRENT archive, and the only one to distribute, is
-  `~/Library/Developer/Xcode/Archives/2026-10-02/iPrayer 1.1.0 (13).xcarchive`. A second 1.1.0 archive sits
+  the launch crash, was moved to the Trash on 2 October rather than deleted, and can be emptied; build
+  13's followed it on 3 October. The CURRENT archive, and the only one to distribute, is
+  `~/Library/Developer/Xcode/Archives/2026-10-03/iPrayer 1.1.1 (14).xcarchive`. An older 1.1.0 archive sits
   in `~/Library/Developer/Xcode/Archives/2026-09-18/` under Xcode's default name: it is BUILD 3, and its
   record says it was UPLOADED to App Store Connect on 18 September. (This file called it "pre-1.1.0" until
   an audit read its Info.plist on 2 October.) It predates everything since, the calendar fix included. App Store
-  Connect itself was not checked; if it still lists build 3 when a build is attached, pick 13, never 3.
-  **Next (owner only): try Siri on a real iPhone first (§6), then Organizer > Distribute App on that 1.1.0
-  (13) archive, paste `docs/AppStoreRelease.md` and `docs/AppStoreListing.md` into App Store Connect with
-  `docs/screenshots/`, attach build 13, and submit.
+  Connect itself was not checked; if it still lists build 3 when a build is attached, pick 14, never 3.
+  The version became 1.1.1 with build 14 (3 October); `WhatsNewView.contentVersion` stays "1.1.0" on
+  purpose, since that page describes the 1.1 release and a bug-fix number must not show it twice.
+  **Next (owner only): try Siri on a real iPhone first (§6), then Organizer > Distribute App on that 1.1.1
+  (14) archive, paste `docs/AppStoreRelease.md` and `docs/AppStoreListing.md` into App Store Connect with
+  `docs/screenshots/`, attach build 14, and submit.
   The 20 September device pass (§5) predates Siri and the calendar fix. The other loose end is the EveryAyah
   rights email, drafted in `docs/AppStoreRelease.md` and not sent.**
 
@@ -157,7 +176,7 @@ iPrayer/
     TasbihView.swift          Dhikr chips (6 phrases, `tasbihDhikr` key), target chips, position-in-cycle count,
                               whole band taps, reset confirmation
     QiblaCompassView.swift    glass dial + 72-tick rose, needle to the Kaaba, turn guidance card, distance from
-                              SharedPrayerConfig coords in device units, no-location card
+                              SharedPrayerConfig coords (app language, device's km or miles), no-location card
     HomeWidgets.swift         streak/tracker card, Dua of the Day card, Verse of the Day card (2-line cap)
     DuaLibraryView.swift      search + category chips (Liquid Glass), cards with copy/share, repeat badge, evening text
     AudioStorageView.swift    downloaded-audio manager: per reciter / per surah sizes and deletion
@@ -421,6 +440,28 @@ must follow the *in-app* language (notifications, some labels) goes through
   dial never spins the long way through north; read it modulo 360. No magnetometer (Simulator) shows "Compass
   unavailable" with the bearing and distance kept. Only the fallback is simulator-verifiable; heading, calibration
   prompt and orientation need a device.
+- **The in-app language and the device are TWO locales, and a formatted value has to say which one it
+  takes.** `Locale.current`, a `MeasurementFormatter` or `DateFormatter` with no locale set, a bare
+  `date.formatted(date:time:)` and `Text(date, style: .time)` all follow the DEVICE. On the phone the last
+  one happens to be right, because iPrayerApp puts `\.locale` in the environment; the watch sets no such
+  thing, so there it was wrong. The rule that every target now follows: WORDS, DIGITS and the CLOCK
+  CONVENTION come from the app language (`Locale(identifier: appLanguage)`, or `model.language` on the
+  watch — `WatchModel.clockStyle` is the one place the watch's time format lives), and the only thing taken
+  from the device is the UNIT SYSTEM, which is a fact about where the person lives and not about what they
+  read: `var c = Locale.Components(identifier: language); c.measurementSystem =
+  Locale.current.measurementSystem`. Measured in a standalone script: device ar_SA + app en gives
+  "1,235 km", device en_US + app ar gives "767 ميل". One consequence to know about rather than fix: a
+  language-only locale decides 12 or 24 hour by the LANGUAGE (en and ar 12-hour, fr/de/tr/ru/zh 24-hour),
+  so an English-language app on a 24-hour phone shows "9:15 PM". The phone, the widgets and the
+  complication have always done that; the watch pages now match them instead of the device.
+- **A `Text("\(word) \(number)")` literal is laid out LEFT-TO-RIGHT in Arabic and Urdu.** An interpolated
+  literal is a `LocalizedStringKey`, not a `String`, and the Qibla tab's two lines built that way read
+  number-first: "136° القبلة" and "53° · استدر يساراً". It shipped, and it sat in the committed Arabic
+  screenshots unnoticed. Build the `String` first and show it with `Text(verbatim:)`, which takes its
+  direction from its own first strong character, and put the number in a first-strong isolate
+  (`\u{2068}136°\u{2069}`) or the degree sign lands on the wrong side of it. `Label` needs the
+  `Label { Text(verbatim:) } icon: { }` form for the same reason. Observed on screen and fixed by the
+  change; WHY the key lays out left-to-right was not isolated.
 - **Copyright line** is built by `AppTranslations.copyrightLine`: RTL languages lead with the phrase, the
   Latin name+year sit in a first-strong isolate.
 - **Tasbih changing the dhikr keeps the count** (people run one count across phrases).
@@ -536,6 +577,22 @@ installed). That is the state a fresh simulator is already in, so the real branc
 - `simctl spawn <sim> defaults write <bundle>` writes a domain the app *reads* but its own writes go to the
   container plist (`get_app_container … data`/Library/Preferences). Read state from the container plist.
 - `simctl pbcopy` needs `LC_ALL=en_US.UTF-8` for Arabic.
+- **A device language different from the app's, for one run:** add `-AppleLanguages "(ar-EG)" -AppleLocale
+  ar_EG` to the launch arguments next to `-appLanguage en`. The location pill turning into "القاهرة" is the
+  proof the device side took. The reverse is `-AppleLocale en_US -appLanguage ar`, which also gives miles.
+  This changes the locale for that one process only; the Hijri test in §5 changes the whole simulator.
+- **The watch's language, once it has ever been paired and synced, cannot be set with `defaults write`.**
+  The phone's sync payload writes `appLanguage` into the watch app's CONTAINER plist, and that wins over
+  the simulator-level domain `simctl spawn <watch> defaults write` reaches. Drive it the real way: with
+  both simulators booted, launch the PHONE app with `-appLanguage ar`, then relaunch the watch app, and
+  confirm with `plutil -p $(xcrun simctl get_app_container <watch> youssefkairum.iPrayer.watchkitapp
+  data)/Library/Preferences/youssefkairum.iPrayer.watchkitapp.plist`. The phone pushes whatever language
+  it was LAST launched in, so an English phone run silently turns the watch back. A watch that has never
+  synced (an unpaired 40mm, say) does take the `defaults write`.
+- The watch's Today and Tracker pages are Lists, and a List swallows the page swipe until it has scrolled
+  to its end: from launch, the Qibla page is six upward swipes away, not four. The Simulator tool's
+  `swipe` works on a watch UDID.
+- `simctl io <sim> screenshot` has been unable to write into the repo; capture to a temp folder.
 - `simctl launch` needs `--terminate-running-process` and the argument string split by the shell (zsh: `${=A}`),
   otherwise the arguments are passed as one word and silently ignored. Give a fresh launch 30 s before a capture.
 - **Fresh-install tests: run `simctl spawn <sim> defaults delete <bundle>` first.** That simulator-level domain
@@ -642,6 +699,37 @@ the widget extension and the watch app, carries `Metadata.appintents` and the pe
 combined build: the Hijri-simulator launch and the tap-through of each shortcut, which were done on each
 branch separately; the two changes share no code.
 
+Verified for #34 (2 October 2026), every case as a screenshot of the rendered screen and each bug first
+REPRODUCED on `main`'s code in the same harness (`main` as of build 12; #32 and #33 touch none of these
+files). Qibla tab, iPhone 17 simulator at Cairo: device Arabic
+(ar_EG) + app English reads "Qibla 136° · 1,286 km" where `main` reads "١٬٢٨٦ كم"; device en_US + app
+Arabic reads "799 ميل"; device en_EG + app Arabic reads "1,286 كم"; and, re-shot after merging build 13
+in, device ar_SA (Hijri) + app English reads "1,286 km". Watch, Apple Watch Ultra 4 simulator
+paired with that phone, device English, language pushed over WatchConnectivity: in Arabic the next-prayer
+page reads "5:30 ص" and "ثم الشروق 6:49 ص" (ثم still leads, at the right) where `main` reads "5:30AM" and
+"6:49 AM"; the Today list reads "5:29 ص", "6:49 ص", "12:45 م", each on one line at full size, where `main`
+breaks "6:49A" / "M"; the Qibla page reads "1,286 كم". In English the same three pages read "5:30 AM",
+"6:49 AM" and "1,286 km", and the longest name, Maghrib, fits at full size. Also checked on the 40mm
+simulator (the narrowest): times stay on one line in both languages. NOT verified: any of it on a real
+watch or phone; the other seven languages on screen (their strings were measured in a standalone script
+only); a device that is right-to-left AND on a 24-hour clock; and the complication beside the page on a
+real face, which is the comparison the bug was first described by.
+Verified for the 3 October additions to #34. Qibla tab under `-debugSpinCompass 1` on the iPhone 17
+simulator: Arabic reads "استدر يميناً · 33°" and "القبلة 136° · 1,286 كم", the word at the right and the
+degree sign right of its number; Urdu reads "دائیں مڑیں · 12°" and "قبلہ 136° · 1,286 کلو میٹر"; English is
+unchanged, "Turn left · 49°" and "Qibla 136° · 1,286 km". Watch Today page without the tick, on the 40mm
+simulator: every name whole in English ("Maghrib" beside "11:23 AM"), Arabic, French ("Lever du soleil")
+and German ("Sonnenaufgang", which needed the name's minimum scale lowered from 0.7 to 0.6); and on the
+49mm in English and Arabic. NOT verified: a PASSED row on screen — every capture was taken just after
+midnight, when all of the day's prayers are still ahead, so the dimmed state was not seen, only left
+unchanged in the code; and the five other languages on the watch.
+
+Verified for 1.1.1 (14) (3 October 2026, #34 merged with three review fixes): a Debug build of the branch
+at its merge state; the Release ARCHIVE reports 1.1.1 (14) and embeds the widget extension and the watch
+app. NOT verified on screen: the three review fixes themselves (the language-change rewrite of the
+distance, the watch clock's leading zero, the VoiceOver value) — each was established by the reviewer in a
+standalone script against the same Foundation, not in the simulator.
+
 **DEVICE PASS DONE — 20 September 2026.** The owner went through the whole standing "not verified" list on
 their own iPhone and Apple Watch and reported everything working. That closes, all at once: the tracker
 across a real midnight on two devices · the Today's Prayers widget rendered · the Verse of the Day widget on
@@ -692,13 +780,6 @@ which no amount of device testing surfaces.
   sizes and the Lock Screen rectangular family, so the system-font fallback is not needed. Keep the font
   registered through UIAppFonts only (§7); that is what makes it work in the widget process.
 
-**Found by the 2 October calendar audit, NOT fixed in #33 (language consistency, not calendar)**
-A separate session was started on 2 October to fix both; check `gh pr list` before doing it again.
-- The Qibla tab's distance ("1,235 km") is formatted with the DEVICE locale, so an Arabic phone with the app
-  in English shows an Arabic unit and Arabic-Indic digits, and the reverse. `QiblaCompassView`'s static
-  `distanceFormatter` should take the in-app language and keep only the measurement system from the device.
-- The watch app's three clock times use the device locale while its complication uses the in-app language,
-  so with the app in Arabic the page says "8:15 PM" and the complication "8:15 م".
 **Siri (#32)**
 - Needs the owner on a real iPhone: say each phrase to Siri in English and Arabic; confirm the answer is
   spoken in the Siri language and that the degree sign is read as "degrees"/"درجة" (if it is not, switch
@@ -716,6 +797,20 @@ A separate session was started on 2 October to fix both; check `gh pr list` befo
   right-to-left tweaks beyond layout mirroring, native system `TabView` for the full Liquid Glass tab
   behaviour, reopen What's New from Settings > About, choosing the calculation method on the watch,
   local adhan notifications on the watch (phone notifications already mirror to it).
+
+**Left open by #34**
+- **Five App Store screenshots are stale now that #34 is merged,** plus their `captioned/` versions. The owner was
+  asked on 3 October and does NOT want them retaken for now, so leave them unless asked.
+  `iphone69-ar-06-qibla` and `ipad13-ar-06-qibla` show "136° القبلة · 1,286 km" where the app now writes
+  "القبلة 136° · 1,286 كم", and the turn line number-first; `watch44-ar-01-next-prayer` shows "6:54PM" and
+  "8:10 PM" (now "6:54 م", "8:10 م"); `watch44-ar-03-qibla` shows "1,286 km"; and
+  `watch44-en-01-next-prayer` shows "6:54PM" where the app now writes "6:54 PM", a space apart. If they are
+  ever retaken: the caption tool was never committed, so the captioned five would have to be composited
+  onto the existing captioned images, and a next-prayer shot taken at night shows Fajr, not Maghrib.
+- **Other interpolated `Text` literals that mix a translated word with a number** were not audited in
+  Arabic: "Version 1.1.0" (About, What's New), the Tasbih's "of 33" and "2 cycles · 66", the reader's
+  "Verse 12", "Downloading audio 40%", and the watch's Tasbih and streak lines. They share the construction
+  that put the Qibla lines number-first (§3), so each is a candidate; none was looked at on screen.
 
 **Known cosmetic**
 - What's New was rebuilt in PR #12 (merged via #15); still to check: the four sections at larger Dynamic Type.

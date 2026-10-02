@@ -41,6 +41,21 @@ let watchNightGradient = LinearGradient(colors: [Color(red: 15/255, green: 32/25
                                                  Color(red: 44/255, green: 83/255, blue: 100/255)],
                                         startPoint: .top, endPoint: .bottom)
 
+private extension WatchModel {
+    /// A clock time in the IN-APP language, written exactly as the complication writes it.
+    /// `Text(date, style: .time)` and a bare `.formatted(date:time:)` follow the DEVICE, so with the app
+    /// in Arabic these pages said "8:15 PM" beside a complication saying "8:15 م". This is a DateFormatter
+    /// and not `Date.FormatStyle(time: .shortened)` on purpose: the two differ on one thing, the leading
+    /// zero in the 24-hour languages ("06:49" against "6:49" in French, German, Turkish, Russian and
+    /// Chinese), and the complication uses the formatter.
+    func clock(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: language)
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+}
+
 // MARK: - Next prayer
 
 struct NextPrayerPage: View {
@@ -75,7 +90,7 @@ struct NextPrayerPage: View {
                         .foregroundStyle(.white)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
-                    Text(next.time, style: .time)
+                    Text(model.clock(next.time))
                         .font(.system(.title3, design: .rounded, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.95))
                     Text(timerInterval: Date()...next.time, countsDown: true)
@@ -97,8 +112,10 @@ struct NextPrayerPage: View {
                         //
                         // The clock is wrapped in a first-strong isolate so a Latin "6:54 PM" cannot be
                         // split apart inside an Arabic sentence — the pattern PrayerListView uses for its
-                        // "at <time>" line.
-                        let clock = following.time.formatted(date: .omitted, time: .shortened)
+                        // "at <time>" line. It stays now that the clock follows the app language: a
+                        // language can still differ from the sentence's direction, and "6:54 م" is itself
+                        // a mixed run.
+                        let clock = model.clock(following.time)
                         (Text(AppTranslations.translate("Then", to: model.language) + " ")
                          + Text(model.name(for: following.name)).bold()
                          + Text(" \u{2068}\(clock)\u{2069}"))
@@ -146,7 +163,7 @@ struct TodayPage: View {
             ForEach(model.todayPrayers, id: \.time) { prayer in
                 let isNext = prayer.time == model.nextPrayer?.time
                 let passed = prayer.time <= Date() && !isNext
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     Image(systemName: prayer.icon)
                         .foregroundStyle(passed ? Color.white.opacity(0.35) : PrayerPalette.palette(for: prayer.name).accent)
                         .frame(width: 20)
@@ -154,18 +171,25 @@ struct TodayPage: View {
                         .font(.system(.body, design: .rounded, weight: isNext ? .bold : .regular))
                         .foregroundStyle(passed ? .secondary : .primary)
                         .lineLimit(1)
-                    Spacer()
-                    if passed {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.green.opacity(0.8))
-                    }
-                    Text(prayer.time, style: .time)
+                        .minimumScaleFactor(0.6)
+                    Spacer(minLength: 0)
+                    // A passed prayer is DIMMED and nothing more. It used to carry a green tick as well,
+                    // and on the smaller watches there is no room for one: beside it "Sunrise" and
+                    // "Dhuhr" were cut to "Sun…" and "Dh…" on the 40mm. The tick said nothing the dimming
+                    // does not, and on this page it could be taken for "prayed", which is the Tracker's.
+                    //
+                    // The time keeps one line and its full width; a long name gives way instead. Without
+                    // this the row broke the time in two beside the longer names ("6:49A" / "M").
+                    Text(model.clock(prayer.time))
                         .font(.system(.body, design: .rounded, weight: isNext ? .bold : .regular))
                         .foregroundStyle(isNext ? .teal : (passed ? .secondary : .primary))
+                        .lineLimit(1)
+                        .layoutPriority(1)
                 }
                 .listRowBackground(isNext ? Color.teal.opacity(0.18) : nil)
                 .accessibilityElement(children: .combine)
+                // The tick that used to mark a passed prayer was the only cue VoiceOver had; say it in words instead.
+                .accessibilityValue(passed ? AppTranslations.translate("Passed", to: model.language) : "")
             }
             if model.todayPrayers.isEmpty {
                 Text(AppTranslations.translate("Locating...", to: model.language))
