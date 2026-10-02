@@ -23,6 +23,8 @@ struct QuranView: View {
     @ObservedObject private var router = DeepLinkRouter.shared
     @State private var linkedSurah: SurahMetadata?
     @State private var linkedVerse: Int?
+    /// How the linked verse is marked on arrival: gold for a destination, green for the person's own place
+    @State private var linkedMark: VerseMark = .destination
     #if DEBUG
     @State private var debugLinkConsumed = false
     #endif
@@ -75,10 +77,13 @@ struct QuranView: View {
             quranVM.updateSearch(newValue)
         }
         .navigationDestination(item: $linkedSurah) { surah in
-            SurahDetailView(surah: surah, initialVerse: linkedVerse, mark: linkedVerse != nil ? .destination : nil)
+            SurahDetailView(surah: surah, initialVerse: linkedVerse, mark: linkedVerse != nil ? linkedMark : nil)
         }
         .onChange(of: quranVM.surahs.count) { _, _ in openLinkedVerseIfPossible() }
-        .onChange(of: router.pendingVerse) { _, _ in openLinkedVerseIfPossible() }
+        // No .onChange(of: router.pendingVerse): every request also bumps ContentView's navigation
+        // epoch, which REPLACES this view. An observer here fires on the instance about to be thrown
+        // away, which takes the verse and pushes onto state nobody will ever see, leaving the new
+        // instance nothing to open. The new instance's onAppear is the one place that consumes it.
         .onAppear { openLinkedVerseIfPossible() }
     }
     
@@ -88,7 +93,10 @@ struct QuranView: View {
         guard !quranVM.surahs.isEmpty else { return }
         if let link = router.pendingVerse {
             router.pendingVerse = nil
-            linkedVerse = link.verse
+            // "Continue reading" arrives the way the Continue Reading card does: green, and at verse 1
+            // simply the top of the surah with no mark at all.
+            linkedVerse = link.isResume && link.verse <= 1 ? nil : link.verse
+            linkedMark = link.isResume ? .resume : .destination
             linkedSurah = nil
             // Pop any open reader first so the new push lands
             DispatchQueue.main.async { linkedSurah = quranVM.surah(number: link.surah) }

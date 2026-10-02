@@ -20,6 +20,12 @@ struct ContentView: View {
     /// Tabs that have been opened at least once. They stay in the hierarchy so their state
     /// (Quran search text and scroll position, Settings scroll) survives switching tabs.
     @State private var loadedTabs: Set<Tab> = [ContentView.initialTab]
+    /// Bumped when a tab is requested from OUTSIDE (a deep link, a Siri intent), which rebuilds the
+    /// navigation stack. Every push in this app is a `NavigationLink(destination:)` on one non-path stack,
+    /// so there is no programmatic pop: without this, "open Tasbih" while a surah is on screen would switch
+    /// the tab UNDERNEATH the reader and leave the reader showing. Tapping the tab bar never bumps it, so
+    /// ordinary tab switches keep their scroll positions and search text exactly as before.
+    @State private var navigationEpoch = 0
     
     private static var initialTab: Tab {
         #if DEBUG
@@ -65,12 +71,26 @@ struct ContentView: View {
             .onChange(of: selectedTab) { _, newTab in
                 loadedTabs.insert(newTab)
             }
-            // iprayer://verse/2/255 (from the Verse of the Day widget) opens the reader at that verse
+            // iprayer://verse/2/255 (from the Verse of the Day widget) opens the reader at that verse;
+            // the router turns it into a pending tab and verse, consumed just below.
             .onOpenURL { url in
-                if DeepLinkRouter.shared.handle(url) {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { selectedTab = .quran }
-                }
+                DeepLinkRouter.shared.handle(url)
             }
+        }
+        .id(navigationEpoch)
+        // A @Published subscription replays its current value, so a request made before this view
+        // existed (a Siri intent cold-launching the app) is honoured on first appearance.
+        .onReceive(DeepLinkRouter.shared.$pendingTab) { tab in
+            guard let tab else { return }
+            // @Published publishes in willSet, so clearing it right here would be overwritten when
+            // the assignment that called us completes, and a second window would replay the tab.
+            DispatchQueue.main.async { DeepLinkRouter.shared.pendingTab = nil }
+            // The compass has nothing pushed to pop and something to lose: rebuilt in place, the new
+            // view's onAppear runs BEFORE the old one's onDisappear, and the shared view model is
+            // left with the compass stopped.
+            if !(tab == .qibla && selectedTab == .qibla) { navigationEpoch += 1 }
+            loadedTabs.insert(tab)
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { selectedTab = tab }
         }
     }
     

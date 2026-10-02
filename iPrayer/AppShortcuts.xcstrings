@@ -1,0 +1,424 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "When is the next prayer in ${applicationName}": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "new",
+            "values": [
+              "When is the next prayer in ${applicationName}",
+              "Next prayer in ${applicationName}",
+              "What is the next prayer in ${applicationName}"
+            ]
+          }
+        },
+        "ar": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "متى الصلاة القادمة في ${applicationName}",
+              "ما الصلاة القادمة في ${applicationName}",
+              "كم بقي للصلاة في ${applicationName}"
+            ]
+          }
+        },
+        "de": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Wann ist das nächste Gebet in ${applicationName}",
+              "Nächstes Gebet in ${applicationName}"
+            ]
+          }
+        },
+        "fr": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Quelle est la prochaine prière dans ${applicationName}",
+              "Prochaine prière dans ${applicationName}"
+            ]
+          }
+        },
+        "ru": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Когда следующая молитва в ${applicationName}",
+              "Следующая молитва в ${applicationName}"
+            ]
+          }
+        },
+        "tr": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "${applicationName} uygulamasında sıradaki namaz ne zaman",
+              "${applicationName} sıradaki namaz"
+            ]
+          }
+        },
+        "zh-Hans": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "${applicationName}下一次祈祷是什么时候",
+              "${applicationName}下一次祈祷"
+            ]
+          }
+        }
+      }
+    },
+    "When is ${prayer} in ${applicationName}": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "new",
+            "values": [
+              "When is ${prayer} in ${applicationName}",
+              "What time is ${prayer} in ${applicationName}",
+              "${prayer} time in ${applicationName}"
+            ]
+          }
+        },
+        "ar": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "متى ${prayer} في ${applicationName}",
+              "موعد ${prayer} في ${applicationName}",
+              "وقت ${prayer} في ${applicationName}"
+            ]
+          }
+        },
+        "de": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Wann ist ${prayer} in ${applicationName}",
+              "Um wie viel Uhr ist ${prayer} in ${applicationName}"
+            ]
+          }
+        },
+        "fr": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "À quelle heure est ${prayer} dans ${applicationName}",
+              "Heure de ${prayer} dans ${applicationName}"
+            ]
+          }
+        },
+        "ru": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Когда ${prayer} в ${applicationName}",
+              "Во сколько ${prayer} в ${applicationName}"
+            ]
+          }
+        },
+        "tr": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "${applicationName} uygulamasında ${prayer} ne zaman",
+              "${applicationName} ${prayer} vakti"
+            ]
+          }
+        },
+        "zh-Hans": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "${applicationName}${prayer}是几点",
+              "${applicationName}${prayer}时间"
+            ]
+          }
+        }
+      }
+    },
+    "Which way is the Qibla in ${applicationName}": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "new",
+            "values": [
+              "Which way is the Qibla in ${applicationName}",
+              "Qibla direction in ${applicationName}",
+              "Where is the Qibla in ${applicationName}"
+            ]
+          }
+        },
+        "ar": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "أين القبلة في ${applicationName}",
+              "اتجاه القبلة في ${applicationName}",
+              "ما اتجاه القبلة في ${applicationName}"
+            ]
+          }
+        },
+        "de": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Wo ist die Qibla in ${applicationName}",
+              "Qibla-Richtung in ${applicationName}"
+            ]
+          }
+        },
+        "fr": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Où est la Qibla dans ${applicationName}",
+              "Direction de la Qibla dans ${applicationName}"
+            ]
+          }
+        },
+        "ru": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Где кибла в ${applicationName}",
+              "Направление киблы в ${applicationName}"
+            ]
+          }
+        },
+        "tr": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "${applicationName} uygulamasında kıble ne tarafta",
+              "${applicationName} kıble yönü"
+            ]
+          }
+        },
+        "zh-Hans": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "${applicationName}朝向在哪里",
+              "${applicationName}朝向方位"
+            ]
+          }
+        }
+      }
+    },
+    "Open the Qibla compass in ${applicationName}": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "new",
+            "values": [
+              "Open the Qibla compass in ${applicationName}",
+              "Qibla compass in ${applicationName}"
+            ]
+          }
+        },
+        "ar": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "افتح بوصلة القبلة في ${applicationName}",
+              "بوصلة القبلة في ${applicationName}"
+            ]
+          }
+        },
+        "de": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Öffne den Qibla-Kompass in ${applicationName}",
+              "Qibla-Kompass in ${applicationName}"
+            ]
+          }
+        },
+        "fr": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Ouvre la boussole de la Qibla dans ${applicationName}",
+              "Boussole de la Qibla dans ${applicationName}"
+            ]
+          }
+        },
+        "ru": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Открой компас киблы в ${applicationName}",
+              "Компас киблы в ${applicationName}"
+            ]
+          }
+        },
+        "tr": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "${applicationName} uygulamasında kıble pusulasını aç",
+              "${applicationName} kıble pusulası"
+            ]
+          }
+        },
+        "zh-Hans": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "打开${applicationName}朝向指南针",
+              "${applicationName}朝向指南针"
+            ]
+          }
+        }
+      }
+    },
+    "Continue reading the Quran in ${applicationName}": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "new",
+            "values": [
+              "Continue reading the Quran in ${applicationName}",
+              "Open the Quran in ${applicationName}",
+              "Continue my reading in ${applicationName}"
+            ]
+          }
+        },
+        "ar": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "تابع القراءة في ${applicationName}",
+              "افتح المصحف في ${applicationName}",
+              "أكمل القراءة في ${applicationName}"
+            ]
+          }
+        },
+        "de": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Lies den Koran weiter in ${applicationName}",
+              "Öffne den Koran in ${applicationName}"
+            ]
+          }
+        },
+        "fr": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Reprends la lecture du Coran dans ${applicationName}",
+              "Ouvre le Coran dans ${applicationName}"
+            ]
+          }
+        },
+        "ru": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Продолжи чтение Корана в ${applicationName}",
+              "Открой Коран в ${applicationName}"
+            ]
+          }
+        },
+        "tr": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "${applicationName} uygulamasında Kur'an okumaya devam et",
+              "${applicationName} uygulamasında Kur'an'ı aç"
+            ]
+          }
+        },
+        "zh-Hans": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "在${applicationName}继续阅读古兰经",
+              "打开${applicationName}古兰经"
+            ]
+          }
+        }
+      }
+    },
+    "Open Tasbih in ${applicationName}": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "new",
+            "values": [
+              "Open Tasbih in ${applicationName}",
+              "Start Tasbih in ${applicationName}",
+              "Tasbih in ${applicationName}"
+            ]
+          }
+        },
+        "ar": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "افتح التسبيح في ${applicationName}",
+              "ابدأ التسبيح في ${applicationName}",
+              "التسبيح في ${applicationName}"
+            ]
+          }
+        },
+        "de": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Öffne Tasbih in ${applicationName}",
+              "Tasbih in ${applicationName}"
+            ]
+          }
+        },
+        "fr": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Ouvre le Tasbih dans ${applicationName}",
+              "Tasbih dans ${applicationName}"
+            ]
+          }
+        },
+        "ru": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "Открой тасбих в ${applicationName}",
+              "Тасбих в ${applicationName}"
+            ]
+          }
+        },
+        "tr": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "${applicationName} uygulamasında tesbihi aç",
+              "${applicationName} tesbih"
+            ]
+          }
+        },
+        "zh-Hans": {
+          "stringSet": {
+            "state": "translated",
+            "values": [
+              "打开${applicationName}泰斯比",
+              "${applicationName}泰斯比"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
