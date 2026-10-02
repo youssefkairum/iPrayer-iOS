@@ -108,6 +108,7 @@ Debug builds accept these arguments to open a specific screen, which helps with 
 | `-debugSpinCompass 1` | Turns the compass at 30 Hz, reporting a deliberately poor 25° accuracy. Works on the watch too |
 | `-debugHeadingAccuracy 5` | Overrides that 25°, to rehearse a well-calibrated phone |
 | `-debugAudioBaseURL https://unreachable.invalid` | Makes every verse fail, to test offline handling |
+| `-debugLogNotifications 1` | Logs each prayer notification's wanted time and the time iOS will fire it (`[Notify]` lines) |
 | `-appLanguage ar` / `-userName "Name"` | Any UserDefaults key can be overridden for one run |
 
 Deep link: `iprayer://verse/2/255` opens the reader at a verse (used by the Verse of the Day widget).

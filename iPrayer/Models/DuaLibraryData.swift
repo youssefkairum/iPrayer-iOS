@@ -123,6 +123,8 @@ class DuaLibraryData {
     /// The day's dua: the whole library in turn, one per local calendar day, in step with the Verse of the Day
     func duaOfTheDay() -> AuthenticDua? {
         guard !allDuas.isEmpty else { return nil }
-        return allDuas[VerseOfTheDay.dayNumber() % allDuas.count]
+        // Never a bare remainder: Swift's % keeps the sign, and a negative day number was a crash at launch.
+        let count = allDuas.count
+        return allDuas[((VerseOfTheDay.dayNumber() % count) + count) % count]
     }
 }
