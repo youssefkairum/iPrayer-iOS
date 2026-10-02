@@ -2,15 +2,16 @@
 //  OnboardingView.swift
 //  iPrayer
 //
-//  Welcome, what the app does, location (asked here, next to the reason, never at launch), and Sign in
-//  with Apple. One scaffold holds the progress, the language menu and the controls, so the pages only
-//  carry content and the buttons never jump between steps.
+//  Welcome, what the app does, location (asked here, next to the reason, never at launch), what to say
+//  to Siri, and Sign in with Apple. One scaffold holds the progress, the language menu and the controls,
+//  so the pages only carry content and the buttons never jump between steps.
 //
-//  A fifth step, offering to install the watch app, appears ONLY when a watch is paired and the app is not
-//  on it — the same condition as the Settings card. For everyone else the flow is the four it always was.
+//  A sixth step, offering to install the watch app, appears ONLY when a watch is paired and the app is not
+//  on it — the same condition as the Settings card. For everyone else the flow is the five it always was.
 //
 
 import SwiftUI
+import AppIntents
 import AuthenticationServices
 
 struct OnboardingView: View {
@@ -35,8 +36,11 @@ struct OnboardingView: View {
     /// app over the air, and `isWatchAppInstalled` is false for the whole transfer — so the raw flag says
     /// "not installed" loudest for exactly the people who did nothing wrong and are about to have it.
     private static let watchSettleSeconds: Double = 6
-    private var syncTab: Int { includesWatchStep ? 4 : 3 }
-    private var stepCount: Int { includesWatchStep ? 5 : 4 }
+    /// The Siri step sits between the (optional) watch step and sign-in, so both of those move when the
+    /// watch step appears; the same guard that protects sign-in protects this one.
+    private var siriTab: Int { includesWatchStep ? 4 : 3 }
+    private var syncTab: Int { includesWatchStep ? 5 : 4 }
+    private var stepCount: Int { includesWatchStep ? 6 : 5 }
     
     private static var initialSlide: Int {
         #if DEBUG
@@ -69,6 +73,7 @@ struct OnboardingView: View {
                     if includesWatchStep {
                         WatchSlide(shown: currentTab >= Self.watchTab).tag(Self.watchTab)
                     }
+                    SiriSlide(shown: currentTab >= siriTab).tag(siriTab)
                     SyncSlide(shown: currentTab >= syncTab).tag(syncTab)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
@@ -118,13 +123,16 @@ struct OnboardingView: View {
     
     /// ADDING and REMOVING the step are not symmetric.
     ///
-    /// Adding renumbers sign-in from tag 3 to tag 4, so it may only happen while the step is still ahead of
-    /// the person — otherwise someone reading the sign-in page would find a watch prompt in its place.
+    /// Adding renumbers the Siri step from tag 3 to tag 4 and sign-in from 4 to 5, so it may only happen
+    /// while the step is still ahead of the person — otherwise someone reading the Siri or sign-in page
+    /// would find a watch prompt in its place.
     ///
-    /// Removing is always allowed, including while the step is on screen. If the watch app finishes
-    /// installing while they are looking at a page that says it has not, the page is now a lie, and moving
-    /// them on is the honest outcome: removal can only ever carry them FORWARD onto sign-in, which is where
-    /// this step was leading anyway. `currentTab` is clamped because tag 4 stops existing.
+    /// Removing is always allowed, including while the step is on screen. Every tag after the watch step
+    /// moves back by one, so `currentTab` moves with it and the SAME slide stays on screen (Siri stays
+    /// Siri, sign-in stays sign-in). On the watch slide itself nothing moves and its tag becomes the Siri
+    /// step: if the watch app finishes installing while they are looking at a page that says it has not,
+    /// the page is now a lie, and moving them on is the honest outcome. (A clamp to the watch tag, which
+    /// this used to be, sent a sign-in reader back one slide once the Siri step sat in between.)
     private func setWatchStep(_ wanted: Bool) {
         guard wanted != includesWatchStep else { return }
         if wanted {
@@ -132,7 +140,7 @@ struct OnboardingView: View {
             includesWatchStep = true
         } else {
             includesWatchStep = false
-            if currentTab > Self.watchTab { currentTab = Self.watchTab }
+            if currentTab > Self.watchTab { currentTab -= 1 }
         }
     }
     
@@ -205,13 +213,15 @@ struct OnboardingView: View {
         case Self.watchTab where includesWatchStep:
             VStack(spacing: 12) {
                 // Advances before leaving, as the location step does, so coming back from the Watch app
-                // lands on sign-in rather than on a prompt that has already been answered.
+                // lands on the Siri step rather than on a prompt that has already been answered.
                 primaryButton(AppTranslations.translate("Open the Watch app", to: appLanguage)) {
                     if let url = URL(string: "itms-watchs://") { openURL(url) }
                     advance()
                 }
                 secondaryButton(AppTranslations.translate("Not now", to: appLanguage)) { advance() }
             }
+        case siriTab:
+            primaryButton(AppTranslations.translate("Continue", to: appLanguage)) { advance() }
         default:
             VStack(spacing: 12) {
                 SignInWithAppleButton(.signIn) { request in
@@ -494,6 +504,82 @@ private struct WatchSlide: View {
                 ("safari.fill", AppTranslations.translate("Qibla", to: appLanguage))
             ]
         )
+    }
+}
+
+/// Siri needs no setting up, so this step only shows what to say. The tips are Apple's own `SiriTipView`,
+/// each shortcut's phrase in the DEVICE language (the language Siri answers to) with that language's layout
+/// direction; `SiriShortcutsView` in Settings is the fuller version of the same screen.
+private struct SiriSlide: View {
+    let shown: Bool
+    @State private var appeared = false
+    private var visible: Bool { shown && appeared }
+    @AppStorage(UDKey.appLanguage.rawValue) private var appLanguage: String = "en"
+    
+    var body: some View {
+        // The tallest slide: three tips that grow with Dynamic Type. It scrolls only when it must, and
+        // stays centred when it need not, which is every phone at the default size.
+        GeometryReader { proxy in
+            ScrollView(showsIndicators: false) {
+                content
+                    .frame(minHeight: proxy.size.height)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+        }
+        .slideEntrance(appeared: $appeared)
+    }
+    
+    private var content: some View {
+        VStack(spacing: 26) {
+            Spacer()
+            
+            Image(systemName: "waveform")
+                .font(.system(size: 40, weight: .semibold))
+                .foregroundColor(.purple)
+                .frame(width: 112, height: 112)
+                .glassEffect(.regular, in: .circle)
+                .shadow(color: Color.purple.opacity(0.4), radius: 24, x: 0, y: 8)
+                .scaleEffect(visible ? 1 : 0.8)
+                .opacity(visible ? 1 : 0)
+                .animation(.spring(response: 0.7, dampingFraction: 0.7), value: shown)
+            
+            VStack(spacing: 12) {
+                Text(AppTranslations.translate("Ask Siri", to: appLanguage))
+                    .font(.custom("AvenirNext-Bold", size: 30))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                Text(AppTranslations.translate("Prayer times, the Qibla and your Quran, by voice. Nothing to set up.", to: appLanguage))
+                    .font(.custom("AvenirNext-Medium", size: 15))
+                    .foregroundColor(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 30)
+            }
+            .entrance(1, shown: visible)
+            
+            VStack(spacing: 10) {
+                SiriTipView(intent: NextPrayerIntent())
+                SiriTipView(intent: QiblaDirectionIntent())
+                SiriTipView(intent: ContinueReadingIntent())
+            }
+            .siriTipViewStyle(.dark)
+            .environment(\.layoutDirection, SiriShortcutsView.tipLayoutDirection)
+            .entrance(2, shown: visible)
+            
+            // Outside the tips' stack: in there, beside the tips, the text was given one line and cut.
+            if SiriShortcutsView.languagesWithoutSiri.contains(appLanguage) {
+                Text(AppTranslations.translate("Siri does not speak Urdu or Hindi yet. Ask in one of Siri's languages, such as English.", to: appLanguage))
+                    .font(.custom("AvenirNext-Medium", size: 13))
+                    .foregroundColor(.teal)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 30)
+                    .entrance(3, shown: visible)
+            }
+            
+            Spacer()
+            Spacer()
+        }
+        .padding(.horizontal, 24)
     }
 }
 
