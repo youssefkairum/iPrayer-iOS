@@ -53,8 +53,11 @@ struct TodayProvider: TimelineProvider {
             completion(Timeline(entries: [.placeholder], policy: .after(Date().addingTimeInterval(1800))))
             return
         }
-        // Entries run to the end of today; ask again at midnight for the new day
-        let midnight = Calendar.current.startOfDay(for: Date().addingTimeInterval(24 * 3600))
+        // Entries run to the end of today; ask again at midnight for the new day. A day is not always
+        // 24 hours: "now + 24 h" at 23:30 on the night the clocks go forward is already the day AFTER
+        // tomorrow, and the widget then sat on yesterday's times for a whole day.
+        let today = Calendar.current.startOfDay(for: Date())
+        let midnight = Calendar.current.date(byAdding: .day, value: 1, to: today) ?? Date().addingTimeInterval(24 * 3600)
         completion(Timeline(entries: entries, policy: .after(midnight)))
     }
     

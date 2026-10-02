@@ -76,8 +76,7 @@ struct SplashScreenView: View {
                 Spacer()
                 
                 // 4. Copyright Footer
-                let year = Calendar.current.component(.year, from: Date())
-                Text(AppTranslations.copyrightLine(language: appLanguage, year: year))
+                Text(AppTranslations.copyrightLine(language: appLanguage))
                     .font(.system(size: 13))
                     .foregroundColor(.gray)
                     .padding(.bottom, 40)

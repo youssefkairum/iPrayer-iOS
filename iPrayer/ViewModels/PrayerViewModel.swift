@@ -437,6 +437,16 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     // MARK: - Notifications
     
+    /// The components of an instant for a notification trigger, STAMPED with the calendar they were read
+    /// in. A trigger resolves bare components in the DEVICE's calendar: Gregorian 2026 read as a Hijri or
+    /// Persian year is centuries away, and under the Buddhist calendar never comes at all, so on those
+    /// phones no adhan and no reminder was ever delivered. `dateComponents(_:from:)` does not set this.
+    private static func triggerComponents(for date: Date, in calendar: Calendar) -> DateComponents {
+        var components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+        components.calendar = calendar
+        return components
+    }
+    
     /// Schedules several days of prayer notifications, in the app's language,
     /// so users who don't open the app every day keep receiving them.
     private func scheduleNotifications(coordinates: Coordinates, params: CalculationParameters, language: String) {
@@ -478,9 +488,14 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                 // Notification sounds must be aiff, wav or caf and under 30 seconds; iOS silently ignores mp3.
                 content.sound = adhanEnabled ? UNNotificationSound(named: UNNotificationSoundName("adhan.caf")) : .default
                 
-                let triggerComponents = cal.dateComponents([.year, .month, .day, .hour, .minute], from: time)
-                let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
+                let trigger = UNCalendarNotificationTrigger(dateMatching: Self.triggerComponents(for: time, in: cal), repeats: false)
                 center.add(UNNotificationRequest(identifier: "prayer_\(name)_\(dayOffset)", content: content, trigger: trigger))
+                #if DEBUG
+                if UserDefaults.standard.integer(forKey: "debugLogNotifications") > 0 {
+                    NSLog("[Notify] prayer_%@_%d wanted %@ fires %@", name, dayOffset, "\(time)",
+                          trigger.nextTriggerDate().map { "\($0)" } ?? "NEVER")
+                }
+                #endif
                 
                 // Optional heads-up a few minutes before the prayer
                 let reminderTime = time.addingTimeInterval(TimeInterval(-reminderMinutes * 60))
@@ -490,8 +505,7 @@ class PrayerViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                     reminder.body = String(format: AppTranslations.minutesFormat("%@ in %lld minutes", minutes: reminderMinutes, language: language), translatedName, reminderMinutes)
                     reminder.sound = .default
                     
-                    let reminderComponents = cal.dateComponents([.year, .month, .day, .hour, .minute], from: reminderTime)
-                    let reminderTrigger = UNCalendarNotificationTrigger(dateMatching: reminderComponents, repeats: false)
+                    let reminderTrigger = UNCalendarNotificationTrigger(dateMatching: Self.triggerComponents(for: reminderTime, in: cal), repeats: false)
                     center.add(UNNotificationRequest(identifier: "preprayer_\(name)_\(dayOffset)", content: reminder, trigger: reminderTrigger))
                 }
             }
