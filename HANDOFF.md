@@ -9,7 +9,7 @@ and what is still open. The README describes the product; this describes the wor
 
 ## 1. Where things stand
 
-- **Version:** 1.1.1, build 15 (App Store has 1.0; a 1.1.0 build 3 was uploaded on 18 September, see Archives). Deployment target iOS 26.0 (watchOS 10.0 on the watch
+- **Version:** 1.1.1, build 16 (App Store has 1.0; a 1.1.0 build 3 was uploaded on 18 September, see Archives). Deployment target iOS 26.0 (watchOS 10.0 on the watch
   targets), Xcode 27. The Swift 6.4 *toolchain*, but still the Swift 5 *language mode*
   (`SWIFT_VERSION = 5.0` in all eight configurations) — which is why the capture rule below is a warning
   and not yet an error. `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and approachable concurrency are on for
@@ -147,27 +147,28 @@ and what is still open. The README describes the product; this describes the wor
   the words Russian- and Chinese-speaking Muslims actually use (намаз, 礼拜/拜功) as extra phrases, found
   that the first mosaic fix could not work (§3), and found the tips mis-pinned on an Urdu phone (§3).
   Build 15, version still 1.1.1.
-- **3 October 2026, the onboarding Siri step — branch `onboarding-siri-step`, PR OPEN, NOT merged, build
-  NOT bumped.** The owner asked for Siri in onboarding. A fifth fixed slide, "Ask Siri", between Location
+- **3 October 2026, the onboarding Siri step — MERGED (#36).** The owner asked for Siri in onboarding. A fifth fixed slide, "Ask Siri", between Location
   (or the optional Apple Watch slide) and sign-in: three of Apple's `SiriTipView` tips in the device
   language, the Urdu/Hindi note where it applies, and nothing else to do, since App Shortcuts need no
-  setup. The watch slide's tag arithmetic moved along one (§3). The onboarding watch-step screenshots in
-  `docs/screenshots/` now show five progress capsules where the app shows six; left as they are (§6).
+  setup. The watch slide's tag arithmetic moved along one, and a review caught that its removal, which
+  used to clamp the page to the watch tag, now sent a sign-in reader back a slide; it shifts instead (§3).
+  The onboarding watch-step screenshots in `docs/screenshots/` now show five progress capsules where the
+  app shows six; left as they are (§6). Build 16.
 - **Archives.** Release archives are built with `xcodebuild archive` (widget + watch app + complication
   embedded, development-signed; Xcode re-signs for distribution on upload). Keep exactly ONE current: each
   new build's archive supersedes the last, and 4 through 11 were deleted in turn; build 12's, the one with
   the launch crash, was moved to the Trash on 2 October rather than deleted, and can be emptied; build
-  13's and 14's followed it on 3 October. The CURRENT archive, and the only one to distribute, is
-  `~/Library/Developer/Xcode/Archives/2026-10-03/iPrayer 1.1.1 (15).xcarchive`. An older 1.1.0 archive sits
+  13's, 14's and 15's followed it on 3 October. The CURRENT archive, and the only one to distribute, is
+  `~/Library/Developer/Xcode/Archives/2026-10-03/iPrayer 1.1.1 (16).xcarchive`. An older 1.1.0 archive sits
   in `~/Library/Developer/Xcode/Archives/2026-09-18/` under Xcode's default name: it is BUILD 3, and its
   record says it was UPLOADED to App Store Connect on 18 September. (This file called it "pre-1.1.0" until
   an audit read its Info.plist on 2 October.) It predates everything since, the calendar fix included. App Store
-  Connect itself was not checked; if it still lists build 3 when a build is attached, pick 14, never 3.
-  The version became 1.1.1 with build 14 (3 October), then build 15 the same day; `WhatsNewView.contentVersion` stays "1.1.0" on
+  Connect itself was not checked; if it still lists build 3 when a build is attached, pick 16, never 3.
+  The version became 1.1.1 with build 14 (3 October), then 15 and 16 the same day; `WhatsNewView.contentVersion` stays "1.1.0" on
   purpose, since that page describes the 1.1 release and a bug-fix number must not show it twice.
   **Next (owner only): try Siri on a real iPhone first (§6), then Organizer > Distribute App on that 1.1.1
-  (15) archive, paste `docs/AppStoreRelease.md` and `docs/AppStoreListing.md` into App Store Connect with
-  `docs/screenshots/`, attach build 15, and submit.
+  (16) archive, paste `docs/AppStoreRelease.md` and `docs/AppStoreListing.md` into App Store Connect with
+  `docs/screenshots/`, attach build 16, and submit.
   The 20 September device pass (§5) predates Siri and the calendar fix. The other loose end is the EveryAyah
   rights email, drafted in `docs/AppStoreRelease.md` and not sent.**
 
@@ -791,6 +792,10 @@ left-to-right in English, the device language) and Urdu (the note, wrapped on tw
 build cut it to one); with `-debugWatchStep 1 -debugOnboardingSlide 4` the same slide sits after the watch
 step with six capsules. NOT verified: the slide at accessibility text sizes, and on an Arabic-language
 device (where the tips would be Arabic and right-to-left).
+
+Verified for 1.1.1 (16) (3 October 2026, #36 merged): the Release ARCHIVE reports 1.1.1 (16), embeds the
+widget extension and the watch app, and its binary has zero hits for the debug launch arguments against a
+positive control.
 
 **DEVICE PASS DONE — 20 September 2026.** The owner went through the whole standing "not verified" list on
 their own iPhone and Apple Watch and reported everything working. That closes, all at once: the tracker
