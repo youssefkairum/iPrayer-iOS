@@ -97,6 +97,15 @@ and what is still open. The README describes the product; this describes the wor
   format string, so a Latin comma shipped in all eight languages; Arabic and Urdu want ، (U+060C) and
   Chinese ，(U+FF0C). The name is now isolated too. The ORDER was never wrong — the owner asked, and the
   answer is that a right-to-left line ENDS on the left, which is why the name sits there. Build 12.
+- **2 October 2026, language consistency — PR #34 OPEN, NOT merged, build NOT bumped.** Branch
+  `fix-qibla-distance-watch-time-language`. Two places formatted with the DEVICE locale while the screen
+  around them was in the in-app language: the Qibla tab's distance (an Arabic phone with the app in
+  English showed "١٬٢٨٦ كم" on an English screen) and the watch's three clock times (with the app in
+  Arabic the page said "5:30AM" beside a complication saying "5:30 ص"). Both fixed; the rule is in §3.
+  Verifying it turned up two more things on the watch, fixed in the PR's second commit so it can be dropped
+  on its own: the watch's Qibla page had the same distance fault, and the Today list split a passed
+  prayer's time across two lines ("6:49A" / "M") in every language. Merging needs the next build number
+  and a new archive, and five App Store screenshots go stale (§6).
 - **Archives.** Release archives are built with `xcodebuild archive` (widget + watch app + complication
   embedded, development-signed; Xcode re-signs for distribution on upload). Keep exactly ONE current: each
   new build's archive supersedes the last, and 4 through 11 were deleted in turn. The only 1.1.0 archive
@@ -130,7 +139,7 @@ iPrayer/
     TasbihView.swift          Dhikr chips (6 phrases, `tasbihDhikr` key), target chips, position-in-cycle count,
                               whole band taps, reset confirmation
     QiblaCompassView.swift    glass dial + 72-tick rose, needle to the Kaaba, turn guidance card, distance from
-                              SharedPrayerConfig coords in device units, no-location card
+                              SharedPrayerConfig coords (app language, device's km or miles), no-location card
     HomeWidgets.swift         streak/tracker card, Dua of the Day card, Verse of the Day card (2-line cap)
     DuaLibraryView.swift      search + category chips (Liquid Glass), cards with copy/share, repeat badge, evening text
     AudioStorageView.swift    downloaded-audio manager: per reciter / per surah sizes and deletion
@@ -387,6 +396,20 @@ must follow the *in-app* language (notifications, some labels) goes through
   dial never spins the long way through north; read it modulo 360. No magnetometer (Simulator) shows "Compass
   unavailable" with the bearing and distance kept. Only the fallback is simulator-verifiable; heading, calibration
   prompt and orientation need a device.
+- **The in-app language and the device are TWO locales, and a formatted value has to say which one it
+  takes.** `Locale.current`, a `MeasurementFormatter` or `DateFormatter` with no locale set, a bare
+  `date.formatted(date:time:)` and `Text(date, style: .time)` all follow the DEVICE. On the phone the last
+  one happens to be right, because iPrayerApp puts `\.locale` in the environment; the watch sets no such
+  thing, so there it was wrong. The rule that every target now follows: WORDS, DIGITS and the CLOCK
+  CONVENTION come from the app language (`Locale(identifier: appLanguage)`, or `model.language` on the
+  watch — `WatchModel.clockStyle` is the one place the watch's time format lives), and the only thing taken
+  from the device is the UNIT SYSTEM, which is a fact about where the person lives and not about what they
+  read: `var c = Locale.Components(identifier: language); c.measurementSystem =
+  Locale.current.measurementSystem`. Measured in a standalone script: device ar_SA + app en gives
+  "1,235 km", device en_US + app ar gives "767 ميل". One consequence to know about rather than fix: a
+  language-only locale decides 12 or 24 hour by the LANGUAGE (en and ar 12-hour, fr/de/tr/ru/zh 24-hour),
+  so an English-language app on a 24-hour phone shows "9:15 PM". The phone, the widgets and the
+  complication have always done that; the watch pages now match them instead of the device.
 - **Copyright line** is built by `AppTranslations.copyrightLine`: RTL languages lead with the phrase, the
   Latin name+year sit in a first-strong isolate.
 - **Tasbih changing the dhikr keeps the count** (people run one count across phrases).
@@ -451,6 +474,23 @@ installed). That is the state a fresh simulator is already in, so the real branc
 - `simctl spawn <sim> defaults write <bundle>` writes a domain the app *reads* but its own writes go to the
   container plist (`get_app_container … data`/Library/Preferences). Read state from the container plist.
 - `simctl pbcopy` needs `LC_ALL=en_US.UTF-8` for Arabic.
+- **A device language different from the app's, for one run:** add `-AppleLanguages "(ar-EG)" -AppleLocale
+  ar_EG` to the launch arguments next to `-appLanguage en`. The location pill turning into "القاهرة" is the
+  proof the device side took. Use ar_EG and not ar_SA while #33 is unmerged: Saudi Arabia's default
+  calendar is Hijri and `main` crashes at launch on it. The reverse is `-AppleLocale en_US -appLanguage ar`,
+  which also gives miles.
+- **The watch's language, once it has ever been paired and synced, cannot be set with `defaults write`.**
+  The phone's sync payload writes `appLanguage` into the watch app's CONTAINER plist, and that wins over
+  the simulator-level domain `simctl spawn <watch> defaults write` reaches. Drive it the real way: with
+  both simulators booted, launch the PHONE app with `-appLanguage ar`, then relaunch the watch app, and
+  confirm with `plutil -p $(xcrun simctl get_app_container <watch> youssefkairum.iPrayer.watchkitapp
+  data)/Library/Preferences/youssefkairum.iPrayer.watchkitapp.plist`. The phone pushes whatever language
+  it was LAST launched in, so an English phone run silently turns the watch back. A watch that has never
+  synced (an unpaired 40mm, say) does take the `defaults write`.
+- The watch's Today and Tracker pages are Lists, and a List swallows the page swipe until it has scrolled
+  to its end: from launch, the Qibla page is six upward swipes away, not four. The Simulator tool's
+  `swipe` works on a watch UDID.
+- `simctl io <sim> screenshot` has been unable to write into the repo; capture to a temp folder.
 - `simctl launch` needs `--terminate-running-process` and the argument string split by the shell (zsh: `${=A}`),
   otherwise the arguments are passed as one word and silently ignored. Give a fresh launch 30 s before a capture.
 - **Fresh-install tests: run `simctl spawn <sim> defaults delete <bundle>` first.** That simulator-level domain
@@ -526,6 +566,20 @@ readout; and under `-debugSpinCompass 1` the ratchet logged 184 clicks, so remov
 silence it. That build's archive contained zero hits for all four removed strings. NOT verified:
 how any of it FEELS — there is no Taptic Engine on the Simulator, which is exactly what caused #22.
 
+Verified for #34 (2 October 2026), every case as a screenshot of the rendered screen and each bug first
+REPRODUCED on `main`'s code in the same harness. Qibla tab, iPhone 17 simulator at Cairo: device Arabic
+(ar_EG) + app English reads "Qibla 136° · 1,286 km" where `main` reads "١٬٢٨٦ كم"; device en_US + app
+Arabic reads "799 ميل"; device en_EG + app Arabic reads "1,286 كم". Watch, Apple Watch Ultra 4 simulator
+paired with that phone, device English, language pushed over WatchConnectivity: in Arabic the next-prayer
+page reads "5:30 ص" and "ثم الشروق 6:49 ص" (ثم still leads, at the right) where `main` reads "5:30AM" and
+"6:49 AM"; the Today list reads "5:29 ص", "6:49 ص", "12:45 م", each on one line at full size, where `main`
+breaks "6:49A" / "M"; the Qibla page reads "1,286 كم". In English the same three pages read "5:30 AM",
+"6:49 AM" and "1,286 km", and the longest name, Maghrib, fits at full size. Also checked on the 40mm
+simulator (the narrowest): times stay on one line in both languages. NOT verified: any of it on a real
+watch or phone; the other seven languages on screen (their strings were measured in a standalone script
+only); a device that is right-to-left AND on a 24-hour clock; and the complication beside the page on a
+real face, which is the comparison the bug was first described by.
+
 **DEVICE PASS DONE — 20 September 2026.** The owner went through the whole standing "not verified" list on
 their own iPhone and Apple Watch and reported everything working. That closes, all at once: the tracker
 across a real midnight on two devices · the Today's Prayers widget rendered · the Verse of the Day widget on
@@ -581,6 +635,22 @@ which no amount of device testing surfaces.
   right-to-left tweaks beyond layout mirroring, native system `TabView` for the full Liquid Glass tab
   behaviour, reopen What's New from Settings > About, choosing the calculation method on the watch,
   local adhan notifications on the watch (phone notifications already mirror to it).
+
+**Found while fixing #34, NOT fixed**
+- **Five App Store screenshots go stale when #34 merges,** plus their `captioned/` versions:
+  `iphone69-ar-06-qibla` and `ipad13-ar-06-qibla` show "1,286 km" on the Arabic screen (now "1,286 كم");
+  `watch44-ar-01-next-prayer` shows "6:54PM" and "8:10 PM" (now "6:54 م", "8:10 م"); `watch44-ar-03-qibla`
+  shows "1,286 km"; and `watch44-en-01-next-prayer` shows "6:54PM" where the app now writes "6:54 PM".
+  The English one differs only by that space. Retake before submitting a build that contains #34.
+- **The Qibla tab's bearing and turn lines read number-first in Arabic:** "136° القبلة" and
+  "53° · استدر يساراً", where the source order is word-first. Both are `Text`/`Label` built from an
+  interpolated literal, and the rendered line is laid out left-to-right. Visible in the committed
+  `iphone69-ar-06-qibla.png`, so it predates #34. The cause was not isolated; `Text(verbatim:)` on a
+  pre-built `String` is the likely fix, the pattern the hero card's "at <time>" line uses.
+- **Watch Today page on the 40mm:** a passed row (name + tick + time) is too narrow for the longer names
+  at body size, so "Sunrise" and "Dhuhr" truncate ("Sun…", "Dh…") and الشروق does in Arabic. `main` had
+  the same truncation and a broken time on top; #34 fixed the time only. A real fix is a design choice
+  (drop the tick on passed rows, which are already dimmed, or a smaller time).
 
 **Known cosmetic**
 - What's New was rebuilt in PR #12 (merged via #15); still to check: the four sections at larger Dynamic Type.
