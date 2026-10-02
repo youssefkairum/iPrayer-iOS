@@ -165,15 +165,15 @@ struct TodayPage: View {
                         .font(.system(.body, design: .rounded, weight: isNext ? .bold : .regular))
                         .foregroundStyle(passed ? .secondary : .primary)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+                        .minimumScaleFactor(0.6)
                     Spacer(minLength: 0)
-                    if passed {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.green.opacity(0.8))
-                    }
+                    // A passed prayer is DIMMED and nothing more. It used to carry a green tick as well,
+                    // and on the smaller watches there is no room for one: beside it "Sunrise" and
+                    // "Dhuhr" were cut to "Sun…" and "Dh…" on the 40mm. The tick said nothing the dimming
+                    // does not, and on this page it could be taken for "prayed", which is the Tracker's.
+                    //
                     // The time keeps one line and its full width; a long name gives way instead. Without
-                    // this the row broke the time in two beside the longer Arabic names ("6:49A" / "M").
+                    // this the row broke the time in two beside the longer names ("6:49A" / "M").
                     Text(prayer.time.formatted(model.clockStyle))
                         .font(.system(.body, design: .rounded, weight: isNext ? .bold : .regular))
                         .foregroundStyle(isNext ? .teal : (passed ? .secondary : .primary))
