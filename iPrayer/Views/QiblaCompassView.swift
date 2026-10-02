@@ -72,24 +72,28 @@ struct QiblaCompassView: View {
         viewModel.locationError == nil && viewModel.locationAuthorization != .notDetermined && viewModel.qiblaDirection != 0
     }
     
-    /// Units follow the device region (km or miles), not the app language. Built once: allocating a
-    /// MeasurementFormatter is expensive and this used to happen on every heading reading.
-    private static let distanceFormatter: MeasurementFormatter = {
-        let formatter = MeasurementFormatter()
-        formatter.locale = Locale.current
-        formatter.unitOptions = .naturalScale
-        formatter.numberFormatter.maximumFractionDigits = 0
-        return formatter
-    }()
-    
-    /// Distance from the last known position to the Kaaba, in the user's units. Read once when the screen
-    /// appears rather than recomputed per heading reading: it is a property of the location, and working it
-    /// out meant an App Group read and a JSON decode 20 to 50 times a second while the phone turned.
-    private static func distanceToKaaba() -> String? {
+    /// Distance from the last known position to the Kaaba. Read once when the screen appears rather than
+    /// recomputed per heading reading: it is a property of the location, and working it out meant an App
+    /// Group read and a JSON decode 20 to 50 times a second while the phone turned.
+    ///
+    /// Two things decide how it is written, and they come from different places. The WORDS and DIGITS
+    /// follow the in-app language, like everything else on this screen; the UNIT SYSTEM (km or miles)
+    /// follows the device region. `Locale.current` gave both to the device, so an Arabic phone with the
+    /// app in English showed "١٬٢٣٥ كم" on an English screen, and an English phone with the app in
+    /// Arabic showed "767 mi" on an Arabic one. The formatter is built per call for that reason — the
+    /// language can change between visits — and a call happens per visit or location change, not per
+    /// heading reading.
+    private static func distanceToKaaba(language: String) -> String? {
         guard let config = SharedPrayerConfig.load() else { return nil }
         let here = CLLocation(latitude: config.latitude, longitude: config.longitude)
         let metres = here.distance(from: kaaba)
-        return distanceFormatter.string(from: Measurement(value: metres, unit: UnitLength.meters))
+        var components = Locale.Components(identifier: language)
+        components.measurementSystem = Locale.current.measurementSystem
+        let formatter = MeasurementFormatter()
+        formatter.locale = Locale(components: components)
+        formatter.unitOptions = .naturalScale
+        formatter.numberFormatter.maximumFractionDigits = 0
+        return formatter.string(from: Measurement(value: metres, unit: UnitLength.meters))
     }
     
     var body: some View {
@@ -127,11 +131,11 @@ struct QiblaCompassView: View {
         }
         .onAppear {
             viewModel.startCompass()
-            distanceText = Self.distanceToKaaba()
+            distanceText = Self.distanceToKaaba(language: appLanguage)
             ratchet.begin(at: qiblaRotation)
         }
         .onChange(of: viewModel.qiblaDirection) { _, _ in
-            distanceText = Self.distanceToKaaba()
+            distanceText = Self.distanceToKaaba(language: appLanguage)
             // The detent lattice is anchored on the Qibla, and the Qibla just moved. Re-anchor in silence.
             ratchet.reseed(at: qiblaRotation)
         }

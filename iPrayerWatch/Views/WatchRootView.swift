@@ -41,6 +41,15 @@ let watchNightGradient = LinearGradient(colors: [Color(red: 15/255, green: 32/25
                                                  Color(red: 44/255, green: 83/255, blue: 100/255)],
                                         startPoint: .top, endPoint: .bottom)
 
+private extension WatchModel {
+    /// Clock times in the IN-APP language, as the complication and the phone write them.
+    /// `Text(date, style: .time)` and a bare `.formatted(date:time:)` follow the DEVICE, so with the app
+    /// in Arabic these pages said "8:15 PM" beside a complication saying "8:15 م".
+    var clockStyle: Date.FormatStyle {
+        Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: language))
+    }
+}
+
 // MARK: - Next prayer
 
 struct NextPrayerPage: View {
@@ -75,7 +84,7 @@ struct NextPrayerPage: View {
                         .foregroundStyle(.white)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
-                    Text(next.time, style: .time)
+                    Text(next.time.formatted(model.clockStyle))
                         .font(.system(.title3, design: .rounded, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.95))
                     Text(timerInterval: Date()...next.time, countsDown: true)
@@ -97,8 +106,10 @@ struct NextPrayerPage: View {
                         //
                         // The clock is wrapped in a first-strong isolate so a Latin "6:54 PM" cannot be
                         // split apart inside an Arabic sentence — the pattern PrayerListView uses for its
-                        // "at <time>" line.
-                        let clock = following.time.formatted(date: .omitted, time: .shortened)
+                        // "at <time>" line. It stays now that the clock follows the app language: a
+                        // language can still differ from the sentence's direction, and "6:54 م" is itself
+                        // a mixed run.
+                        let clock = following.time.formatted(model.clockStyle)
                         (Text(AppTranslations.translate("Then", to: model.language) + " ")
                          + Text(model.name(for: following.name)).bold()
                          + Text(" \u{2068}\(clock)\u{2069}"))
@@ -160,7 +171,7 @@ struct TodayPage: View {
                             .font(.caption2)
                             .foregroundStyle(.green.opacity(0.8))
                     }
-                    Text(prayer.time, style: .time)
+                    Text(prayer.time.formatted(model.clockStyle))
                         .font(.system(.body, design: .rounded, weight: isNext ? .bold : .regular))
                         .foregroundStyle(isNext ? .teal : (passed ? .secondary : .primary))
                 }
