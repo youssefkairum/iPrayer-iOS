@@ -98,7 +98,7 @@ Prayer times, the Quran text, Duas and the Tasbih all work offline. The network 
 
 1. Clone the repository and open `iPrayer.xcodeproj`. Swift Package Manager resolves Adhan automatically.
 2. Select your own development team for all four targets: `iPrayer`, `iPrayerWidgetExtension`, `iPrayerWatch` and `iPrayerWatchWidgetExtension`.
-3. The app uses these capabilities, which must exist for your team: **App Groups** (`group.iPrayer.shared`), **iCloud key-value storage**, **Sign in with Apple**, and **Background Modes** (background fetch).
+3. The app uses these capabilities, which must exist for your team: **App Groups** (`group.iPrayer.shared`), **iCloud key-value storage**, **Sign in with Apple**, and **Background Modes** (audio, background fetch).
 4. Build and run the `iPrayer` scheme. In the Simulator, set a location under *Features > Location* so prayer times can be calculated.
 
 ### Debug launch arguments

@@ -1,6 +1,6 @@
 # App Store listing text (ASO), 19 September 2026
 
-Character counts verified against App Store Connect limits. Keywords avoid words already in the name and subtitle.
+Character counts verified against App Store Connect limits. English keywords avoid words already in the name and subtitle; the Arabic list repeats one subtitle word (مواقيت), which can be dropped to free seven characters.
 
 Arabic: every paragraph and bullet must START with an Arabic word. App Store Connect picks each paragraph's direction from its first strong character, so a line that opens with a Latin word (iPrayer, Live Activities) renders left-to-right with its punctuation on the wrong side. The Promotional Text field is a forced left-to-right input, so keep it pure Arabic (no Latin words) with no trailing full stop; if it still renders wrong, wrap the whole text in U+2067 … U+2069 (right-to-left isolate).
 

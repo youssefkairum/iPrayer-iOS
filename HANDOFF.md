@@ -1,7 +1,7 @@
 # iPrayer — Handoff Notes
 
-Written 18 September 2026; updated 2 October 2026 for the Siri branch. Everything through PR #31 is merged
-to `main`. This is the context a future session
+Written 18 September 2026; updated 2 October 2026, after Siri (#32) and the non-Gregorian calendar fix
+(#33). Everything through PR #33 is merged to `main`. This is the context a future session
 needs that is *not* obvious from the code: where things stand, why decisions were made, how to test,
 and what is still open. The README describes the product; this describes the work.
 
@@ -9,8 +9,8 @@ and what is still open. The README describes the product; this describes the wor
 
 ## 1. Where things stand
 
-- **Version:** 1.1.0, build 12 (App Store has 1.0). Deployment target iOS 26.0 (watchOS 10.0 on the watch
-  targets), Xcode 27. The Swift 6.2 *toolchain*, but still the Swift 5 *language mode*
+- **Version:** 1.1.0, build 13 (App Store has 1.0). Deployment target iOS 26.0 (watchOS 10.0 on the watch
+  targets), Xcode 27. The Swift 6.4 *toolchain*, but still the Swift 5 *language mode*
   (`SWIFT_VERSION = 5.0` in all eight configurations) — which is why the capture rule below is a warning
   and not yet an error. `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and approachable concurrency are on for
   the app target.
@@ -82,7 +82,7 @@ and what is still open. The README describes the product; this describes the wor
   Watch 44mm (368x448, three screens), each in BOTH English and Arabic. Named
   `<device><size>-<en|ar>-<NN>-<screen>.png`. Captured on the simulator with debug launch arguments and a
   frozen 9:41 status bar; the streak, tracker and Tasbih counts are seeded so the cards are not empty.
-  Two deliberate omissions, both in §5: no onboarding Apple Watch step for iPad, because an iPad cannot pair
+  Two deliberate omissions: no onboarding Apple Watch step for iPad, because an iPad cannot pair
   a watch and that screen would be unreachable for anyone who saw it in the listing; and the watch has no
   Quran or Duas page to shoot. The 44mm watch was chosen over the Ultra because it gives 368x448, a size the
   App Store lists, where the Ultra gives 422x514.
@@ -97,32 +97,39 @@ and what is still open. The README describes the product; this describes the wor
   format string, so a Latin comma shipped in all eight languages; Arabic and Urdu want ، (U+060C) and
   Chinese ，(U+FF0C). The name is now isolated too. The ORDER was never wrong — the owner asked, and the
   answer is that a right-to-left line ENDS on the left, which is why the name sits there. Build 12.
-- **2 October 2026, the non-Gregorian calendar round — branch `fix-non-gregorian-calendar`, PR OPEN, NOT
-  merged. BUILD 12 MUST NOT BE UPLOADED.** Testing on a Simulator set to region Saudi Arabia, whose default
+- **2 October 2026, the non-Gregorian calendar round — MERGED (#33). BUILD 12 WAS NEVER UPLOADED AND MUST
+  NOT BE.** Testing on a Simulator set to region Saudi Arabia, whose default
   calendar is Hijri, the app CRASHED AT LAUNCH. Every tester until then had a Gregorian device (Egypt).
   Three things were wrong on any phone whose calendar is Hijri, Persian, Japanese, Buddhist and so on, all
-  three in the archived build 12, the first two introduced since 1.0: (1) the day number behind the Dua and Verse of
+  three in build 12, the first two introduced since 1.0: (1) the day number behind the Dua and Verse of
   the Day went negative and the Home screen indexed an array with it — the crash; (2) NO adhan and NO
   pre-prayer reminder was ever delivered, silently, because the notification triggers carried Gregorian
   numbers with no calendar and iOS read them in the device's (§3); (3) the copyright line said © 1448.
-  Fixed on the branch, with the Today's Prayers widget's reload date on the night the clocks go forward,
-  which the same audit turned up. Merging needs build 13 and a new archive; the 1.1.0 (12) archive should
-  then be deleted like its predecessors.
-- **2 October 2026, Siri — branch `siri-app-intents`, PR OPEN, NOT merged.** The owner asked for Siri
+  Fixed in #33, with the Today's Prayers widget's reload date on the night the clocks go forward, which the
+  same audit turned up. Two things it found were NOT calendar bugs and were left for a separate change (§6).
+  Build 13.
+- **2 October 2026, Siri — MERGED (#32).** The owner asked for Siri
   "in the languages". Built as App Intents inside the app target: six shortcuts that need no setup (next
   prayer, a named prayer's time, Qibla bearing; open the compass, Continue Reading, Tasbih), spoken phrases
   in the seven app languages Siri has, titles and answers in all nine (§3 for what decides which language).
   `iprayer://open/<tab>` came with it. An adversarial review before the PR found three navigation bugs in
   the first version, all invisible on a cold launch, and two wrong answers around midnight (§3); all five
-  are fixed and re-tested. Merging this needs a build bump and a new archive.
+  are fixed and re-tested. Nobody has SPOKEN to it yet: that needs the owner's iPhone (§5, §6). Build 13.
 - **Archives.** Release archives are built with `xcodebuild archive` (widget + watch app + complication
   embedded, development-signed; Xcode re-signs for distribution on upload). Keep exactly ONE current: each
-  new build's archive supersedes the last, and 4 through 11 were deleted in turn. The only 1.1.0 archive
-  on disk is `~/Library/Developer/Xcode/Archives/2026-09-20/iPrayer 1.1.0 (12).xcarchive`. (A pre-1.1.0
-  archive from 18 September is also on disk and is not part of this release.)
-  **Next (owner only): Organizer > Distribute App on that 1.1.0 (12) archive, paste `docs/AppStoreRelease.md`
-  into App Store Connect with `docs/screenshots/`, and submit. The device pass is DONE (§5, 20 September).
-  The only other loose end is the EveryAyah rights email, drafted in `docs/AppStoreRelease.md` and not sent.**
+  new build's archive supersedes the last, and 4 through 11 were deleted in turn; build 12's, the one with
+  the launch crash, was moved to the Trash on 2 October rather than deleted, and can be emptied. The
+  CURRENT archive, and the only one to distribute, is
+  `~/Library/Developer/Xcode/Archives/2026-10-02/iPrayer 1.1.0 (13).xcarchive`. A second 1.1.0 archive sits
+  in `~/Library/Developer/Xcode/Archives/2026-09-18/` under Xcode's default name: it is BUILD 3, and its
+  record says it was UPLOADED to App Store Connect on 18 September. (This file called it "pre-1.1.0" until
+  an audit read its Info.plist on 2 October.) It predates everything since, the calendar fix included. App Store
+  Connect itself was not checked; if it still lists build 3 when a build is attached, pick 13, never 3.
+  **Next (owner only): try Siri on a real iPhone first (§6), then Organizer > Distribute App on that 1.1.0
+  (13) archive, paste `docs/AppStoreRelease.md` and `docs/AppStoreListing.md` into App Store Connect with
+  `docs/screenshots/`, attach build 13, and submit.
+  The 20 September device pass (§5) predates Siri and the calendar fix. The other loose end is the EveryAyah
+  rights email, drafted in `docs/AppStoreRelease.md` and not sent.**
 
 ## 2. Map of the code
 
@@ -176,11 +183,11 @@ iPrayer/
     Haptics.swift             tap / soft / rigid / selection / success / warning, used everywhere
     DeepLinks.swift           DeepLinkRouter.open(tab, verse:): the ONE way in from outside. iprayer://verse/S/A
                               -> Quran tab pushes the reader; iprayer://open/<tab>; the Siri open-intents
+    UserDefaultsKeys.swift    UDKey enum — every persisted key
   Intents/PrayerIntents.swift Siri / Shortcuts (App Intents, in the app, no extension, no entitlement): three
                               intents that ANSWER (next prayer, a named prayer, Qibla bearing), three that OPEN
                               (compass, Continue Reading, Tasbih), the AppShortcutsProvider with the phrases,
                               and `-debugSiriDialogs 1`
-    UserDefaultsKeys.swift    UDKey enum — every persisted key
   Models/DuaLibraryData.swift 50 duas with sources; duaOfTheDay(); displayArabic swaps the Arabic comma
     HomeWidgetsData.swift     tracker + streak + the App Group payload the widgets and watch read
     QuranModel.swift          Surah / Ayah / SurahMetadata
@@ -458,7 +465,7 @@ must follow the *in-app* language (notifications, some labels) goes through
   is back. Three things follow, each found by review and reproduced, none visible on a cold launch:
   (1) QuranView must NOT observe `router.pendingVerse` — the instance about to be thrown away fires first,
   takes the verse and pushes onto dead state, and a warm tap on the Verse of the Day widget lands on the
-  surah list; the new instance's `onAppear` is the only consumer. (2) Do not bump when the compass is both
+  surah list; the new instance's `openLinkedVerseIfPossible` is the only consumer (run from its `onAppear`, and again once its own surah list has loaded). (2) Do not bump when the compass is both
   showing and requested: rebuilt in place, the new view's `onAppear` runs BEFORE the old one's
   `onDisappear`, and the shared view model is left with the compass stopped. (3) `pendingTab` is cleared
   with `DispatchQueue.main.async`, because `@Published` publishes in willSet and a clear made inside the
@@ -552,7 +559,7 @@ encoder or the font changes. And a Python bidi audit over `AppTranslations.swift
 and `ur` value whose first strong character is left-to-right (see the §3 rule) — rerun it whenever a
 translation is added, because the failure is invisible until someone who reads the language looks at it.
 
-## 5. Verified vs not verified (as of 20 September 2026)
+## 5. Verified vs not verified (as of 2 October 2026)
 
 Verified on the iPhone 17 simulator (screenshots + logs): every tab, onboarding incl. the real location
 prompt, What's New for update vs fresh install, Home layout with and without a signed-in name (incl. a long
@@ -604,16 +611,16 @@ readout; and under `-debugSpinCompass 1` the ratchet logged 184 clicks, so remov
 silence it. That build's archive contained zero hits for all four removed strings. NOT verified:
 how any of it FEELS — there is no Taptic Engine on the Simulator, which is exactly what caused #22.
 
-Verified for the calendar branch (2 October 2026) on the iPhone 17 simulator switched to a HIJRI device
+Verified for the calendar fix (#33, 2 October 2026) on the iPhone 17 simulator switched to a HIJRI device
 (`simctl spawn <sim> defaults write "Apple Global Domain" AppleLocale ar_SA`, then shutdown and boot; put
 `en_EG` back afterwards): build 12's code crashes at launch there (crash report: `duaOfTheDay`, index out
-of range); the fixed build opens Home, shows the same Verse of the Day as a Gregorian device, and under
+of range); the fixed code opens Home, shows the same Verse of the Day as a Gregorian device, and under
 `-debugLogNotifications 1` every scheduled prayer's "wanted" and "fires" instants are identical. NOT
 verified: an adhan actually ARRIVING on a Hijri-calendar iPhone (the trigger dates are right; delivery
 needs a device and a wait); the copyright year and the widget's reload date were fixed by reading, and the
 date arithmetic checked in a standalone script, not on screen. Other calendars (Persian, Japanese,
 Buddhist) were measured in standalone scripts only.
-Verified for the Siri branch (2 October 2026) on the iPhone 17 simulator, clean build: metadata extraction,
+Verified for Siri (#32, 2 October 2026) on the iPhone 17 simulator, clean build: metadata extraction,
 phrase validation and Siri training all ran; the Shortcuts app lists the six shortcuts with ARABIC titles on
 a simulator rebooted into Arabic, plus a tile per prayer; Next Prayer answers by tap; Tasbih opens its tab;
 Continue Reading cold-launches into the reader at the last-read verse with the GREEN mark; a warm
@@ -626,6 +633,14 @@ each Siri voice reads "136°", and the language of the answer as displayed — t
 result banner in English, its own "Done" button included, even when rebooted into Arabic, so the banner
 proves nothing either way. Also not verified: the second-window replay fix on a real iPad (reasoned and
 reproduced in a Catalyst harness only).
+
+Verified for build 13 (both merged, 2 October 2026): a clean Debug build of the combined code with phrase
+validation; it launches to Home and logs the Siri answers; the Release ARCHIVE reports 1.1.0 (13), embeds
+the widget extension and the watch app, carries `Metadata.appintents` and the per-language
+`AppShortcuts.strings` / `AppIntents.strings`, and its binary has zero hits for `debugSiriDialogs`,
+`debugLogNotifications`, `[Notify]` and `debugSpinCompass` against a positive control. NOT re-run on the
+combined build: the Hijri-simulator launch and the tap-through of each shortcut, which were done on each
+branch separately; the two changes share no code.
 
 **DEVICE PASS DONE — 20 September 2026.** The owner went through the whole standing "not verified" list on
 their own iPhone and Apple Watch and reported everything working. That closes, all at once: the tracker
@@ -660,8 +675,10 @@ which no amount of device testing surfaces.
 - Onboarding copy: DONE in PR #8 (now "backups go to your own iCloud; iPrayer runs no servers").
 - "Sign in with Apple" button text follows the DEVICE language (Apple's button; no API). A custom button with
   Apple's official translations is possible but adds review risk; left as is.
-- Store screenshots and review notes: DONE in `docs/` (see above). The screenshots are raw simulator captures;
-  add frames or captions if wanted. Not yet uploaded to App Store Connect.
+- Store screenshots and review notes: DONE in `docs/` (see above). `docs/screenshots/` holds the 32 raw
+  simulator captures and `docs/screenshots/captioned/` the same 32 with a headline drawn in; upload either
+  set. Not yet uploaded to App Store Connect. Neither the release notes nor the listing text mentions Siri
+  yet: that copy is the owner's, in two languages, and was left for them to decide.
 - Licence: README now says all rights reserved (matching the in-app copyright line) with the bundled data's own
   licences pointed to; the MIT badge and LICENSE reference were removed. Switch to MIT later if wanted, but note the
   Tanzil text, KFGQPC font and EveryAyah audio could not be MIT anyway.
@@ -675,13 +692,14 @@ which no amount of device testing surfaces.
   sizes and the Lock Screen rectangular family, so the system-font fallback is not needed. Keep the font
   registered through UIAppFonts only (§7); that is what makes it work in the widget process.
 
-**Found by the 2 October calendar audit, NOT fixed (language consistency, not calendar)**
+**Found by the 2 October calendar audit, NOT fixed in #33 (language consistency, not calendar)**
+A separate session was started on 2 October to fix both; check `gh pr list` before doing it again.
 - The Qibla tab's distance ("1,235 km") is formatted with the DEVICE locale, so an Arabic phone with the app
   in English shows an Arabic unit and Arabic-Indic digits, and the reverse. `QiblaCompassView`'s static
   `distanceFormatter` should take the in-app language and keep only the measurement system from the device.
 - The watch app's three clock times use the device locale while its complication uses the in-app language,
   so with the app in Arabic the page says "8:15 PM" and the complication "8:15 م".
-**Siri (branch `siri-app-intents`)**
+**Siri (#32)**
 - Needs the owner on a real iPhone: say each phrase to Siri in English and Arabic; confirm the answer is
   spoken in the Siri language and that the degree sign is read as "degrees"/"درجة" (if it is not, switch
   that sentence to a word, which needs plural variations in Arabic and Russian).
