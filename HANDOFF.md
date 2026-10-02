@@ -123,8 +123,11 @@ and what is still open. The README describes the product; this describes the wor
   Arabic the page said "5:30AM" beside a complication saying "5:30 ص"). Both fixed; the rule is in §3.
   Verifying it turned up two more things on the watch, fixed in the PR's second commit so it can be dropped
   on its own: the watch's Qibla page had the same distance fault, and the Today list split a passed
-  prayer's time across two lines ("6:49A" / "M") in every language. Merging needs build 14 and a new
-  archive to replace 1.1.0 (13), and five App Store screenshots go stale (§6).
+  prayer's time across two lines ("6:49A" / "M") in every language. On 3 October the owner asked for what
+  that round had found to be fixed too, and it is, one commit each: the Qibla tab's bearing and turn lines
+  read word-first in Arabic and Urdu (§3), and the watch's Today page no longer puts a tick on a passed
+  prayer, which is what cut "Sunrise" to "Sun…" on the 40mm. Merging needs build 14 and a new archive to
+  replace 1.1.0 (13). Five App Store screenshots go stale and the owner does not want them retaken (§6).
 - **Archives.** Release archives are built with `xcodebuild archive` (widget + watch app + complication
   embedded, development-signed; Xcode re-signs for distribution on upload). Keep exactly ONE current: each
   new build's archive supersedes the last, and 4 through 11 were deleted in turn; build 12's, the one with
@@ -445,6 +448,14 @@ must follow the *in-app* language (notifications, some labels) goes through
   language-only locale decides 12 or 24 hour by the LANGUAGE (en and ar 12-hour, fr/de/tr/ru/zh 24-hour),
   so an English-language app on a 24-hour phone shows "9:15 PM". The phone, the widgets and the
   complication have always done that; the watch pages now match them instead of the device.
+- **A `Text("\(word) \(number)")` literal is laid out LEFT-TO-RIGHT in Arabic and Urdu.** An interpolated
+  literal is a `LocalizedStringKey`, not a `String`, and the Qibla tab's two lines built that way read
+  number-first: "136° القبلة" and "53° · استدر يساراً". It shipped, and it sat in the committed Arabic
+  screenshots unnoticed. Build the `String` first and show it with `Text(verbatim:)`, which takes its
+  direction from its own first strong character, and put the number in a first-strong isolate
+  (`\u{2068}136°\u{2069}`) or the degree sign lands on the wrong side of it. `Label` needs the
+  `Label { Text(verbatim:) } icon: { }` form for the same reason. Observed on screen and fixed by the
+  change; WHY the key lays out left-to-right was not isolated.
 - **Copyright line** is built by `AppTranslations.copyrightLine`: RTL languages lead with the phrase, the
   Latin name+year sit in a first-strong isolate.
 - **Tasbih changing the dhikr keeps the count** (people run one count across phrases).
@@ -697,6 +708,15 @@ simulator (the narrowest): times stay on one line in both languages. NOT verifie
 watch or phone; the other seven languages on screen (their strings were measured in a standalone script
 only); a device that is right-to-left AND on a 24-hour clock; and the complication beside the page on a
 real face, which is the comparison the bug was first described by.
+Verified for the 3 October additions to #34. Qibla tab under `-debugSpinCompass 1` on the iPhone 17
+simulator: Arabic reads "استدر يميناً · 33°" and "القبلة 136° · 1,286 كم", the word at the right and the
+degree sign right of its number; Urdu reads "دائیں مڑیں · 12°" and "قبلہ 136° · 1,286 کلو میٹر"; English is
+unchanged, "Turn left · 49°" and "Qibla 136° · 1,286 km". Watch Today page without the tick, on the 40mm
+simulator: every name whole in English ("Maghrib" beside "11:23 AM"), Arabic, French ("Lever du soleil")
+and German ("Sonnenaufgang", which needed the name's minimum scale lowered from 0.7 to 0.6); and on the
+49mm in English and Arabic. NOT verified: a PASSED row on screen — every capture was taken just after
+midnight, when all of the day's prayers are still ahead, so the dimmed state was not seen, only left
+unchanged in the code; and the five other languages on the watch.
 
 **DEVICE PASS DONE — 20 September 2026.** The owner went through the whole standing "not verified" list on
 their own iPhone and Apple Watch and reported everything working. That closes, all at once: the tracker
@@ -766,21 +786,19 @@ which no amount of device testing surfaces.
   behaviour, reopen What's New from Settings > About, choosing the calculation method on the watch,
   local adhan notifications on the watch (phone notifications already mirror to it).
 
-**Found while fixing #34, NOT fixed**
-- **Five App Store screenshots go stale when #34 merges,** plus their `captioned/` versions:
-  `iphone69-ar-06-qibla` and `ipad13-ar-06-qibla` show "1,286 km" on the Arabic screen (now "1,286 كم");
-  `watch44-ar-01-next-prayer` shows "6:54PM" and "8:10 PM" (now "6:54 م", "8:10 م"); `watch44-ar-03-qibla`
-  shows "1,286 km"; and `watch44-en-01-next-prayer` shows "6:54PM" where the app now writes "6:54 PM".
-  The English one differs only by that space. Retake before submitting a build that contains #34.
-- **The Qibla tab's bearing and turn lines read number-first in Arabic:** "136° القبلة" and
-  "53° · استدر يساراً", where the source order is word-first. Both are `Text`/`Label` built from an
-  interpolated literal, and the rendered line is laid out left-to-right. Visible in the committed
-  `iphone69-ar-06-qibla.png`, so it predates #34. The cause was not isolated; `Text(verbatim:)` on a
-  pre-built `String` is the likely fix, the pattern the hero card's "at <time>" line uses.
-- **Watch Today page on the 40mm:** a passed row (name + tick + time) is too narrow for the longer names
-  at body size, so "Sunrise" and "Dhuhr" truncate ("Sun…", "Dh…") and الشروق does in Arabic. `main` had
-  the same truncation and a broken time on top; #34 fixed the time only. A real fix is a design choice
-  (drop the tick on passed rows, which are already dimmed, or a smaller time).
+**Left open by #34**
+- **Five App Store screenshots are stale once #34 merges,** plus their `captioned/` versions. The owner was
+  asked on 3 October and does NOT want them retaken for now, so leave them unless asked.
+  `iphone69-ar-06-qibla` and `ipad13-ar-06-qibla` show "136° القبلة · 1,286 km" where the app now writes
+  "القبلة 136° · 1,286 كم", and the turn line number-first; `watch44-ar-01-next-prayer` shows "6:54PM" and
+  "8:10 PM" (now "6:54 م", "8:10 م"); `watch44-ar-03-qibla` shows "1,286 km"; and
+  `watch44-en-01-next-prayer` shows "6:54PM" where the app now writes "6:54 PM", a space apart. If they are
+  ever retaken: the caption tool was never committed, so the captioned five would have to be composited
+  onto the existing captioned images, and a next-prayer shot taken at night shows Fajr, not Maghrib.
+- **Other interpolated `Text` literals that mix a translated word with a number** were not audited in
+  Arabic: "Version 1.1.0" (About, What's New), the Tasbih's "of 33" and "2 cycles · 66", the reader's
+  "Verse 12", "Downloading audio 40%", and the watch's Tasbih and streak lines. They share the construction
+  that put the Qibla lines number-first (§3), so each is a candidate; none was looked at on screen.
 
 **Known cosmetic**
 - What's New was rebuilt in PR #12 (merged via #15); still to check: the four sections at larger Dynamic Type.
