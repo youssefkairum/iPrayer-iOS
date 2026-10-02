@@ -157,7 +157,7 @@ struct TodayPage: View {
             ForEach(model.todayPrayers, id: \.time) { prayer in
                 let isNext = prayer.time == model.nextPrayer?.time
                 let passed = prayer.time <= Date() && !isNext
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     Image(systemName: prayer.icon)
                         .foregroundStyle(passed ? Color.white.opacity(0.35) : PrayerPalette.palette(for: prayer.name).accent)
                         .frame(width: 20)
@@ -165,15 +165,20 @@ struct TodayPage: View {
                         .font(.system(.body, design: .rounded, weight: isNext ? .bold : .regular))
                         .foregroundStyle(passed ? .secondary : .primary)
                         .lineLimit(1)
-                    Spacer()
+                        .minimumScaleFactor(0.7)
+                    Spacer(minLength: 0)
                     if passed {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.caption2)
                             .foregroundStyle(.green.opacity(0.8))
                     }
+                    // The time keeps one line and its full width; a long name gives way instead. Without
+                    // this the row broke the time in two beside the longer Arabic names ("6:49A" / "M").
                     Text(prayer.time.formatted(model.clockStyle))
                         .font(.system(.body, design: .rounded, weight: isNext ? .bold : .regular))
                         .foregroundStyle(isNext ? .teal : (passed ? .secondary : .primary))
+                        .lineLimit(1)
+                        .layoutPriority(1)
                 }
                 .listRowBackground(isNext ? Color.teal.opacity(0.18) : nil)
                 .accessibilityElement(children: .combine)

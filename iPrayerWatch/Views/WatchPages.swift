@@ -125,8 +125,13 @@ struct QiblaPage: View {
     }
     private var isFacingQibla: Bool { abs(offset) < 5 }
     
+    /// Words and digits in the app's language, km or miles from the watch's region — the same split the
+    /// phone's Qibla tab makes. Left on the device locale, an Arabic page said "1,286 km".
     private var distanceText: String {
+        var components = Locale.Components(identifier: model.language)
+        components.measurementSystem = Locale.current.measurementSystem
         let formatter = MeasurementFormatter()
+        formatter.locale = Locale(components: components)
         formatter.unitOptions = .naturalScale
         formatter.numberFormatter.maximumFractionDigits = 0
         return formatter.string(from: Measurement(value: model.distanceToKaabaMetres, unit: UnitLength.meters))
