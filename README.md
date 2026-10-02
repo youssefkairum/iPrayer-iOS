@@ -114,6 +114,7 @@ Debug builds accept these arguments to open a specific screen, which helps with 
 | `-debugSpinCompass 1` | Turns the compass at 30 Hz, reporting a deliberately poor 25° accuracy. Works on the watch too |
 | `-debugHeadingAccuracy 5` | Overrides that 25°, to rehearse a well-calibrated phone |
 | `-debugAudioBaseURL https://unreachable.invalid` | Makes every verse fail, to test offline handling |
+| `-debugLogNotifications 1` | Logs each prayer notification's wanted time and the time iOS will fire it (`[Notify]` lines) |
 | `-debugSiriDialogs 1` | Logs every Siri answer in all nine languages (`[SiriDialog]` lines), plus what this device would say by default |
 | `-appLanguage ar` / `-userName "Name"` | Any UserDefaults key can be overridden for one run |
 

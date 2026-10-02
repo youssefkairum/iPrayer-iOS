@@ -40,8 +40,16 @@ nonisolated struct SharedVerseSchedule: Codable {
     
     /// Whole days since 1970 for the LOCAL calendar date, so everyone sees the same verse on the same date
     /// regardless of time zone, and it changes at local midnight.
+    ///
+    /// The date is read in a GREGORIAN calendar, never `Calendar.current`. On a phone whose calendar is
+    /// Hijri (the default for the Saudi Arabia region), Persian or Japanese, `Calendar.current` says the
+    /// year is 1448, 1405 or 8; handed to the Gregorian calendar below, that is a day centuries before
+    /// 1970 and the number comes out NEGATIVE. That crashed the Home screen at launch (a negative array
+    /// index in the Dua of the Day), and on every such device gave a different verse from everyone else.
     static func dayNumber(for date: Date = Date()) -> Int {
-        let local = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = Calendar.current.timeZone
+        let local = gregorian.dateComponents([.year, .month, .day], from: date)
         var utc = Calendar(identifier: .gregorian)
         utc.timeZone = TimeZone(identifier: "UTC")!
         let midnight = utc.date(from: DateComponents(year: local.year, month: local.month, day: local.day)) ?? date

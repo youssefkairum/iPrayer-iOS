@@ -97,6 +97,17 @@ and what is still open. The README describes the product; this describes the wor
   format string, so a Latin comma shipped in all eight languages; Arabic and Urdu want ، (U+060C) and
   Chinese ，(U+FF0C). The name is now isolated too. The ORDER was never wrong — the owner asked, and the
   answer is that a right-to-left line ENDS on the left, which is why the name sits there. Build 12.
+- **2 October 2026, the non-Gregorian calendar round — branch `fix-non-gregorian-calendar`, PR OPEN, NOT
+  merged. BUILD 12 MUST NOT BE UPLOADED.** Testing on a Simulator set to region Saudi Arabia, whose default
+  calendar is Hijri, the app CRASHED AT LAUNCH. Every tester until then had a Gregorian device (Egypt).
+  Three things were wrong on any phone whose calendar is Hijri, Persian, Japanese, Buddhist and so on, all
+  three in the archived build 12, the first two introduced since 1.0: (1) the day number behind the Dua and Verse of
+  the Day went negative and the Home screen indexed an array with it — the crash; (2) NO adhan and NO
+  pre-prayer reminder was ever delivered, silently, because the notification triggers carried Gregorian
+  numbers with no calendar and iOS read them in the device's (§3); (3) the copyright line said © 1448.
+  Fixed on the branch, with the Today's Prayers widget's reload date on the night the clocks go forward,
+  which the same audit turned up. Merging needs build 13 and a new archive; the 1.1.0 (12) archive should
+  then be deleted like its predecessors.
 - **2 October 2026, Siri — branch `siri-app-intents`, PR OPEN, NOT merged.** The owner asked for Siri
   "in the languages". Built as App Intents inside the app target: six shortcuts that need no setup (next
   prayer, a named prayer's time, Qibla bearing; open the compass, Continue Reading, Tasbih), spoken phrases
@@ -408,6 +419,19 @@ must follow the *in-app* language (notifications, some labels) goes through
 - **Tasbih changing the dhikr keeps the count** (people run one count across phrases).
 - **Deployment target 26.0** for the iPhone app and widget; **watchOS 10.0** for the watch app and complications
   (nothing in them needs newer; Series 4/5 top out at watchOS 10). Everywhere else 26.0 (was 26.1/26.6/26.2). iPad is targeted and cannot be dropped.
+- **`Calendar.current` is not Gregorian, and for a prayer app it often is not.** Region Saudi Arabia
+  defaults to the Hijri (Umm al-Qura) calendar, Iran and Afghanistan to the Persian, Thailand to the
+  Buddhist, and anyone can pick one in Settings. Two rules, each learned from a shipped-in-archive bug:
+  (1) never take year/month/day from `Calendar.current` and hand them to anything that assumes Gregorian —
+  Adhan, a Gregorian `Calendar`, a number shown as a year. Year 1448 read as Gregorian is five centuries
+  before 1970; `SharedVerseSchedule.dayNumber` did exactly this, went negative, and a bare `%` on a negative
+  number is a negative array index. (2) `calendar.dateComponents(_:from:)` does NOT stamp its result with
+  the calendar, and `UNCalendarNotificationTrigger` resolves bare components in the DEVICE calendar: build
+  them with `PrayerViewModel.triggerComponents(for:in:)`, which sets `.calendar`. The Daily Quran reminder
+  is the one place that is right without it, because both its sides use `Calendar.current`. Day STAMPS
+  (tracker, streak, iCloud, watch) were audited and are safe: Gregorian + `en_US_POSIX` + `yyyy-MM-dd`.
+  Day arithmetic (`startOfDay`, adding days, `isDateInTomorrow`) is calendar-independent and fine anywhere;
+  "now + 24 hours" is not a day, on two nights a year.
 - **Siri: three settings decide three things, and none of them is the in-app language.** The PHRASES Siri
   listens for follow the SIRI language. The TITLES in Shortcuts and Spotlight follow the DEVICE language.
   The ANSWER is a `LocalizedStringResource` the SYSTEM resolves. So an answer is never built with
@@ -470,7 +494,10 @@ watch's Qibla page can only ever be seen in its "Compass unavailable" state, sin
 magnetometer. Set it with `simctl spawn <watch> defaults write <bundle> debugSpinCompass -int 1` rather
 than as a launch argument if you are going to be driving the app for a while: watchOS relaunches it, and
 launch arguments do not survive that · `-debugAudioBaseURL https://unreachable.invalid`
-(fails every verse, to test offline handling) · `-debugSiriDialogs 1` (logs every Siri answer in all nine
+(fails every verse, to test offline handling) · `-debugLogNotifications 1` (logs, for every prayer
+notification as it is scheduled, the instant wanted and the instant iOS will actually fire it:
+`[Notify] prayer_Fajr_1 wanted … fires …`; the two must match, and "NEVER" is what a Buddhist-calendar
+device used to print) · `-debugSiriDialogs 1` (logs every Siri answer in all nine
 languages, resolved as the system would, plus one line for what THIS device says with nothing forced; read
 with `simctl spawn <sim> log show --last 1m --predicate 'process == "iPrayer" AND eventMessage CONTAINS "SiriDialog"'`). Any UserDefaults key can also be overridden for one run,
 e.g. `-lastSeenWhatsNewVersion 1.0.0`, `-hasSeenOnboarding YES`, `-appLanguage ar`, `-userName "Youssef Keram"`
@@ -577,6 +604,15 @@ readout; and under `-debugSpinCompass 1` the ratchet logged 184 clicks, so remov
 silence it. That build's archive contained zero hits for all four removed strings. NOT verified:
 how any of it FEELS — there is no Taptic Engine on the Simulator, which is exactly what caused #22.
 
+Verified for the calendar branch (2 October 2026) on the iPhone 17 simulator switched to a HIJRI device
+(`simctl spawn <sim> defaults write "Apple Global Domain" AppleLocale ar_SA`, then shutdown and boot; put
+`en_EG` back afterwards): build 12's code crashes at launch there (crash report: `duaOfTheDay`, index out
+of range); the fixed build opens Home, shows the same Verse of the Day as a Gregorian device, and under
+`-debugLogNotifications 1` every scheduled prayer's "wanted" and "fires" instants are identical. NOT
+verified: an adhan actually ARRIVING on a Hijri-calendar iPhone (the trigger dates are right; delivery
+needs a device and a wait); the copyright year and the widget's reload date were fixed by reading, and the
+date arithmetic checked in a standalone script, not on screen. Other calendars (Persian, Japanese,
+Buddhist) were measured in standalone scripts only.
 Verified for the Siri branch (2 October 2026) on the iPhone 17 simulator, clean build: metadata extraction,
 phrase validation and Siri training all ran; the Shortcuts app lists the six shortcuts with ARABIC titles on
 a simulator rebooted into Arabic, plus a tile per prayer; Next Prayer answers by tap; Tasbih opens its tab;
@@ -639,6 +675,12 @@ which no amount of device testing surfaces.
   sizes and the Lock Screen rectangular family, so the system-font fallback is not needed. Keep the font
   registered through UIAppFonts only (§7); that is what makes it work in the widget process.
 
+**Found by the 2 October calendar audit, NOT fixed (language consistency, not calendar)**
+- The Qibla tab's distance ("1,235 km") is formatted with the DEVICE locale, so an Arabic phone with the app
+  in English shows an Arabic unit and Arabic-Indic digits, and the reverse. `QiblaCompassView`'s static
+  `distanceFormatter` should take the in-app language and keep only the measurement system from the device.
+- The watch app's three clock times use the device locale while its complication uses the in-app language,
+  so with the app in Arabic the page says "8:15 PM" and the complication "8:15 م".
 **Siri (branch `siri-app-intents`)**
 - Needs the owner on a real iPhone: say each phrase to Siri in English and Arabic; confirm the answer is
   spoken in the Siri language and that the degree sign is read as "degrees"/"درجة" (if it is not, switch
