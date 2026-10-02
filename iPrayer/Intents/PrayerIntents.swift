@@ -103,8 +103,12 @@ struct NextPrayerIntent: AppIntent {
             return SiriSchedule.needsLocation
         }
         let name = SiriSchedule.name(next.name)
+        // "How long until the next prayer" is one of the phrases, so the answer carries the wait as well
+        // as the clock time: whole minutes, never under one, in the sentence's own language and units.
+        let remaining = Duration.seconds(max(60, Int(next.time.timeIntervalSince(now))))
         return LocalizedStringResource(
-            "The next prayer is \(name) at \(next.time, format: .dateTime.hour().minute()).", table: "AppIntents")
+            "The next prayer is \(name) at \(next.time, format: .dateTime.hour().minute()), in \(remaining, format: .units(allowed: [.hours, .minutes], width: .wide, maximumUnitCount: 2)).",
+            table: "AppIntents")
     }
 }
 

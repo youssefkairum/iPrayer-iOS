@@ -123,14 +123,20 @@ struct BackgroundPatternView: View {
     var body: some View {
         GeometryReader { geo in
             let size: CGFloat = 80
-            // Calculate enough columns and rows to cover the screen even when rotated
-            let cols = Int(geo.size.width / size) + 4
-            let rows = Int(geo.size.height / size) + 4
+            // A SQUARE as wide as the screen's DIAGONAL, rasterised BEFORE it is placed. A rotating sheet
+            // covers the screen at every angle only if the circle inscribed in it reaches the screen's
+            // corners, which sit half a diagonal from the centre; and `.drawingGroup()` rasterises the
+            // frame of whatever it is applied to, so applied after `.position` it rasterised the SCREEN
+            // rectangle and threw the rest of the sheet away before the rotation — which is why the
+            // corners went bare for most of every half turn (the owner saw it on About and Settings)
+            // whatever size the grid was given. The order below is the fix; the one extra cell is slack.
+            let cells = Int((hypot(geo.size.width, geo.size.height) / size).rounded(.up)) + 1
+            let side = CGFloat(cells) * size
             
             VStack(spacing: 0) {
-                ForEach(0..<rows, id: \.self) { row in
+                ForEach(0..<cells, id: \.self) { row in
                     HStack(spacing: 0) {
-                        ForEach(0..<cols, id: \.self) { col in
+                        ForEach(0..<cells, id: \.self) { col in
                             ZStack {
                                 Rectangle()
                                     .stroke(Color(hex: "D4AF37").opacity(0.08), lineWidth: 1)
@@ -145,14 +151,14 @@ struct BackgroundPatternView: View {
                     }
                 }
             }
-            .frame(width: geo.size.width * 1.5, height: geo.size.height * 1.5)
-            .position(x: geo.size.width / 2, y: geo.size.height / 2)
+            .frame(width: side, height: side)
             // Flatten the grid into one rasterised layer before rotating it. As plain views, every one of
             // its few hundred stroked shapes was re-stroked on every frame for as long as the screen was
             // open — measured at ~12% CPU sustained on the Qibla tab against 0% on tabs without the
             // pattern, which is frame budget the compass dial needs. Halves it, and the pattern is
-            // identical on screen.
+            // identical on screen. The layer is the whole square (about 43 MB at 3x on an iPhone 17).
             .drawingGroup()
+            .position(x: geo.size.width / 2, y: geo.size.height / 2)
             .rotationEffect(.degrees(rotation))
             .onAppear {
                 withAnimation(.linear(duration: 90).repeatForever(autoreverses: false)) {

@@ -10,7 +10,11 @@
             "values": [
               "When is the next prayer in ${applicationName}",
               "Next prayer in ${applicationName}",
-              "What is the next prayer in ${applicationName}"
+              "What is the next prayer in ${applicationName}",
+              "What's the next prayer in ${applicationName}",
+              "Next prayer time in ${applicationName}",
+              "When's the next adhan in ${applicationName}",
+              "How long until the next prayer in ${applicationName}"
             ]
           }
         },
@@ -20,7 +24,11 @@
             "values": [
               "متى الصلاة القادمة في ${applicationName}",
               "ما الصلاة القادمة في ${applicationName}",
-              "كم بقي للصلاة في ${applicationName}"
+              "كم بقي للصلاة في ${applicationName}",
+              "متى موعد الصلاة القادمة في ${applicationName}",
+              "متى الأذان القادم في ${applicationName}",
+              "ما هي الصلاة القادمة في ${applicationName}",
+              "كم باقي على الصلاة في ${applicationName}"
             ]
           }
         },
@@ -29,7 +37,10 @@
             "state": "translated",
             "values": [
               "Wann ist das nächste Gebet in ${applicationName}",
-              "Nächstes Gebet in ${applicationName}"
+              "Nächstes Gebet in ${applicationName}",
+              "Was ist das nächste Gebet in ${applicationName}",
+              "Wann ist der nächste Adhan in ${applicationName}",
+              "Wie lange bis zum nächsten Gebet in ${applicationName}"
             ]
           }
         },
@@ -38,7 +49,10 @@
             "state": "translated",
             "values": [
               "Quelle est la prochaine prière dans ${applicationName}",
-              "Prochaine prière dans ${applicationName}"
+              "Prochaine prière dans ${applicationName}",
+              "Quand est la prochaine prière dans ${applicationName}",
+              "Prochain adhan dans ${applicationName}",
+              "Combien de temps avant la prochaine prière dans ${applicationName}"
             ]
           }
         },
@@ -47,7 +61,11 @@
             "state": "translated",
             "values": [
               "Когда следующая молитва в ${applicationName}",
-              "Следующая молитва в ${applicationName}"
+              "Следующая молитва в ${applicationName}",
+              "Какая следующая молитва в ${applicationName}",
+              "Когда следующий азан в ${applicationName}",
+              "Сколько до следующей молитвы в ${applicationName}",
+              "Когда следующий намаз в ${applicationName}"
             ]
           }
         },
@@ -56,7 +74,10 @@
             "state": "translated",
             "values": [
               "${applicationName} uygulamasında sıradaki namaz ne zaman",
-              "${applicationName} sıradaki namaz"
+              "${applicationName} sıradaki namaz",
+              "${applicationName} uygulamasında bir sonraki namaz ne zaman",
+              "${applicationName} uygulamasında sıradaki ezan ne zaman",
+              "${applicationName} uygulamasında namaza ne kadar kaldı"
             ]
           }
         },
@@ -65,7 +86,12 @@
             "state": "translated",
             "values": [
               "${applicationName}下一次祈祷是什么时候",
-              "${applicationName}下一次祈祷"
+              "${applicationName}下一次祈祷",
+              "${applicationName}下一次祈祷是几点",
+              "${applicationName}下一次宣礼是什么时候",
+              "${applicationName}距离下一次祈祷还有多久",
+              "${applicationName}下一次礼拜是几点",
+              "${applicationName}下一次拜功是什么时候"
             ]
           }
         }
@@ -80,7 +106,11 @@
             "values": [
               "When is ${prayer} in ${applicationName}",
               "What time is ${prayer} in ${applicationName}",
-              "${prayer} time in ${applicationName}"
+              "${prayer} time in ${applicationName}",
+              "When is ${prayer} prayer in ${applicationName}",
+              "What time is ${prayer} prayer in ${applicationName}",
+              "When is ${prayer} today in ${applicationName}",
+              "When's the ${prayer} adhan in ${applicationName}"
             ]
           }
         },
@@ -90,7 +120,11 @@
             "values": [
               "متى ${prayer} في ${applicationName}",
               "موعد ${prayer} في ${applicationName}",
-              "وقت ${prayer} في ${applicationName}"
+              "وقت ${prayer} في ${applicationName}",
+              "متى موعد صلاة ${prayer} في ${applicationName}",
+              "متى صلاة ${prayer} في ${applicationName}",
+              "متى أذان ${prayer} في ${applicationName}",
+              "متى ${prayer} اليوم في ${applicationName}"
             ]
           }
         },
@@ -99,7 +133,10 @@
             "state": "translated",
             "values": [
               "Wann ist ${prayer} in ${applicationName}",
-              "Um wie viel Uhr ist ${prayer} in ${applicationName}"
+              "Um wie viel Uhr ist ${prayer} in ${applicationName}",
+              "Wann ist das ${prayer}-Gebet in ${applicationName}",
+              "Wann ist ${prayer} heute in ${applicationName}",
+              "${prayer} Gebetszeit in ${applicationName}"
             ]
           }
         },
@@ -108,7 +145,10 @@
             "state": "translated",
             "values": [
               "À quelle heure est ${prayer} dans ${applicationName}",
-              "Heure de ${prayer} dans ${applicationName}"
+              "${prayer} est à quelle heure dans ${applicationName}",
+              "Quand est ${prayer} dans ${applicationName}",
+              "À quelle heure est la prière ${prayer} dans ${applicationName}",
+              "Quand est l'adhan pour ${prayer} dans ${applicationName}"
             ]
           }
         },
@@ -117,7 +157,11 @@
             "state": "translated",
             "values": [
               "Когда ${prayer} в ${applicationName}",
-              "Во сколько ${prayer} в ${applicationName}"
+              "Во сколько ${prayer} в ${applicationName}",
+              "Во сколько молитва ${prayer} в ${applicationName}",
+              "Когда ${prayer} сегодня в ${applicationName}",
+              "Время намаза ${prayer} в ${applicationName}",
+              "Во сколько намаз ${prayer} в ${applicationName}"
             ]
           }
         },
@@ -126,7 +170,10 @@
             "state": "translated",
             "values": [
               "${applicationName} uygulamasında ${prayer} ne zaman",
-              "${applicationName} ${prayer} vakti"
+              "${applicationName} ${prayer} vakti",
+              "${applicationName} uygulamasında ${prayer} namazı ne zaman",
+              "${applicationName} uygulamasında ${prayer} ezanı ne zaman",
+              "${applicationName} uygulamasında ${prayer} saat kaçta"
             ]
           }
         },
@@ -135,7 +182,10 @@
             "state": "translated",
             "values": [
               "${applicationName}${prayer}是几点",
-              "${applicationName}${prayer}时间"
+              "${applicationName}${prayer}时间",
+              "${applicationName}${prayer}什么时候",
+              "${applicationName}今天${prayer}是几点",
+              "${applicationName}${prayer}宣礼是几点"
             ]
           }
         }
@@ -150,7 +200,10 @@
             "values": [
               "Which way is the Qibla in ${applicationName}",
               "Qibla direction in ${applicationName}",
-              "Where is the Qibla in ${applicationName}"
+              "Where is the Qibla in ${applicationName}",
+              "Which direction is the Qibla in ${applicationName}",
+              "Find the Qibla in ${applicationName}",
+              "Where is Makkah from here in ${applicationName}"
             ]
           }
         },
@@ -160,7 +213,10 @@
             "values": [
               "أين القبلة في ${applicationName}",
               "اتجاه القبلة في ${applicationName}",
-              "ما اتجاه القبلة في ${applicationName}"
+              "ما اتجاه القبلة في ${applicationName}",
+              "أين اتجاه القبلة في ${applicationName}",
+              "كم درجة القبلة في ${applicationName}",
+              "وين القبلة في ${applicationName}"
             ]
           }
         },
@@ -169,7 +225,10 @@
             "state": "translated",
             "values": [
               "Wo ist die Qibla in ${applicationName}",
-              "Qibla-Richtung in ${applicationName}"
+              "Qibla-Richtung in ${applicationName}",
+              "In welche Richtung ist die Qibla in ${applicationName}",
+              "Finde die Qibla in ${applicationName}",
+              "Wo liegt Mekka von hier aus in ${applicationName}"
             ]
           }
         },
@@ -178,7 +237,10 @@
             "state": "translated",
             "values": [
               "Où est la Qibla dans ${applicationName}",
-              "Direction de la Qibla dans ${applicationName}"
+              "Direction de la Qibla dans ${applicationName}",
+              "Dans quelle direction est la Qibla dans ${applicationName}",
+              "Trouve la Qibla dans ${applicationName}",
+              "Quelle est la direction de la Qibla dans ${applicationName}"
             ]
           }
         },
@@ -187,7 +249,10 @@
             "state": "translated",
             "values": [
               "Где кибла в ${applicationName}",
-              "Направление киблы в ${applicationName}"
+              "Направление киблы в ${applicationName}",
+              "В какую сторону кибла в ${applicationName}",
+              "Найди киблу в ${applicationName}",
+              "В какой стороне Мекка в ${applicationName}"
             ]
           }
         },
@@ -196,7 +261,10 @@
             "state": "translated",
             "values": [
               "${applicationName} uygulamasında kıble ne tarafta",
-              "${applicationName} kıble yönü"
+              "${applicationName} kıble yönü",
+              "${applicationName} uygulamasında kıble hangi yönde",
+              "${applicationName} uygulamasında kıbleyi bul",
+              "${applicationName} uygulamasında kıble nerede"
             ]
           }
         },
@@ -205,7 +273,10 @@
             "state": "translated",
             "values": [
               "${applicationName}朝向在哪里",
-              "${applicationName}朝向方位"
+              "${applicationName}朝向方位",
+              "${applicationName}朝向是哪个方向",
+              "${applicationName}找朝向",
+              "${applicationName}麦加在哪个方向"
             ]
           }
         }
@@ -219,7 +290,9 @@
             "state": "new",
             "values": [
               "Open the Qibla compass in ${applicationName}",
-              "Qibla compass in ${applicationName}"
+              "Qibla compass in ${applicationName}",
+              "Show me the Qibla in ${applicationName}",
+              "Point me to the Qibla in ${applicationName}"
             ]
           }
         },
@@ -228,7 +301,9 @@
             "state": "translated",
             "values": [
               "افتح بوصلة القبلة في ${applicationName}",
-              "بوصلة القبلة في ${applicationName}"
+              "بوصلة القبلة في ${applicationName}",
+              "أرني القبلة في ${applicationName}",
+              "دلني على القبلة في ${applicationName}"
             ]
           }
         },
@@ -237,7 +312,9 @@
             "state": "translated",
             "values": [
               "Öffne den Qibla-Kompass in ${applicationName}",
-              "Qibla-Kompass in ${applicationName}"
+              "Qibla-Kompass in ${applicationName}",
+              "Zeig mir die Qibla in ${applicationName}",
+              "Führe mich zur Qibla in ${applicationName}"
             ]
           }
         },
@@ -246,7 +323,9 @@
             "state": "translated",
             "values": [
               "Ouvre la boussole de la Qibla dans ${applicationName}",
-              "Boussole de la Qibla dans ${applicationName}"
+              "Boussole de la Qibla dans ${applicationName}",
+              "Montre-moi la Qibla dans ${applicationName}",
+              "Indique-moi la Qibla dans ${applicationName}"
             ]
           }
         },
@@ -255,7 +334,9 @@
             "state": "translated",
             "values": [
               "Открой компас киблы в ${applicationName}",
-              "Компас киблы в ${applicationName}"
+              "Компас киблы в ${applicationName}",
+              "Покажи мне киблу в ${applicationName}",
+              "Укажи киблу в ${applicationName}"
             ]
           }
         },
@@ -264,7 +345,9 @@
             "state": "translated",
             "values": [
               "${applicationName} uygulamasında kıble pusulasını aç",
-              "${applicationName} kıble pusulası"
+              "${applicationName} kıble pusulası",
+              "${applicationName} uygulamasında bana kıbleyi göster",
+              "${applicationName} uygulamasında kıbleyi aç"
             ]
           }
         },
@@ -273,7 +356,9 @@
             "state": "translated",
             "values": [
               "打开${applicationName}朝向指南针",
-              "${applicationName}朝向指南针"
+              "${applicationName}朝向指南针",
+              "${applicationName}给我看朝向",
+              "${applicationName}给我指朝向"
             ]
           }
         }
@@ -288,7 +373,10 @@
             "values": [
               "Continue reading the Quran in ${applicationName}",
               "Open the Quran in ${applicationName}",
-              "Continue my reading in ${applicationName}"
+              "Continue my reading in ${applicationName}",
+              "Resume my Quran in ${applicationName}",
+              "Open my Quran in ${applicationName}",
+              "Read Quran in ${applicationName}"
             ]
           }
         },
@@ -298,7 +386,11 @@
             "values": [
               "تابع القراءة في ${applicationName}",
               "افتح المصحف في ${applicationName}",
-              "أكمل القراءة في ${applicationName}"
+              "أكمل القراءة في ${applicationName}",
+              "افتح القرآن في ${applicationName}",
+              "أكمل قراءة القرآن في ${applicationName}",
+              "تابع الورد في ${applicationName}",
+              "أين وصلت في القراءة في ${applicationName}"
             ]
           }
         },
@@ -307,7 +399,10 @@
             "state": "translated",
             "values": [
               "Lies den Koran weiter in ${applicationName}",
-              "Öffne den Koran in ${applicationName}"
+              "Öffne den Koran in ${applicationName}",
+              "Meinen Koran weiterlesen in ${applicationName}",
+              "Öffne meinen Koran in ${applicationName}",
+              "Koran lesen in ${applicationName}"
             ]
           }
         },
@@ -316,7 +411,10 @@
             "state": "translated",
             "values": [
               "Reprends la lecture du Coran dans ${applicationName}",
-              "Ouvre le Coran dans ${applicationName}"
+              "Ouvre le Coran dans ${applicationName}",
+              "Reprends mon Coran dans ${applicationName}",
+              "Ouvre mon Coran dans ${applicationName}",
+              "Lis le Coran dans ${applicationName}"
             ]
           }
         },
@@ -325,7 +423,10 @@
             "state": "translated",
             "values": [
               "Продолжи чтение Корана в ${applicationName}",
-              "Открой Коран в ${applicationName}"
+              "Открой Коран в ${applicationName}",
+              "Продолжи мой Коран в ${applicationName}",
+              "Открой мой Коран в ${applicationName}",
+              "Читать Коран в ${applicationName}"
             ]
           }
         },
@@ -334,7 +435,10 @@
             "state": "translated",
             "values": [
               "${applicationName} uygulamasında Kur'an okumaya devam et",
-              "${applicationName} uygulamasında Kur'an'ı aç"
+              "${applicationName} uygulamasında Kur'an'ı aç",
+              "${applicationName} uygulamasında kaldığım yerden devam et",
+              "${applicationName} uygulamasında Kur'an'ımı aç",
+              "${applicationName} uygulamasında Kur'an oku"
             ]
           }
         },
@@ -343,7 +447,10 @@
             "state": "translated",
             "values": [
               "在${applicationName}继续阅读古兰经",
-              "打开${applicationName}古兰经"
+              "打开${applicationName}古兰经",
+              "${applicationName}继续我的古兰经",
+              "打开我的${applicationName}古兰经",
+              "${applicationName}读古兰经"
             ]
           }
         }
@@ -358,7 +465,10 @@
             "values": [
               "Open Tasbih in ${applicationName}",
               "Start Tasbih in ${applicationName}",
-              "Tasbih in ${applicationName}"
+              "Tasbih in ${applicationName}",
+              "Open the Tasbih counter in ${applicationName}",
+              "Open the dhikr counter in ${applicationName}",
+              "Count my tasbih in ${applicationName}"
             ]
           }
         },
@@ -368,7 +478,10 @@
             "values": [
               "افتح التسبيح في ${applicationName}",
               "ابدأ التسبيح في ${applicationName}",
-              "التسبيح في ${applicationName}"
+              "التسبيح في ${applicationName}",
+              "افتح المسبحة في ${applicationName}",
+              "أريد أن أسبح في ${applicationName}",
+              "سبح معي في ${applicationName}"
             ]
           }
         },
@@ -377,7 +490,10 @@
             "state": "translated",
             "values": [
               "Öffne Tasbih in ${applicationName}",
-              "Tasbih in ${applicationName}"
+              "Tasbih in ${applicationName}",
+              "Öffne den Tasbih-Zähler in ${applicationName}",
+              "Öffne den Dhikr-Zähler in ${applicationName}",
+              "Zähle meinen Tasbih in ${applicationName}"
             ]
           }
         },
@@ -386,7 +502,10 @@
             "state": "translated",
             "values": [
               "Ouvre le Tasbih dans ${applicationName}",
-              "Tasbih dans ${applicationName}"
+              "Tasbih dans ${applicationName}",
+              "Ouvre le compteur de Tasbih dans ${applicationName}",
+              "Ouvre le compteur de dhikr dans ${applicationName}",
+              "Compte mon Tasbih dans ${applicationName}"
             ]
           }
         },
@@ -395,7 +514,10 @@
             "state": "translated",
             "values": [
               "Открой тасбих в ${applicationName}",
-              "Тасбих в ${applicationName}"
+              "Тасбих в ${applicationName}",
+              "Открой счётчик тасбиха в ${applicationName}",
+              "Открой счётчик зикра в ${applicationName}",
+              "Считай мой тасбих в ${applicationName}"
             ]
           }
         },
@@ -404,7 +526,10 @@
             "state": "translated",
             "values": [
               "${applicationName} uygulamasında tesbihi aç",
-              "${applicationName} tesbih"
+              "${applicationName} tesbih",
+              "${applicationName} uygulamasında tesbih sayacını aç",
+              "${applicationName} uygulamasında zikirmatiği aç",
+              "${applicationName} uygulamasında tesbih çek"
             ]
           }
         },
@@ -413,7 +538,10 @@
             "state": "translated",
             "values": [
               "打开${applicationName}泰斯比",
-              "${applicationName}泰斯比"
+              "${applicationName}泰斯比",
+              "打开${applicationName}泰斯比计数器",
+              "打开${applicationName}赞念计数器",
+              "${applicationName}数我的泰斯比"
             ]
           }
         }

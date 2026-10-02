@@ -478,59 +478,6 @@
         }
       }
     },
-    "The next prayer is %@ at %@.": {
-      "extractionState": "manual",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "الصلاة القادمة هي %1$@، الساعة %2$@."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Das nächste Gebet ist %1$@ um %2$@."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La prochaine prière est %1$@ à %2$@."
-          }
-        },
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "अगली नमाज़ %1$@ है, %2$@ पर।"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Следующая молитва — %1$@ в %2$@."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sıradaki namaz %1$@, saat %2$@."
-          }
-        },
-        "ur": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "اگلی نماز %1$@ ہے، %2$@ پر۔"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "下一次祈祷是%1$@，时间为 %2$@。"
-          }
-        }
-      }
-    },
     "The Qibla is %lld° from north.": {
       "extractionState": "manual",
       "localizations": {
@@ -580,6 +527,59 @@
           "stringUnit": {
             "state": "translated",
             "value": "朝向在正北顺时针 %lld° 方向。"
+          }
+        }
+      }
+    },
+    "The next prayer is %@ at %@, in %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الصلاة القادمة هي %1$@، الساعة %2$@، والمتبقي %3$@."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das nächste Gebet ist %1$@ um %2$@, in %3$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La prochaine prière est %1$@ à %2$@, dans %3$@."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अगली नमाज़ %1$@ है, %2$@ पर, %3$@ में।"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Следующая молитва — %1$@ в %2$@, через %3$@."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sıradaki namaz %1$@, saat %2$@, %3$@ sonra."
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اگلی نماز %1$@ ہے، %2$@ پر، %3$@ بعد۔"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一次祈祷是%1$@，时间为 %2$@，还有 %3$@。"
           }
         }
       }
