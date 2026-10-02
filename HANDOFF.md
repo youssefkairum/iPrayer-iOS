@@ -147,6 +147,12 @@ and what is still open. The README describes the product; this describes the wor
   the words Russian- and Chinese-speaking Muslims actually use (намаз, 礼拜/拜功) as extra phrases, found
   that the first mosaic fix could not work (§3), and found the tips mis-pinned on an Urdu phone (§3).
   Build 15, version still 1.1.1.
+- **3 October 2026, the onboarding Siri step — branch `onboarding-siri-step`, PR OPEN, NOT merged, build
+  NOT bumped.** The owner asked for Siri in onboarding. A fifth fixed slide, "Ask Siri", between Location
+  (or the optional Apple Watch slide) and sign-in: three of Apple's `SiriTipView` tips in the device
+  language, the Urdu/Hindi note where it applies, and nothing else to do, since App Shortcuts need no
+  setup. The watch slide's tag arithmetic moved along one (§3). The onboarding watch-step screenshots in
+  `docs/screenshots/` now show five progress capsules where the app shows six; left as they are (§6).
 - **Archives.** Release archives are built with `xcodebuild archive` (widget + watch app + complication
   embedded, development-signed; Xcode re-signs for distribution on upload). Keep exactly ONE current: each
   new build's archive supersedes the last, and 4 through 11 were deleted in turn; build 12's, the one with
@@ -183,8 +189,9 @@ iPrayer/
     SurahDetailView.swift     reader screen: text size/theme/reciter/download menu, verse action bar, playback bar
     MushafTextView.swift      UITextView-based reader: page-by-page loading, highlights, resume, auto-follow
     OnboardingView.swift      one scaffold (progress capsules, language menu, fixed-height controls that crossfade)
-                              + 4 slides that animate in once, plus a conditional 5th (Apple Watch) at tag 3
-                              which makes sign-in's tag computed, not fixed; fresh installs start in the
+                              + 5 slides that animate in once (Welcome, Features, Location, Siri, Sign-in),
+                              plus a conditional Apple Watch slide at tag 3 which pushes Siri and sign-in
+                              one tag along (both tags computed, not fixed); fresh installs start in the
                               phone's language
     WhatsNewView.swift        four sections (Quran / Every day / Everywhere / Look and feel), prayer-coloured
                               tiles, contentVersion gate; `-debugShowWhatsNew 1` forces it
@@ -380,11 +387,12 @@ must follow the *in-app* language (notifications, some labels) goes through
   that is `L`; ignore values that are entirely English, which are a missing translation, not a direction bug.
 - **The onboarding's Apple Watch step ADDS and REMOVES itself asymmetrically (PR #25).** It appears only when a
   watch is paired and iPrayer is not on it — the same condition as the Settings card — which makes the
-  step count 5 instead of 4 and pushes sign-in from tag 3 to tag 4. `WCSession` activates at launch and
+  step count 6 instead of 5 and pushes the Siri step from tag 3 to tag 4 and sign-in from 4 to 5. `WCSession` activates at launch and
   answers ASYNCHRONOUSLY, so the answer lands while onboarding is already on screen, and the two
   directions need opposite rules. ADDING may only happen while `currentTab < watchTab`, or someone
   reading the sign-in page would find a watch prompt in its place. REMOVING is always allowed, even with
-  the step on screen, and clamps `currentTab`: it can only carry them forward onto sign-in, which is
+  the step on screen, and moves `currentTab` back with the tags so the same slide stays on screen; on
+  the watch slide itself that carries them forward onto the Siri step, which is
   where the step was leading anyway.
   The trap underneath it: iOS installs an embedded watch app OVER THE AIR, and `isWatchAppInstalled` is
   false for the whole transfer. Read raw, the flag says "not installed" loudest for exactly the people
@@ -777,6 +785,13 @@ languages; About's mosaic covers the corners a quarter turn in (the frame that w
 verified: the tips on an Arabic or Urdu DEVICE (the Simulator was English; the Arabic app on it showed
 English tips, correctly laid out), what `ShortcutsLink` opens on a device, and any phrase spoken aloud.
 
+Verified for the onboarding Siri step on the iPhone 17 simulator (`-hasSeenOnboarding NO
+-installedAsUpdate NO -debugOnboardingSlide 3`): the slide in English, Arabic (right-to-left page, tips
+left-to-right in English, the device language) and Urdu (the note, wrapped on two lines after a first
+build cut it to one); with `-debugWatchStep 1 -debugOnboardingSlide 4` the same slide sits after the watch
+step with six capsules. NOT verified: the slide at accessibility text sizes, and on an Arabic-language
+device (where the tips would be Arabic and right-to-left).
+
 **DEVICE PASS DONE — 20 September 2026.** The owner went through the whole standing "not verified" list on
 their own iPhone and Apple Watch and reported everything working. That closes, all at once: the tracker
 across a real midnight on two devices · the Today's Prayers widget rendered · the Verse of the Day widget on
@@ -846,7 +861,9 @@ which no amount of device testing surfaces.
   local adhan notifications on the watch (phone notifications already mirror to it).
 
 **Left open by #34**
-- **Five App Store screenshots are stale now that #34 is merged,** plus their `captioned/` versions. The owner was
+- **Seven App Store screenshots are stale,** plus their `captioned/` versions: five from #34 (below) and,
+  since the onboarding Siri step, the two `*-07-onboarding-watch` shots, whose five progress capsules are
+  now six in the app. The owner was
   asked on 3 October and does NOT want them retaken for now, so leave them unless asked.
   `iphone69-ar-06-qibla` and `ipad13-ar-06-qibla` show "136° القبلة · 1,286 km" where the app now writes
   "القبلة 136° · 1,286 كم", and the turn line number-first; `watch44-ar-01-next-prayer` shows "6:54PM" and

@@ -14,12 +14,12 @@ struct SiriShortcutsView: View {
 
     /// The two app languages Siri does not speak. Their speakers get the shortcuts and the answers, but
     /// must ask in one of Siri's languages, so the screen says so instead of showing phrases they cannot use.
-    private static let languagesWithoutSiri: Set<String> = ["ur", "hi"]
+    static let languagesWithoutSiri: Set<String> = ["ur", "hi"]
 
     /// The direction of the language the tips are WRITTEN in: the one whose `AppShortcuts.strings` the
     /// bundle resolves to, which is Arabic or a left-to-right language. Not the device locale: an Urdu
     /// phone is right-to-left but has no Urdu phrases, so its tips are English and must lay out that way.
-    private static var tipLayoutDirection: LayoutDirection {
+    static var tipLayoutDirection: LayoutDirection {
         guard let url = Bundle.main.url(forResource: "AppShortcuts", withExtension: "strings") else { return .leftToRight }
         let language = url.deletingLastPathComponent().deletingPathExtension().lastPathComponent
         return Locale(identifier: language).language.characterDirection == .rightToLeft ? .rightToLeft : .leftToRight
