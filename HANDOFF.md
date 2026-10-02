@@ -9,7 +9,7 @@ and what is still open. The README describes the product; this describes the wor
 
 ## 1. Where things stand
 
-- **Version:** 1.1.1, build 14 (App Store has 1.0; a 1.1.0 build 3 was uploaded on 18 September, see Archives). Deployment target iOS 26.0 (watchOS 10.0 on the watch
+- **Version:** 1.1.1, build 15 (App Store has 1.0; a 1.1.0 build 3 was uploaded on 18 September, see Archives). Deployment target iOS 26.0 (watchOS 10.0 on the watch
   targets), Xcode 27. The Swift 6.4 *toolchain*, but still the Swift 5 *language mode*
   (`SWIFT_VERSION = 5.0` in all eight configurations) — which is why the capture rule below is a warning
   and not yet an error. `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and approachable concurrency are on for
@@ -132,21 +132,36 @@ and what is still open. The README describes the product; this describes the wor
   Today page tells VoiceOver "Passed" now that the tick is gone. Merged with the version bump: 1.1.1, build
   14, at the owner's choice of number. Five App Store screenshots go stale and the owner does not want them
   retaken (§6).
+- **3 October 2026, Siri phrases, the Settings hint and the mosaic corners — branch
+  `siri-phrases-settings-hint`.** The owner asked what to say and whether "when is Fajr" could work without
+  the app's name; it cannot (Apple requires the name in every third-party phrase), so instead: 128 more
+  natural phrases across the seven Siri languages (222 in all; "متى موعد صلاة الفجر في iPrayer", "What's
+  the next prayer in iPrayer", "Where is Makkah from here in iPrayer"...), the next-prayer answer now
+  saying how long is left as well as the time (so "how long until the next prayer" is answered, not
+  deflected), and a Settings > Siri & Shortcuts
+  screen built on Apple's `SiriTipView` (the phrase for each shortcut, in the DEVICE language, straight from
+  the metadata) and `ShortcutsLink` (the Shortcuts app's page for iPrayer, where a shortcut can be renamed
+  to anything, which is the only way round the name rule). The owner also noticed the rotating mosaic
+  baring the screen's corners (§3). A review before the merge corrected eleven phrases (French elision,
+  a German case, a Russian genitive, two calques, a Chinese declarative, three Arabic diacritics), added
+  the words Russian- and Chinese-speaking Muslims actually use (намаз, 礼拜/拜功) as extra phrases, found
+  that the first mosaic fix could not work (§3), and found the tips mis-pinned on an Urdu phone (§3).
+  Build 15, version still 1.1.1.
 - **Archives.** Release archives are built with `xcodebuild archive` (widget + watch app + complication
   embedded, development-signed; Xcode re-signs for distribution on upload). Keep exactly ONE current: each
   new build's archive supersedes the last, and 4 through 11 were deleted in turn; build 12's, the one with
   the launch crash, was moved to the Trash on 2 October rather than deleted, and can be emptied; build
-  13's followed it on 3 October. The CURRENT archive, and the only one to distribute, is
-  `~/Library/Developer/Xcode/Archives/2026-10-03/iPrayer 1.1.1 (14).xcarchive`. An older 1.1.0 archive sits
+  13's and 14's followed it on 3 October. The CURRENT archive, and the only one to distribute, is
+  `~/Library/Developer/Xcode/Archives/2026-10-03/iPrayer 1.1.1 (15).xcarchive`. An older 1.1.0 archive sits
   in `~/Library/Developer/Xcode/Archives/2026-09-18/` under Xcode's default name: it is BUILD 3, and its
   record says it was UPLOADED to App Store Connect on 18 September. (This file called it "pre-1.1.0" until
   an audit read its Info.plist on 2 October.) It predates everything since, the calendar fix included. App Store
   Connect itself was not checked; if it still lists build 3 when a build is attached, pick 14, never 3.
-  The version became 1.1.1 with build 14 (3 October); `WhatsNewView.contentVersion` stays "1.1.0" on
+  The version became 1.1.1 with build 14 (3 October), then build 15 the same day; `WhatsNewView.contentVersion` stays "1.1.0" on
   purpose, since that page describes the 1.1 release and a bug-fix number must not show it twice.
   **Next (owner only): try Siri on a real iPhone first (§6), then Organizer > Distribute App on that 1.1.1
-  (14) archive, paste `docs/AppStoreRelease.md` and `docs/AppStoreListing.md` into App Store Connect with
-  `docs/screenshots/`, attach build 14, and submit.
+  (15) archive, paste `docs/AppStoreRelease.md` and `docs/AppStoreListing.md` into App Store Connect with
+  `docs/screenshots/`, attach build 15, and submit.
   The 20 September device pass (§5) predates Siri and the calendar fix. The other loose end is the EveryAyah
   rights email, drafted in `docs/AppStoreRelease.md` and not sent.**
 
@@ -181,7 +196,10 @@ iPrayer/
     DuaLibraryView.swift      search + category chips (Liquid Glass), cards with copy/share, repeat badge, evening text
     AudioStorageView.swift    downloaded-audio manager: per reciter / per surah sizes and deletion
     AboutView.swift           fits one screen; acknowledgements as provider name + subtitle
-    SettingsView.swift        Account, Prayer Calculation, Notifications, Quran Audio, General (language + about)
+    SiriShortcutsView.swift   Settings > Siri & Shortcuts: six SiriTipViews (phrases in the device language)
+                              + ShortcutsLink; a note for Urdu/Hindi, which Siri does not speak
+    SettingsView.swift        Account, Prayer Calculation, Notifications, Quran Audio, General (language, about,
+                              Siri & Shortcuts, rate, system settings)
     Motion.swift              AppEntrance flag, CardPressStyle, .entrance(index:shown:) stagger
     SettingsView.swift        + Apple Watch card (only when PhoneWatchSync says paired && !installed)
     PrayerTheme.swift         PrayerTheme (reads PrayerPalette) + AppAppearance (status-bar scheme flip)
@@ -426,7 +444,26 @@ must follow the *in-app* language (notifications, some labels) goes through
   times a second and never leaves its slow-in shoulder. The needle also takes the CONTINUOUS angle, never the
   wrapped `offset` (which is for the turn text only) — re-wrapping made it swing the long way round whenever the
   phone swept past the bearing opposite the Qibla.
-- **`BackgroundPatternView` is expensive and is on six screens.** Its few hundred stroked shapes were re-stroked
+- **`BackgroundPatternView` is a SQUARE as wide as the screen's diagonal, rasterised BEFORE it is placed.**
+  It rotates forever, and a rotating sheet covers the screen at every angle only if the circle inscribed
+  in it reaches the corners, which sit half a diagonal from the centre. Two things had to be true and
+  neither was: the grid was the screen plus a margin, and `.drawingGroup()` sat AFTER `.position`, so it
+  rasterised the screen rectangle and threw the rest of the sheet away before the rotation — the grid's
+  size never mattered. The owner saw the bare corners on About and Settings. Now `cells = ceil(diagonal /
+  80) + 1` per side and the order is frame → drawingGroup → position → rotation. A review caught the first
+  attempt (grid resized, order unchanged) with a real SwiftUI render: the screenshots that "showed" it
+  fixed were read at a scale where an 8%-opacity stroke cannot be seen. The price is the rasterised layer:
+  about 43 MB at 3x on an iPhone 17, 52 MB on a 13-inch iPad, two alive at once on a pushed screen.
+- **`SiriTipView` tips take the direction of the language their PHRASES resolve to, not the app's and not
+  the device's.** Laid out right-to-left (app in Arabic on an English phone) an English tip put its closing
+  quote at the start of the line. The device locale is not the answer either: an Urdu phone is right-to-left
+  but has no Urdu phrases, so its tips are English. `SiriShortcutsView` asks the bundle which `.lproj`
+  serves `AppShortcuts.strings` and takes that language's direction; Arabic is the only right-to-left one.
+- **Siri's next-prayer answer carries the wait as a `Duration`** ("..., in 2 hours, 10 minutes"), formatted
+  by the system in the sentence's language with `.units(allowed: [.hours, .minutes], width: .wide)`, never
+  under one minute. Arabic says "والمتبقي ..." rather than "بعد ...": ICU gives the dual in the nominative
+  (ساعتان), which "بعد" cannot take.
+- **`BackgroundPatternView` is expensive and is on seven screens.** Its few hundred stroked shapes were re-stroked
   every frame for as long as the screen was open, because it rotates forever: measured at ~12% CPU sustained on
   the Qibla tab against 0% on tabs without it. `.drawingGroup()` rasterises it once and halves that, with no
   visible change. Anything else long-lived and animated on those screens pays the same tax, so measure before
@@ -730,6 +767,16 @@ app. NOT verified on screen: the three review fixes themselves (the language-cha
 distance, the watch clock's leading zero, the VoiceOver value) — each was established by the reviewer in a
 standalone script against the same Foundation, not in the simulator.
 
+Verified for the 3 October phrases round on the iPhone 17 simulator, clean build: phrase validation passed
+with 222 phrases and the built `.lproj` files carry exactly the catalog's counts; Settings shows the Siri &
+Shortcuts row in English and Arabic; the screen's six tips resolve to the device-language phrases after
+about a second (they render as grey placeholders first, which is Apple's loading state); `ShortcutsLink`
+renders, labelled "shortcuts" in lower case on the Simulator, which is Apple's component and was not
+checked on a device; `-debugSiriDialogs 1` prints the next-prayer sentence with the wait in all nine
+languages; About's mosaic covers the corners a quarter turn in (the frame that was bare before). NOT
+verified: the tips on an Arabic or Urdu DEVICE (the Simulator was English; the Arabic app on it showed
+English tips, correctly laid out), what `ShortcutsLink` opens on a device, and any phrase spoken aloud.
+
 **DEVICE PASS DONE — 20 September 2026.** The owner went through the whole standing "not verified" list on
 their own iPhone and Apple Watch and reported everything working. That closes, all at once: the tracker
 across a real midnight on two devices · the Today's Prayers widget rendered · the Verse of the Day widget on
@@ -788,7 +835,7 @@ which no amount of device testing surfaces.
   "آي براير" and "I Prayer". The Arabic spelling is the model's guess at how the owner says it; confirm it.
 - The Siri strings in Urdu, Hindi, Russian and Chinese are model-written, like the rest (see above).
 - Not built, on purpose: voice actions that WRITE (mark a prayer, count a tasbih). Not built, could be:
-  a "Siri" row in What's New, a Shortcuts link in Settings, the same intents on the watch.
+  a "Siri" row in What's New, the same intents on the watch. (The Settings hint was built on 3 October.)
 
 **Features suggested, not built**
 - Cache-as-you-listen (save streamed verses), background `URLSession` downloads, "download all",
