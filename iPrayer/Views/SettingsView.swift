@@ -290,6 +290,20 @@ struct SettingsView: View {
                                 
                                 Divider().background(Color.white.opacity(0.2))
                                 
+                                NavigationLink(destination: SiriShortcutsView()) {
+                                    HStack {
+                                        Text(AppTranslations.translate("Siri & Shortcuts", to: appLanguage))
+                                            .font(.custom("AvenirNext-Medium", size: 15))
+                                            .foregroundColor(.white)
+                                        Spacer()
+                                        Image(systemName: "chevron.forward")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                                
+                                Divider().background(Color.white.opacity(0.2))
+                                
                                 Button(action: {
                                     requestReview()
                                 }) {

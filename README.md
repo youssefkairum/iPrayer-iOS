@@ -38,9 +38,10 @@ Prayer times, the Quran text, Duas and the Tasbih all work offline. The network 
 - **Two-Way Sync:** Settings, language and location flow to the watch; Tasbih and tracker changes made on the wrist flow back to the phone and on to iCloud.
 
 ### 🗣 Siri & Shortcuts
-- **Ask Siri:** "When is the next prayer in iPrayer", "When is Maghrib in iPrayer" and "Which way is the Qibla in iPrayer" are answered on the spot, without opening the app.
+- **Ask Siri:** "When is the next prayer in iPrayer" (the prayer, its time and how long is left), "When is Maghrib in iPrayer" and "Which way is the Qibla in iPrayer" are answered on the spot, without opening the app.
 - **Open by Voice:** "Open the Qibla compass in iPrayer", "Continue reading the Quran in iPrayer" (back to your last verse) and "Open Tasbih in iPrayer".
-- **No Setup:** The six shortcuts appear in the Shortcuts app and Spotlight as soon as the app is installed, with a tile for each prayer.
+- **Many Ways to Say It:** Each shortcut answers to several phrasings — "What's the next prayer", "How long until the next prayer", "When's the Fajr adhan", "Where is Makkah from here", "Open my Quran", "Count my tasbih" — 222 phrases across the seven Siri languages. The app's name has to be in the phrase; that is Apple's rule for every app.
+- **No Setup:** The six shortcuts appear in the Shortcuts app and Spotlight as soon as the app is installed, with a tile for each prayer. Settings > Siri & Shortcuts shows what to say, in the phone's language, and opens the Shortcuts app, where a shortcut can be given any name — the way to leave the app's name out.
 - **Languages:** Spoken phrases in English, Arabic, French, German, Turkish, Russian and Chinese; titles and answers in all nine app languages. Siri itself does not offer Urdu or Hindi, so those two get the shortcuts and the answers but not the voice phrases.
 
 ### 📖 The Holy Quran
