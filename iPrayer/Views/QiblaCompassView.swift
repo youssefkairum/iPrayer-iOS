@@ -139,6 +139,12 @@ struct QiblaCompassView: View {
             // The detent lattice is anchored on the Qibla, and the Qibla just moved. Re-anchor in silence.
             ratchet.reseed(at: qiblaRotation)
         }
+        // The language can change under a showing compass without a fresh onAppear: iCloud sync from
+        // another device, or Settings in a second iPad window. The rest of the screen follows at once;
+        // the distance is stored text and must be rewritten, or it alone stays in the old language.
+        .onChange(of: appLanguage) { _, language in
+            distanceText = Self.distanceToKaaba(language: language)
+        }
         .onDisappear {
             viewModel.stopCompass()
             ratchet.end()

@@ -42,11 +42,17 @@ let watchNightGradient = LinearGradient(colors: [Color(red: 15/255, green: 32/25
                                         startPoint: .top, endPoint: .bottom)
 
 private extension WatchModel {
-    /// Clock times in the IN-APP language, as the complication and the phone write them.
+    /// A clock time in the IN-APP language, written exactly as the complication writes it.
     /// `Text(date, style: .time)` and a bare `.formatted(date:time:)` follow the DEVICE, so with the app
-    /// in Arabic these pages said "8:15 PM" beside a complication saying "8:15 م".
-    var clockStyle: Date.FormatStyle {
-        Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: language))
+    /// in Arabic these pages said "8:15 PM" beside a complication saying "8:15 م". This is a DateFormatter
+    /// and not `Date.FormatStyle(time: .shortened)` on purpose: the two differ on one thing, the leading
+    /// zero in the 24-hour languages ("06:49" against "6:49" in French, German, Turkish, Russian and
+    /// Chinese), and the complication uses the formatter.
+    func clock(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: language)
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
 }
 
@@ -84,7 +90,7 @@ struct NextPrayerPage: View {
                         .foregroundStyle(.white)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
-                    Text(next.time.formatted(model.clockStyle))
+                    Text(model.clock(next.time))
                         .font(.system(.title3, design: .rounded, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.95))
                     Text(timerInterval: Date()...next.time, countsDown: true)
@@ -109,7 +115,7 @@ struct NextPrayerPage: View {
                         // "at <time>" line. It stays now that the clock follows the app language: a
                         // language can still differ from the sentence's direction, and "6:54 م" is itself
                         // a mixed run.
-                        let clock = following.time.formatted(model.clockStyle)
+                        let clock = model.clock(following.time)
                         (Text(AppTranslations.translate("Then", to: model.language) + " ")
                          + Text(model.name(for: following.name)).bold()
                          + Text(" \u{2068}\(clock)\u{2069}"))
@@ -174,7 +180,7 @@ struct TodayPage: View {
                     //
                     // The time keeps one line and its full width; a long name gives way instead. Without
                     // this the row broke the time in two beside the longer names ("6:49A" / "M").
-                    Text(prayer.time.formatted(model.clockStyle))
+                    Text(model.clock(prayer.time))
                         .font(.system(.body, design: .rounded, weight: isNext ? .bold : .regular))
                         .foregroundStyle(isNext ? .teal : (passed ? .secondary : .primary))
                         .lineLimit(1)
@@ -182,6 +188,8 @@ struct TodayPage: View {
                 }
                 .listRowBackground(isNext ? Color.teal.opacity(0.18) : nil)
                 .accessibilityElement(children: .combine)
+                // The tick that used to mark a passed prayer was the only cue VoiceOver had; say it in words instead.
+                .accessibilityValue(passed ? AppTranslations.translate("Passed", to: model.language) : "")
             }
             if model.todayPrayers.isEmpty {
                 Text(AppTranslations.translate("Locating...", to: model.language))
