@@ -1,7 +1,7 @@
 # iPrayer — Handoff Notes
 
-Written 18 September 2026; updated 2 October 2026, after Siri (#32) and the non-Gregorian calendar fix
-(#33). Everything through PR #33 is merged to `main`. This is the context a future session
+Written 18 September 2026; updated 3 October 2026, after Siri (#32), the non-Gregorian calendar fix (#33)
+and the language-consistency round (#34). Everything through PR #34 is merged to `main`. This is the context a future session
 needs that is *not* obvious from the code: where things stand, why decisions were made, how to test,
 and what is still open. The README describes the product; this describes the work.
 
@@ -9,7 +9,7 @@ and what is still open. The README describes the product; this describes the wor
 
 ## 1. Where things stand
 
-- **Version:** 1.1.0, build 13 (App Store has 1.0). Deployment target iOS 26.0 (watchOS 10.0 on the watch
+- **Version:** 1.1.1, build 14 (App Store has 1.0; a 1.1.0 build 3 was uploaded on 18 September, see Archives). Deployment target iOS 26.0 (watchOS 10.0 on the watch
   targets), Xcode 27. The Swift 6.4 *toolchain*, but still the Swift 5 *language mode*
   (`SWIFT_VERSION = 5.0` in all eight configurations) — which is why the capture rule below is a warning
   and not yet an error. `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and approachable concurrency are on for
@@ -115,8 +115,7 @@ and what is still open. The README describes the product; this describes the wor
   `iprayer://open/<tab>` came with it. An adversarial review before the PR found three navigation bugs in
   the first version, all invisible on a cold launch, and two wrong answers around midnight (§3); all five
   are fixed and re-tested. Nobody has SPOKEN to it yet: that needs the owner's iPhone (§5, §6). Build 13.
-- **2 October 2026, language consistency — PR #34 OPEN, NOT merged, build NOT bumped.** Branch
-  `fix-qibla-distance-watch-time-language`, with `main` at build 13 merged in. These are the two bugs the
+- **2–3 October 2026, language consistency — MERGED (#34).** These are the two bugs the
   calendar audit found and left. Two places formatted with the DEVICE locale while the screen
   around them was in the in-app language: the Qibla tab's distance (an Arabic phone with the app in
   English showed "١٬٢٨٦ كم" on an English screen) and the watch's three clock times (with the app in
@@ -126,21 +125,28 @@ and what is still open. The README describes the product; this describes the wor
   prayer's time across two lines ("6:49A" / "M") in every language. On 3 October the owner asked for what
   that round had found to be fixed too, and it is, one commit each: the Qibla tab's bearing and turn lines
   read word-first in Arabic and Urdu (§3), and the watch's Today page no longer puts a tick on a passed
-  prayer, which is what cut "Sunrise" to "Sun…" on the 40mm. Merging needs build 14 and a new archive to
-  replace 1.1.0 (13). Five App Store screenshots go stale and the owner does not want them retaken (§6).
+  prayer, which is what cut "Sunrise" to "Sun…" on the 40mm. A review before the merge (3 October) added
+  three small things: the Qibla distance is rewritten when the language changes under a showing compass
+  (iCloud, or a second iPad window), the watch clock uses the complication's DateFormatter so the two agree
+  on the leading zero in the 24-hour languages ("06:49", not "6:49"), and a passed prayer on the watch's
+  Today page tells VoiceOver "Passed" now that the tick is gone. Merged with the version bump: 1.1.1, build
+  14, at the owner's choice of number. Five App Store screenshots go stale and the owner does not want them
+  retaken (§6).
 - **Archives.** Release archives are built with `xcodebuild archive` (widget + watch app + complication
   embedded, development-signed; Xcode re-signs for distribution on upload). Keep exactly ONE current: each
   new build's archive supersedes the last, and 4 through 11 were deleted in turn; build 12's, the one with
-  the launch crash, was moved to the Trash on 2 October rather than deleted, and can be emptied. The
-  CURRENT archive, and the only one to distribute, is
-  `~/Library/Developer/Xcode/Archives/2026-10-02/iPrayer 1.1.0 (13).xcarchive`. A second 1.1.0 archive sits
+  the launch crash, was moved to the Trash on 2 October rather than deleted, and can be emptied; build
+  13's followed it on 3 October. The CURRENT archive, and the only one to distribute, is
+  `~/Library/Developer/Xcode/Archives/2026-10-03/iPrayer 1.1.1 (14).xcarchive`. An older 1.1.0 archive sits
   in `~/Library/Developer/Xcode/Archives/2026-09-18/` under Xcode's default name: it is BUILD 3, and its
   record says it was UPLOADED to App Store Connect on 18 September. (This file called it "pre-1.1.0" until
   an audit read its Info.plist on 2 October.) It predates everything since, the calendar fix included. App Store
-  Connect itself was not checked; if it still lists build 3 when a build is attached, pick 13, never 3.
-  **Next (owner only): try Siri on a real iPhone first (§6), then Organizer > Distribute App on that 1.1.0
-  (13) archive, paste `docs/AppStoreRelease.md` and `docs/AppStoreListing.md` into App Store Connect with
-  `docs/screenshots/`, attach build 13, and submit.
+  Connect itself was not checked; if it still lists build 3 when a build is attached, pick 14, never 3.
+  The version became 1.1.1 with build 14 (3 October); `WhatsNewView.contentVersion` stays "1.1.0" on
+  purpose, since that page describes the 1.1 release and a bug-fix number must not show it twice.
+  **Next (owner only): try Siri on a real iPhone first (§6), then Organizer > Distribute App on that 1.1.1
+  (14) archive, paste `docs/AppStoreRelease.md` and `docs/AppStoreListing.md` into App Store Connect with
+  `docs/screenshots/`, attach build 14, and submit.
   The 20 September device pass (§5) predates Siri and the calendar fix. The other loose end is the EveryAyah
   rights email, drafted in `docs/AppStoreRelease.md` and not sent.**
 
@@ -718,6 +724,12 @@ and German ("Sonnenaufgang", which needed the name's minimum scale lowered from 
 midnight, when all of the day's prayers are still ahead, so the dimmed state was not seen, only left
 unchanged in the code; and the five other languages on the watch.
 
+Verified for 1.1.1 (14) (3 October 2026, #34 merged with three review fixes): a Debug build of the branch
+at its merge state; the Release ARCHIVE reports 1.1.1 (14) and embeds the widget extension and the watch
+app. NOT verified on screen: the three review fixes themselves (the language-change rewrite of the
+distance, the watch clock's leading zero, the VoiceOver value) — each was established by the reviewer in a
+standalone script against the same Foundation, not in the simulator.
+
 **DEVICE PASS DONE — 20 September 2026.** The owner went through the whole standing "not verified" list on
 their own iPhone and Apple Watch and reported everything working. That closes, all at once: the tracker
 across a real midnight on two devices · the Today's Prayers widget rendered · the Verse of the Day widget on
@@ -787,7 +799,7 @@ which no amount of device testing surfaces.
   local adhan notifications on the watch (phone notifications already mirror to it).
 
 **Left open by #34**
-- **Five App Store screenshots are stale once #34 merges,** plus their `captioned/` versions. The owner was
+- **Five App Store screenshots are stale now that #34 is merged,** plus their `captioned/` versions. The owner was
   asked on 3 October and does NOT want them retaken for now, so leave them unless asked.
   `iphone69-ar-06-qibla` and `ipad13-ar-06-qibla` show "136° القبلة · 1,286 km" where the app now writes
   "القبلة 136° · 1,286 كم", and the turn line number-first; `watch44-ar-01-next-prayer` shows "6:54PM" and

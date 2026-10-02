@@ -3,7 +3,7 @@
 ![Platform](https://img.shields.io/badge/Platform-iOS%2026%2B-blue.svg)
 ![Language](https://img.shields.io/badge/Language-Swift-orange.svg)
 ![UI Framework](https://img.shields.io/badge/UI-SwiftUI-purple.svg)
-![Version](https://img.shields.io/badge/Version-1.1.0-teal.svg)
+![Version](https://img.shields.io/badge/Version-1.1.1-teal.svg)
 ![License](https://img.shields.io/badge/License-All%20rights%20reserved-lightgrey.svg)
 
 **iPrayer** is a comprehensive, beautifully designed iOS application built with **SwiftUI**. It is an all-in-one companion for daily Islamic practice: accurate prayer times with adhan notifications, a Qibla compass, a fully offline Quran reader, a Dua library, a Tasbih counter, Home Screen and Lock Screen widgets, and a Live Activity that counts down to the next prayer.
