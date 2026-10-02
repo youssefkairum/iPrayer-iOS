@@ -309,11 +309,15 @@ struct QiblaCompassView: View {
                     .foregroundColor(.white.opacity(0.6))
             } else if !isFacingQibla {
                 let degrees = Int(abs(offset).rounded())
-                Label("\(AppTranslations.translate(offset > 0 ? "Turn right" : "Turn left", to: appLanguage)) · \(degrees)°",
-                      systemImage: offset > 0 ? "arrow.turn.up.right" : "arrow.turn.up.left")
-                    .font(.custom("AvenirNext-DemiBold", size: 15))
-                    .foregroundColor(.teal)
-                    .contentTransition(.numericText())
+                // Built as a String and shown verbatim, like the bearing line below and for the same reason.
+                Label {
+                    Text(verbatim: "\(AppTranslations.translate(offset > 0 ? "Turn right" : "Turn left", to: appLanguage)) · \u{2068}\(degrees)°\u{2069}")
+                } icon: {
+                    Image(systemName: offset > 0 ? "arrow.turn.up.right" : "arrow.turn.up.left")
+                }
+                .font(.custom("AvenirNext-DemiBold", size: 15))
+                .foregroundColor(.teal)
+                .contentTransition(.numericText())
             }
             
             // The magnetometer's own error estimate: past the threshold, ask for the figure-8 (iOS shows its
@@ -325,8 +329,13 @@ struct QiblaCompassView: View {
                     .multilineTextAlignment(.center)
             }
             
+            // Word first, then the number, in every language. Written as an interpolated literal this line
+            // was a LocalizedStringKey, and in Arabic it was laid out left-to-right: it read "136° القبلة",
+            // number first. A plain String shown verbatim takes its direction from its own first strong
+            // character, so the word leads. The number sits in a first-strong isolate so that the degree
+            // sign stays on its right inside a right-to-left line — the pattern of the Home card's time.
             HStack(spacing: 6) {
-                Text("\(AppTranslations.translate("Qibla", to: appLanguage)) \(Int(viewModel.qiblaDirection.rounded()))°")
+                Text(verbatim: "\(AppTranslations.translate("Qibla", to: appLanguage)) \u{2068}\(Int(viewModel.qiblaDirection.rounded()))°\u{2069}")
                 if let distance = distanceText {
                     Text("·")
                     Text(distance)
